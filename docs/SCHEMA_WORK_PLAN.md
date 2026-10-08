@@ -7,7 +7,9 @@ See [roadmap](OUTSTANDING_WORK.md) and [service plan](SPEC_WORK_PLAN.md).
 ## Common schema infrastructure
 
 The provider boundary is an early deliverable in [EXT-3](EXTENSIBILITY.md).
-Users can supply their own schemas before the complete built-in catalog exists.
+The provider API is not implemented yet. Callers can currently supply explicit
+parameter types through Parameter/ParameterBlock; provider lookup and automatic
+schema-aware planning remain future work.
 Provider extensibility and a particular built-in PT row have separate completion
 criteria; caller extensions do not imply verified firmware coverage for the crate.
 

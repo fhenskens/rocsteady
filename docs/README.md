@@ -4,15 +4,15 @@ Start here when planning or implementing rocsteady. The target is ROC Plus
 D301180X012, October 2022, Chapters 1–7; delivery starts with an extensible client
 and verified defaults. Unresolved device behavior remains explicit.
 Ambiguous device behavior uses public extension contracts; sufficiently specified
-alternatives are provided as named selectable built-in extensions through those
+alternatives will be provided as named selectable built-in extensions through those
 same contracts, so callers can replace them with their own implementations.
 
 ## Reading order
 
 1. [Coverage](COVERAGE.md): implemented behavior and current evidence.
 2. [Roadmap](OUTSTANDING_WORK.md): milestones, dependencies and release gates.
-3. [Extensibility plan](EXTENSIBILITY.md#first-implementation-slice): the first
-   implementation slice and contracts to settle before public APIs.
+3. [Extensibility plan](EXTENSIBILITY.md#first-implementation-slice): delivered
+   managed contracts, first-slice evidence and remaining extension acceptance tasks.
 4. [Current decision register](reference/DECISIONS.md): delivery dispositions,
    open questions and evidence required for the selected work.
 5. [Service work packages](SPEC_WORK_PLAN.md) and
@@ -25,7 +25,7 @@ same contracts, so callers can replace them with their own implementations.
 | --- | --- |
 | [Coverage](COVERAGE.md) | Current implemented support and limitations |
 | [Roadmap](OUTSTANDING_WORK.md) | Delivery order, dependencies and product/release gates |
-| [Extensibility](EXTENSIBILITY.md) | Planned extension contracts and external-consumer acceptance |
+| [Extensibility](EXTENSIBILITY.md) | Delivered/planned extension boundaries and external-consumer acceptance |
 | [Service plan](SPEC_WORK_PLAN.md) | Baseline opcode/core inventory and closure criteria |
 | [Schema plan](SCHEMA_WORK_PLAN.md) | Point-type inventory and per-parameter closure criteria |
 | [Architecture](ARCHITECTURE.md) | Existing ownership, recovery and stream behavior |
@@ -35,6 +35,11 @@ same contracts, so callers can replace them with their own implementations.
 
 Work plans do not replace the vendor wire specification. The research records
 explain evidence and its limitations; they do not establish hardware compatibility.
+
+For the current alpha candidate, see [usage and errors](USAGE.md),
+[managed API contracts](MANAGED_EXTENSIONS.md), [release evidence](RELEASE.md)
+and the [dependency/license inventory](DEPENDENCIES.md). Hosted macOS CI and
+physical controller evidence remain separate pending gates.
 
 ## Working on a slice
 

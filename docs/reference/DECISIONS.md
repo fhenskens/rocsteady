@@ -28,8 +28,11 @@ progress without claiming the underlying wire question is resolved:
   transport/firmware variants are not thereby verified.
 - **Documented direction:** apply established distinctions without inferring
   missing device behavior.
-- **User extension:** planned seam for callers with applicable knowledge. These
-  seams are not implemented yet; affected built-in variants remain unavailable.
+- **User extension:** a customization boundary for callers with applicable knowledge.
+  EXT-1 setup and EXT-4 typed operations/workflows are implemented; EXT-2 profiles
+  and EXT-3 providers remain planned. A row naming several seams may still require
+  an undelivered profile/provider or framework capability. Affected built-in
+  variants remain unavailable unless coverage explicitly records them.
 - **Deferred framework:** define ownership, validation or outcome contracts before
   exposing behavior. Extensions cannot bypass those contracts.
 - **Deferred supplemental scope/evidence:** obtain applicable definitions/evidence
@@ -178,3 +181,14 @@ Evidence: [search assessment](SEARCH_RECORD.md#dec-10--widths-conditional-access
 | DEC-10.02 | Conditional writes and configuration mode | Tags/parameter-level conditions found; no universal rule established | User extension: EXT-3 | Each affected parameter's preconditions and device outcomes |
 | DEC-10.03 | Firmware-dependent schema differences | Broad audit remains ongoing | User extension: EXT-3 | Per-parameter manifests for all 62 catalog rows |
 | DEC-10.04 | Naming/description defects in other drivers | Indexed release-note lead only | Deferred evidence | Read original release notes before adopting corrections |
+
+## Managed extension delivery evidence (2026-10-09)
+
+The EXT-1/4/5 ownership boundary is now implemented; see
+[contracts and tests](../MANAGED_EXTENSIONS.md). DEC-2 procedures can be supplied
+through `SetupStrategy`, and ordinary unicast multi-exchange procedures through
+`Workflow`/`ManagedContext`, with typed codecs through `Operation`. This makes
+these seams available without resolving any DEC-2 authentication algorithm or
+DEC-4/5/6 payload/remote-outcome ambiguity. No preset is promoted and all DEC rows
+remain open. Routing, framing budgets, profiles and schemas retain their existing
+framework/evidence prerequisites. Physical evidence remains none.

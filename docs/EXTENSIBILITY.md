@@ -1,6 +1,6 @@
 # Extensible client work plan
 
-Status: planned; no new extension APIs have been implemented.
+Status: first managed EXT-1/4/5 slice implemented; EXT-2/3 and remaining acceptance tasks are open.
 This is the early delivery milestone in [the roadmap](OUTSTANDING_WORK.md).
 The published Etherbird crate remains responsible for lifecycle supervision,
 admission, exclusive leases, recovery and awaited shutdown.
@@ -19,16 +19,16 @@ A raw request alone does not constitute a usable typed extension framework.
 
 ## EXT-1: authentication and readiness strategies
 
-- [ ] Define an async strategy boundary for login, protocol readiness, and restoration on every new connection generation.
-- [ ] Run strategies inside bounded lifecycle setup before publishing readiness; retain built-in legacy login/clock probing as defaults.
+- [x] Define an async strategy boundary for login, protocol readiness, and restoration on every new connection generation.
+- [x] Run strategies inside bounded lifecycle setup before publishing readiness; retain built-in legacy login/clock probing as defaults.
 - [ ] Let a strategy handle protected discovery and custom readiness probes, with explicit device/firmware applicability.
-- [ ] Define generation-local session state, including keys/handles, and prevent it from leaking into a replacement.
-- [ ] Support application credential providers; keep secrets out of Debug, tracing and fixture output.
-- [ ] Define rejected/unsupported authentication errors separately from transient transport failures and apply the intended recovery policy.
+- [x] Define generation-local session state, including keys/handles, and prevent it from leaking into a replacement.
+- [x] Support application credential providers; keep secrets out of Debug, tracing and fixture output.
+- [x] Define rejected/unsupported authentication errors separately from transient transport failures and apply the intended recovery policy.
 - [ ] Define explicit logout and changed-credentials behavior without silently undoing caller intent through relogin.
-- [ ] Expose only managed protocol exchanges to setup strategies; no unrestricted shared socket.
-- [ ] Provide a compile-checked external strategy example demonstrating setup and restoration using a deterministic fixture procedure.
-- [ ] Clearly label the example procedure as a fixture, not an invented enhanced-security algorithm.
+- [x] Expose only managed protocol exchanges to setup strategies; no unrestricted shared socket.
+- [x] Provide a compile-checked external strategy example demonstrating setup and restoration using a deterministic fixture procedure.
+- [x] Clearly label the example procedure as a fixture, not an invented enhanced-security algorithm.
 
 Acceptance: an external consumer implements authentication without editing the
 crate; replacement reruns setup, unsuccessful/cancelled setup is never ready,
@@ -72,17 +72,18 @@ rocsteady, and oversized/unsupported requests fail before channel use.
 
 ## EXT-4: typed custom operations and exclusive workflows
 
-- [ ] Expose single-exchange typed operations with local request validation and raw reply decoding in the managed operation boundary.
-- [ ] Expose a scoped workflow context that retains exclusive channel ownership across multiple exchanges.
-- [ ] Define the workflow's overall deadline, per-exchange wire deadlines and readiness admission behavior.
-- [ ] Specify how heartbeat/unsolicited dispatch interacts with workflow ownership; prevent responses from being stolen by competing readers.
-- [ ] Define error classification for local validation, healthy device rejection, malformed typed data and transport failure.
-- [ ] Tie remote handles and partial progress to connection generation; fail an interrupted workflow explicitly.
-- [ ] Do not transparently resume/replay a workflow across replacement; a caller may start an explicit new attempt when its semantics permit it.
-- [ ] Keep stop/cancellation managed and awaited; a dropped incomplete exchange retires the stream even for extensions.
-- [ ] Prevent extensions from bypassing queue bounds, receiving an untracked shared stream or retaining an exclusive context after its scope ends.
-- [ ] Provide a compile-checked custom operation and multi-exchange fixture workflow in an external consumer crate/example.
-- [ ] Test competing clones, late replies, decoder failure, stop with in-flight work, and disconnect after a simulated side effect.
+- [x] Expose single-exchange typed operations with local request validation and raw reply decoding in the managed operation boundary.
+- [x] Expose a scoped workflow context that retains exclusive channel ownership across multiple exchanges.
+- [x] Define the workflow's overall deadline, per-exchange wire deadlines and readiness admission behavior.
+- [x] Specify how heartbeat/unsolicited dispatch interacts with workflow ownership; prevent responses from being stolen by competing readers.
+- [x] Define error classification for local validation, healthy device rejection, malformed typed data and transport failure.
+- [x] Tie remote handles and partial progress to connection generation; fail an interrupted workflow explicitly.
+- [x] Do not transparently resume/replay a workflow across replacement; a caller may start an explicit new attempt when its semantics permit it.
+- [x] Keep stop/cancellation managed and awaited; a dropped incomplete exchange retires the stream even for extensions.
+- [x] Prevent extensions from bypassing queue bounds, receiving an untracked shared stream or retaining an exclusive context after its scope ends.
+- [x] Provide a compile-checked custom operation and multi-exchange fixture workflow in an external consumer crate/example.
+- [x] Test competing clones, late replies, decoder failure and stop with in-flight work.
+- [ ] Test disconnect after a simulated side effect with an independent committed-effect counter; the current extension fixture observes a request but does not model a write effect.
 
 Acceptance: typed operations and workflows can be implemented outside the crate
 while preserving managed admission, ownership and cancellation guarantees. Remote
@@ -90,14 +91,14 @@ completion remains an operation-specific contract; no implicit side-effect repla
 
 ## EXT-5: contracts, examples and extension lifecycle
 
-- [ ] Write API/design contracts before fixing public trait signatures: ownership, async lifetimes, Send/Sync, error types, supported dependency versions and versioning policy.
-- [ ] Keep extension registration/configuration immutable or define atomic changes and generation invalidation explicitly.
+- [x] Write API/design contracts before fixing public trait signatures: ownership, async lifetimes, Send/Sync, error types, supported dependency versions and versioning policy.
+- [x] Keep extension registration/configuration immutable or define atomic changes and generation invalidation explicitly.
 - [ ] Distinguish built-in verified, built-in provisional, user-supplied and unavailable capabilities in docs/diagnostics.
 - [ ] Publish guides for all four extension seams, including what knowledge/evidence an implementer must supply.
-- [ ] Test external implementation ergonomics with a consumer using the published Etherbird dependency; examples must not depend on crate-private access.
+- [x] Test external implementation ergonomics with a consumer using the published Etherbird dependency; examples must not depend on crate-private access.
 - [ ] Maintain framework contract tests across dependency upgrades.
-- [ ] Establish a contribution path: source/evidence, independent fixtures, applicable model/firmware, review, simulator/integration tests, then promotion to built-in support.
-- [ ] Keep extension compatibility claims separate from the crate's built-in conformance matrix.
+- [x] Establish a contribution path: source/evidence, independent fixtures, applicable model/firmware, review, simulator/integration tests, then promotion to built-in support.
+- [x] Keep extension compatibility claims separate from the crate's built-in conformance matrix.
 
 Acceptance: readers have runnable examples and documented missing-capability
 errors. They can add their own implementations without needing us to guess the
@@ -145,6 +146,11 @@ framework contract; unrestricted plugin code is not a substitute for ownership.
 
 ## First implementation slice
 
+Contracts, dependency audit, evidence and remaining limitations are recorded in
+[Managed extension contracts](MANAGED_EXTENSIONS.md). The runnable external example
+is [managed_extensions](../examples/managed_extensions.rs); regression cases are
+in [extensions](../tests/extensions.rs). This does not close full EXT acceptance.
+
 Scope: EXT-5 contracts and the managed exchange boundary needed by EXT-1/4.
 Demonstrate custom setup, a typed operation and a two-exchange fixture workflow
 from an external consumer. EXT-2/3 follow once ownership is demonstrated.
@@ -177,10 +183,16 @@ Implementation sequence:
 5. Update coverage, EXT-1/4/5 subitems and relevant decision dispositions with exact
    evidence links; keep unfinished requirements and unresolved DEC rows open.
 
+Alpha review adds typed DecodeError, exclusively owned state destroyed on disconnect,
+checked GenerationValue handles, required-state errors and terminal authentication
+policy. Credential-provider/recovery, README/usage doctests and extracted-package
+consumer checks are recorded in [release evidence](RELEASE.md). Explicit device
+logout remains unsupported; changed credentials require stopped-client replacement.
+
 Slice exit: an external consumer compiles and runs all three examples without
 crate-private access, and ownership/recovery checks pass. This closes only
 evidenced subitems; full EXT-1/4/5 acceptance and M0-E require their remaining
-checklist items. Setup rejection policy and logout remain explicit design tasks.
+checklist items. Applicability metadata and device logout remain explicit design tasks.
 
 ## Delivery order
 

@@ -166,12 +166,14 @@ from credential field length alone.
   a complete cryptographic procedure.
 - [ ] Implement documented enhanced login, session-key handling and logout forms
   after that behavior is established.
-- [ ] Expose authentication/readiness strategies before requiring built-in enhanced
+- [x] Expose authentication/readiness strategies before requiring built-in enhanced
   login; provide a deterministic external strategy example and restoration tests.
 - [ ] Detect session expiration on an otherwise healthy channel and define whether
   the affected operation fails or receives an explicitly permitted replay.
-- [ ] Distinguish rejected credentials/configuration from transient channel failures
-  so callers receive actionable errors rather than only repeated setup timeouts.
+- [x] Distinguish explicit rejected/unsupported authentication from transient channel
+  failures using terminal Authentication errors rather than repeated setup timeouts.
+- [ ] Establish device-specific configuration/busy/expiration classifications beyond
+  the explicit strategy error policy; these still need applicable wire evidence.
 - [ ] Test rejected, expired and replacement sessions, secret-safe diagnostics, and
   readiness only after successful setup.
 
@@ -331,7 +333,7 @@ test. Compilation and in-memory stream tests alone do not establish serial behav
 - [ ] Test listener outage/rebind and repeated controller restart, beyond closing an
   accepted socket while the listener remains available.
 - [ ] Test refused/stalled connection, stalled setup and late connection success.
-- [ ] Test malformed typed replies with otherwise valid frame/CRC and healthy-looking
+- [x] Test malformed typed replies with otherwise valid frame/CRC and healthy-looking
   transport.
 - [ ] Test queued cancellation without execution, overall deadline expiration while
   queued/recovering, and teardown with work still in flight.
@@ -350,9 +352,9 @@ test. Compilation and in-memory stream tests alone do not establish serial behav
   and before acknowledgement, plus connection/setup/operation counters.
 - [ ] Test device identity, layout, schema, session key and remote handle changes
   across replacement; invalidate caches whose identity no longer holds.
-- [ ] Test exclusive ownership across compound workflows, with competing reads,
+- [x] Test exclusive ownership across compound workflows, with competing reads,
   heartbeat/unsolicited traffic, cancellation and stop from another clone.
-- [ ] Keep Etherbird responsible for lifecycle/admission/shutdown and rocsteady
+- [x] Keep Etherbird responsible for lifecycle/admission/shutdown and rocsteady
   responsible for protocol/session semantics; validate against its published crate.
 
 Completion: regression tests assert bounded outcomes and operation/setup counts,
@@ -377,22 +379,25 @@ matrix. Hardware-dependent tests should be explicitly opt-in; no-hardware CI rem
 
 ### API, documentation and packaging
 
-- [ ] Review public API ergonomics, configuration validation and error/outcome types.
-- [ ] Document how applications should react to transport, protocol, authentication,
+- [x] Review public API ergonomics, configuration validation and error/outcome types.
+- [x] Document how applications should react to transport, protocol, authentication,
   queue and unknown-outcome errors.
 - [ ] Add complete examples for credentials, serial, log/history pagination and state/events.
-- [ ] Compile README examples as doctests or equivalent checks; the current library
-  doctest run contains no README example tests.
-- [ ] Verify the declared Rust 1.88 minimum with that toolchain and supported features;
-  current checks used the installed toolchain.
+  Credentials, serial and state/events examples are delivered; log/history
+  pagination examples remain blocked on their unimplemented typed services.
+- [x] Compile README and usage examples as library doctests, including context lifetime checks.
+- [x] Verify the declared Rust 1.88 minimum with default/all-feature/target/doctest
+  checks on Windows and Linux; see [release evidence](RELEASE.md).
 - [ ] Establish successful Linux/macOS/Windows CI results, including optional serial.
-- [ ] Audit dependencies/licenses and packaged contents; validate cargo package.
-- [ ] Add changelog, explicit compatibility/versioning policy and release checklist.
-- [ ] Select the advertised release scope and keep unsupported services visible.
+- [x] Audit dependencies/licenses and packaged contents; validate cargo package.
+- [x] Add changelog, explicit compatibility/versioning policy and release checklist.
+- [x] Select the advertised release scope and keep unsupported services visible.
 - [ ] Publish only after the chosen release criteria are met and publication is authorized.
 - [ ] Provide runnable recovery examples for reads, authenticated setup, logs/history,
   files and routing; show state changes and explicit interrupted-operation outcomes.
-- [ ] Establish dependency upgrade regression checks for the published Etherbird
+  Read/authenticated-setup recovery is delivered; logs/history, files and routing
+  remain future services. See [current examples](../README.md#concrete-examples).
+- [x] Establish dependency upgrade regression checks for the published Etherbird
   crate, without requiring a sibling checkout for users or CI.
 - [ ] Document ownership and cancellation for pagers, file handles, subscriptions,
   routed clients and broadcast sends; give bounded defaults and useful errors.
@@ -405,10 +410,10 @@ from hardware evidence.
 
 ## Recommended next slice
 
-Start M0-E: write ownership/error/lifecycle contracts, then implement external
-authentication/readiness strategies and typed operations with scoped exclusive
-workflows. Follow with profiles and schema providers, and verify all seams through
-compile-checked external examples and failure/recovery tests. Catalogue each known
+Continue M0-E: the first managed slice is implemented (see
+[contracts](MANAGED_EXTENSIONS.md)). Complete remaining authentication applicability/logout,
+remote-handle and lifecycle acceptance tasks, then add profiles and schema
+providers with external examples and failure/recovery tests. Catalogue each known
 ambiguity's extension disposition before committing to disputed built-in behavior.
 
 Then continue OP-50/100 discovery and schema-backed reads using verified defaults

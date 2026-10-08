@@ -36,8 +36,10 @@ request recovery.
 The call deadline includes admission and lifecycle readiness. The wire deadline
 starts after the stream mutex is acquired, so contention with a heartbeat is not
 misclassified as peer silence. Configured creation/setup deadlines bound each
-recovery attempt. Bad credentials may continue to fail until the call deadline;
-there is no permanent authentication-failure state yet.
+recovery attempt. Explicit rejected/unsupported authentication now latches in
+Client, fails waiting calls promptly and blocks further connection/setup attempts.
+The latch is separate from Etherbird's resource state. Await stop and create a new
+client to change credentials; transport setup failures remain recoverable.
 
 The simulator's pure Model dispatch runs behind the same framing/stream boundary.
 Unit tests include published CRC examples and literal typed payloads. An independent
@@ -47,3 +49,10 @@ shared-client/simulator false positives.
 The event receiver is stable across generations and bounded. SRBX signals are
 processed during active exchanges/heartbeats. No automatic alarm acknowledgement
 is emitted because it requires knowledge of the alarm log entries actually consumed.
+
+The first EXT-1/4/5 slice now uses the [managed extension contracts](MANAGED_EXTENSIONS.md).
+A Session ownership mutex spans entire setup/workflow scopes and is shared by
+ordinary requests and heartbeats; the inner stream guard still retires incomplete
+exchanges. Cancelled scopes between exchanges signal retirement before releasing
+ownership. Setup state is installed once per generation and accessed by borrowing
+the scoped context. Registration is immutable; setup is repeated on replacement.

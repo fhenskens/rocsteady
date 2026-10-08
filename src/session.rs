@@ -6,7 +6,10 @@ use crate::{
     },
     transport::{Stream, read_frame, write_frame},
 };
-use std::time::Duration;
+use std::{
+    sync::atomic::{AtomicU64, Ordering},
+    time::Duration,
+};
 use tokio::{
     sync::{Mutex, broadcast, watch},
     time::timeout,
@@ -15,6 +18,9 @@ use tokio::{
 /// One serialized connection generation. Use Client for managed replacement.
 pub struct Session {
     stream: Mutex<Option<Stream>>,
+    ownership: Mutex<()>,
+    pub(crate) generation: u64,
+    state: Mutex<Option<crate::SessionState>>,
     host: Address,
     device: Address,
     response_timeout: Duration,
@@ -66,6 +72,9 @@ impl Session {
         }
         Ok(Self {
             stream: Mutex::new(Some(stream)),
+            ownership: Mutex::new(()),
+            generation: NEXT_GENERATION.fetch_add(1, Ordering::Relaxed),
+            state: Mutex::new(None),
             host,
             device,
             response_timeout,
@@ -84,6 +93,7 @@ impl Session {
     pub async fn disconnect(&self) {
         self.stream.lock().await.take();
         self.connected.send_replace(false);
+        self.state.lock().await.take();
     }
 
     /// Run one unicast exchange. No retry or side-effect inference is performed.
@@ -101,10 +111,28 @@ impl Session {
         data: Vec<u8>,
         decode: impl FnOnce(&[u8]) -> Result<T, Error>,
     ) -> Result<T, Error> {
+        let _ownership = self.ownership.lock().await;
+        self.exchange_decoded(opcode, data, decode).await
+    }
+    pub(crate) async fn managed(&self) -> crate::ManagedContext<'_> {
+        let ownership = self.ownership.lock().await;
+        crate::ManagedContext {
+            session: self,
+            complete: false,
+            state: self.state.lock().await,
+            _ownership: ownership,
+        }
+    }
+    pub(crate) async fn exchange_decoded<T>(
+        &self,
+        opcode: u8,
+        data: Vec<u8>,
+        decode: impl FnOnce(&[u8]) -> Result<T, Error>,
+    ) -> Result<T, Error> {
         validate_request(opcode, &data)?;
         let frame = Frame::new(self.device, self.host, opcode, data);
         let mut slot = self.stream.lock().await;
-        if slot.is_none() {
+        if slot.is_none() || !self.is_connected() {
             return Err(Error::Disconnected);
         }
         let mut exchange = Exchange {
@@ -187,3 +215,5 @@ pub(crate) fn validate_request(opcode: u8, data: &[u8]) -> Result<(), Error> {
     }
     Ok(())
 }
+
+static NEXT_GENERATION: AtomicU64 = AtomicU64::new(1);

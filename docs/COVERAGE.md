@@ -6,10 +6,10 @@ The linked document is authoritative; its text and tables are not redistributed.
 The full implementation target is tracked in [the roadmap](OUTSTANDING_WORK.md),
 [service work packages](SPEC_WORK_PLAN.md) and [schema work packages](SCHEMA_WORK_PLAN.md).
 These inventories describe planned scope, not additional implemented support.
-The [extensibility plan](EXTENSIBILITY.md) adds planned authentication strategies,
-profiles, schema providers and custom managed workflows. These APIs are not yet
-implemented; current extension seams remain Connector, caller-provided parameter
-types and raw single-unicast requests.
+The [extensibility plan](EXTENSIBILITY.md) includes implemented managed setup,
+typed operations and exclusive workflows. Profiles and schema providers remain
+planned. See [contracts and exact evidence](MANAGED_EXTENSIONS.md). Connector,
+caller-provided parameter types and raw single-unicast requests remain supported.
 [Reference specifications](reference/README.md) records its source, revision and
 the sections used by the implementation and fixtures.
 
@@ -30,6 +30,7 @@ the sections used by the implementation and fixtures.
 | TCP | Fresh connection seam and simulator transport | Real loopback sockets |
 | Serial | Configurable stream connector | Compilation only; physical validation outstanding |
 | Supervision | Login/readiness restoration, queue bound, deadlines, heartbeat, cancellation/shutdown | Etherbird-backed integration suite |
+| Managed extensions | Immutable setup strategies, typed operations, exclusive workflows, terminal auth, owned generation state and checked handles | External fixtures, packaged consumer, README/usage doctests and [release evidence](RELEASE.md) |
 
 Table 2-3 is used for the clock year representation instead of the older illustration
 in Figure 1-2. Error offsets are retained as raw bytes; their meaning depends on the
@@ -40,7 +41,9 @@ operation. TLP parameter widths come from caller-provided schemas.
 Typed replies are decoded under the Session exchange guard: malformed
 configuration, clock, login acknowledgement and parameter replies retire the
 generation before another caller can use it. This applies to standalone Session
-and managed Client; valid device rejections and local validation remain healthy.
+and managed Client; ordinary valid device rejections and local validation remain
+healthy. Legacy login rejection during managed setup is the deliberate exception:
+it latches terminal authentication failure and that setup generation is discarded.
 Regression evidence: `standalone_session_retires_every_malformed_typed_reply`
 and `standalone_typed_device_rejection_keeps_session_usable`.
 
@@ -77,8 +80,10 @@ claim full ROC Plus conformance.
 See [OUTSTANDING_WORK.md](OUTSTANDING_WORK.md) for the detailed backlog and
 completion criteria, including transport regressions, hardware evidence and releases.
 
-1. Complete the [first extension slice](EXTENSIBILITY.md#first-implementation-slice):
-   contracts, managed custom operations/workflows and authentication/readiness.
+1. Complete the remaining [extension acceptance tasks](EXTENSIBILITY.md):
+   authentication applicability/logout and outstanding lifecycle cases. The first
+   managed slice, API review and alpha onboarding are implemented; see
+   [release evidence](RELEASE.md) for pending hosted CI and hardware gates.
 2. Complete protocol profiles and schema providers, then use configuration
    discovery for supported device/setup policies and firmware-aware selection.
 3. Expand schema-backed parameter models and read-only alarm/history services,

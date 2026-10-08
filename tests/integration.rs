@@ -397,7 +397,7 @@ async fn heartbeats_detect_idle_failure_and_restore_authentication() {
 }
 
 #[tokio::test]
-async fn rejected_setup_is_never_published_ready_and_call_deadline_is_bounded() {
+async fn rejected_setup_is_terminal_never_ready_and_not_retried() {
     let server = Simulator::bind("127.0.0.1:0".parse().unwrap(), model())
         .await
         .unwrap();
@@ -407,10 +407,21 @@ async fn rejected_setup_is_never_published_ready_and_call_deadline_is_bounded() 
     let client = Client::tcp(server.endpoint().to_string(), cfg).unwrap();
     assert!(matches!(
         client.connected().await,
-        Err(etherbird::Error::Timeout)
+        Err(etherbird::Error::Operation(Error::Authentication(
+            rocsteady::AuthenticationFailure::Rejected
+        )))
     ));
     assert_ne!(client.state(), rocsteady::ResourceState::Connected);
     assert_eq!(server.stats().logins, 0);
+    let attempts = server.stats().connections;
+    tokio::time::sleep(Duration::from_millis(40)).await;
+    assert_eq!(server.stats().connections, attempts);
+    assert!(matches!(
+        client.clone().read_clock().await,
+        Err(etherbird::Error::Operation(Error::Authentication(
+            rocsteady::AuthenticationFailure::Rejected
+        )))
+    ));
     finish(server, client).await;
 }
 
