@@ -392,7 +392,8 @@ matrix. Hardware-dependent tests should be explicitly opt-in; no-hardware CI rem
 - [x] Audit dependencies/licenses and packaged contents; validate cargo package.
 - [x] Add changelog, explicit compatibility/versioning policy and release checklist.
 - [x] Select the advertised release scope and keep unsupported services visible.
-- [ ] Publish only after the chosen release criteria are met and publication is authorized.
+- [x] Publish the experimental read-only alpha after the chosen release criteria are
+  met and publication is authorized: 0.1.0-alpha.1; see [release record](RELEASE.md).
 - [ ] Provide runnable recovery examples for reads, authenticated setup, logs/history,
   files and routing; show state changes and explicit interrupted-operation outcomes.
   Read/authenticated-setup recovery is delivered; logs/history, files and routing

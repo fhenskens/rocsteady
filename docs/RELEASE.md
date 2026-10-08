@@ -1,6 +1,7 @@
 # Read-only alpha release checklist
 
-Version: 0.1.0-alpha.1. This checklist applies to the experimental read-only
+Published: [0.1.0-alpha.1](https://crates.io/crates/rocsteady/0.1.0-alpha.1),
+2026-10-09 (local release date). This checklist applies to the experimental read-only
 scope, not full EXT-1/4/5 acceptance or the complete specification backlog.
 
 ## API and compatibility policy
@@ -29,11 +30,11 @@ require a new client. Shutdown is local disconnect; on-wire logout is unsupporte
 - [x] Changelog and pre-1.0 compatibility policy recorded.
 - [x] Windows stable and Rust 1.88 default/all-feature/target/doctest checks.
 - [x] Linux Rust 1.88 default/all-feature/target/doctest checks in Docker.
-- [x] Linux/macOS/Windows hosted CI for the alpha candidate; final release-commit CI is checked again before publication.
+- [x] Linux/macOS/Windows hosted CI for the exact published commit.
 - [x] Package build/verification and packaged external consumer check.
 - [x] Dependency/license and publication payload audit.
 - [ ] Record controller model/firmware/security mode and independent read/recovery evidence (follow-up gate for production compatibility claims; not required for this explicitly unverified experimental release).
-- [ ] Confirm version, clean release commit, CI success and authorized publication.
+- [x] Confirm version, clean release commit, CI success and authorized publication.
 
 ## Repeatable checks
 
@@ -79,9 +80,13 @@ The hosted workflow covers stable and 1.88.0 on Linux/macOS/Windows, including
 examples and package consumer. All six jobs passed on candidate commit
 `d83cd1d59e7b0246f5417dfc904ac55ac60d9138`:
 [hosted validation run](https://github.com/fhenskens/rocsteady/actions/runs/37788381127).
-This includes macOS runtime checks and optional serial compilation. Publication
-also waits for all six jobs on the final release commit after this evidence update.
-The exact tag identifies that commit; hosted status is available in the
-[repository CI runs](https://github.com/fhenskens/rocsteady/actions/workflows/ci.yml).
+This includes macOS runtime checks and optional serial compilation. All six jobs
+also passed on the published commit `8ce3ac729e8160571391d5ea6983bd1400e245bb`:
+[release-commit CI](https://github.com/fhenskens/rocsteady/actions/runs/37789099537).
+The clean-commit `cargo publish --dry-run --locked --all-features` succeeded,
+followed by actual publication and the annotated tag `v0.1.0-alpha.1`.
+[GitHub prerelease](https://github.com/fhenskens/rocsteady/releases/tag/v0.1.0-alpha.1)
+records the release scope and exact commit. macOS was waived as a blocking alpha
+gate by the user while queued, then completed successfully before publication.
 Cross-platform workflow configuration is not evidence that a hosted run succeeded.
 Physical validation is outside this work and remains pending.
