@@ -29,8 +29,8 @@ and baud/parity/stop bits from the exact controller/module manual. Do not substi
 a TTL UART for an RS-232 interface or assume an RJ-45 serial port is Ethernet.
 
 The `serial` feature provides `SerialConnector` with explicit line options. It
-has compiled in local Windows/Linux all-feature checks, including Rust 1.88;
-the hosted CI matrix is configured but its release-commit results remain pending.
+has compiled in local Windows/Linux checks and hosted Windows/Linux/macOS
+all-feature checks on stable Rust and Rust 1.88.
 Physical serial I/O has not been validated. See [release evidence](RELEASE.md).
 The current automated byte-stream seam uses Tokio duplex streams; a serial fixture
 over Unix pseudo-terminals or paired physical adapters remains an additional test.

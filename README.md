@@ -50,10 +50,10 @@ reads, legacy login and device errors. Profiles, schema providers, enhanced logi
 and typed writes, history, alarms, files and routing remain unavailable. Raw/custom
 operations can perform side effects; they are not automatically replayed.
 
-Windows and Linux checks cover Rust 1.88, independent wire fixtures, loopback TCP,
+Windows, Linux and macOS checks cover Rust 1.88, independent wire fixtures, loopback TCP,
 in-memory streams, recovery and shutdown. The publication package is verified
-and exercised by an external consumer. Physical ROC hardware has not been validated;
-macOS execution and hosted CI for the release commit remain pending. The simulator
+and exercised by an external consumer. All six hosted stable/MSRV jobs passed for
+the alpha candidate. Physical ROC hardware has not been validated. The simulator
 is a deterministic fault-injection fixture, not a full ROC800 emulator.
 
 Read the [coverage matrix](https://github.com/fhenskens/rocsteady/blob/main/docs/COVERAGE.md)

@@ -75,8 +75,8 @@ Publication contents were inspected using `cargo package --list --locked --allow
 The payload includes source, lockfile/manifests, tests, examples and fixture support,
 README, Apache license, changelog and the selected user-facing guides/audit.
 It excludes target output, local environment files, git internals, roadmaps, vendor
-research, CI and developer scripts. Cargo-generated VCS metadata records dirty
-candidate status; final publication requires a reviewed clean commit.
+research, CI and developer scripts. Cargo-generated VCS metadata records the source
+commit and its dirty status; final publication requires a reviewed clean commit.
 
 The README and usage include_str paths are present in the package. Verification
 builds the extracted crate, and scripts compile/run an external consumer against

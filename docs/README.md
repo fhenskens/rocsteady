@@ -38,8 +38,8 @@ explain evidence and its limitations; they do not establish hardware compatibili
 
 For the current alpha candidate, see [usage and errors](USAGE.md),
 [managed API contracts](MANAGED_EXTENSIONS.md), [release evidence](RELEASE.md)
-and the [dependency/license inventory](DEPENDENCIES.md). Hosted macOS CI and
-physical controller evidence remain separate pending gates.
+and the [dependency/license inventory](DEPENDENCIES.md). Hosted Windows/Linux/macOS
+CI has passed for the alpha candidate; physical controller evidence remains pending.
 
 ## Working on a slice
 

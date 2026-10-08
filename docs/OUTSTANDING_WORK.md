@@ -388,7 +388,7 @@ matrix. Hardware-dependent tests should be explicitly opt-in; no-hardware CI rem
 - [x] Compile README and usage examples as library doctests, including context lifetime checks.
 - [x] Verify the declared Rust 1.88 minimum with default/all-feature/target/doctest
   checks on Windows and Linux; see [release evidence](RELEASE.md).
-- [ ] Establish successful Linux/macOS/Windows CI results, including optional serial.
+- [x] Establish successful Linux/macOS/Windows CI results, including optional serial.
 - [x] Audit dependencies/licenses and packaged contents; validate cargo package.
 - [x] Add changelog, explicit compatibility/versioning policy and release checklist.
 - [x] Select the advertised release scope and keep unsupported services visible.

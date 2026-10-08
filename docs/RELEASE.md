@@ -29,7 +29,7 @@ require a new client. Shutdown is local disconnect; on-wire logout is unsupporte
 - [x] Changelog and pre-1.0 compatibility policy recorded.
 - [x] Windows stable and Rust 1.88 default/all-feature/target/doctest checks.
 - [x] Linux Rust 1.88 default/all-feature/target/doctest checks in Docker.
-- [ ] Linux/macOS/Windows hosted CI for the exact release commit.
+- [x] Linux/macOS/Windows hosted CI for the alpha candidate; final release-commit CI is checked again before publication.
 - [x] Package build/verification and packaged external consumer check.
 - [x] Dependency/license and publication payload audit.
 - [ ] Record controller model/firmware/security mode and independent read/recovery evidence (follow-up gate for production compatibility claims; not required for this explicitly unverified experimental release).
@@ -76,8 +76,12 @@ the consumer live only in the container. Windows/package CI uses
 dependency and reviewed publication payload.
 
 The hosted workflow covers stable and 1.88.0 on Linux/macOS/Windows, including
-examples and package consumer. All six jobs must pass on the release commit before
-publication. This checklist records local evidence; exact hosted status is available
-in the [repository CI runs](https://github.com/fhenskens/rocsteady/actions/workflows/ci.yml).
+examples and package consumer. All six jobs passed on candidate commit
+`d83cd1d59e7b0246f5417dfc904ac55ac60d9138`:
+[hosted validation run](https://github.com/fhenskens/rocsteady/actions/runs/37788381127).
+This includes macOS runtime checks and optional serial compilation. Publication
+also waits for all six jobs on the final release commit after this evidence update.
+The exact tag identifies that commit; hosted status is available in the
+[repository CI runs](https://github.com/fhenskens/rocsteady/actions/workflows/ci.yml).
 Cross-platform workflow configuration is not evidence that a hosted run succeeded.
 Physical validation is outside this work and remains pending.
