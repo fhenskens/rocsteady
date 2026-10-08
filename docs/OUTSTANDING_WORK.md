@@ -409,6 +409,41 @@ Completion: a user can tell exactly which services, firmware and channels are
 supported, reproduce the documented examples, and distinguish simulator coverage
 from hardware evidence.
 
+## Adopt upstream Etherbird lifecycle improvements
+
+Status: open; current dependency remains published Etherbird 0.3.1. Upstream work
+is recorded in Etherbird's `docs/OUTSTANDING_WORK.md` under EB-ROC-1 through
+EB-ROC-4, informed by this alpha implementation. These are requested features,
+not capabilities already available in the dependency.
+
+- [ ] Track EB-ROC-1: non-retryable lifecycle failures. Once a published version
+  provides the required fail-fast readiness/admission semantics, replace Client's
+  authentication watch/latch and connector gate with that upstream policy while
+  retaining credential-free errors, immutable registration and stop precedence.
+- [ ] Track EB-ROC-2: operation failure classification. Replace
+  `preserve_device_error`'s nested-result workaround with upstream retain/recover
+  classification when supported. Valid device rejections and local validation must
+  stay healthy; malformed replies and interrupted exchanges must still retire.
+- [ ] Track EB-ROC-3: configuration validation. Delegate Etherbird lifecycle
+  deadline/backoff checks to its validated configuration API, preserving rocsteady's
+  address, queue, heartbeat and call/wire timeout validation. Review zero-duration
+  semantics and error compatibility rather than assuming they match.
+- [ ] Track EB-ROC-4: resource retention after shutdown. Adopt/document the upstream
+  retention contract and verify that awaited shutdown releases internal references
+  as specified. Keep Session's explicit generation-state/stream cleanup: external
+  handles can retain objects, and dropping an object is not a secret-erasure guarantee.
+- [ ] Upgrade Cargo.toml/Cargo.lock to a published Etherbird version delivering the
+  chosen features; do not switch consumers to a sibling path dependency.
+- [ ] Re-run external/package-consumer, authentication, healthy rejection, malformed
+  decoding, generation-state destruction, cancellation, queue/deadline, recovery,
+  no-replay and awaited-stop regressions on Windows/Linux/macOS and Rust 1.88.
+- [ ] Update MANAGED_EXTENSIONS.md, USAGE.md, DEPENDENCIES.md, RELEASE.md and the
+  changelog with actual adopted APIs, versions and evidence. Mark each item complete
+  only after its implementation is released upstream and integrated here.
+
+Managed ROC exchanges, contextual decoders, heartbeat/reader coordination and
+remote-handle semantics remain rocsteady responsibilities.
+
 ## Recommended next slice
 
 Continue M0-E: the first managed slice is implemented (see

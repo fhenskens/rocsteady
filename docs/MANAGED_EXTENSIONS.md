@@ -7,6 +7,11 @@ feature, Rust 1.88 minimum, and Tokio 1. No fork or private dependency APIs.
 1.0; compatible additions may ship in patch releases. Re-run the extension and
 lifecycle suites on every dependency upgrade.
 
+Requested upstream improvements and their eventual adoption are tracked in
+[the Etherbird upgrade work package](OUTSTANDING_WORK.md#adopt-upstream-etherbird-lifecycle-improvements).
+Until released and integrated, the alpha retains its local authentication latch,
+nested healthy-error results, lifecycle configuration checks and explicit state cleanup.
+
 ## Audit and ownership
 
 Etherbird `Pool::execute` supplies bounded admission and an exclusive lease;
