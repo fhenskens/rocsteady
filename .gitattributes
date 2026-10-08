@@ -1,0 +1,17 @@
+# Normalize text consistently on every development and CI platform.
+* text=auto eol=lf
+
+# Windows command scripts use CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Preserve reference documents and binary fixtures byte for byte.
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.gz binary
+*.bin binary

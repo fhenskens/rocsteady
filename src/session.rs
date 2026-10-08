@@ -1,0 +1,189 @@
+use crate::{
+    Error, SystemConfiguration,
+    protocol::{
+        Address, Clock, CrcMode, DeviceError, Frame, Login, Parameter, ParameterBlock, Value,
+        decode_parameters, parameter_request,
+    },
+    transport::{Stream, read_frame, write_frame},
+};
+use std::time::Duration;
+use tokio::{
+    sync::{Mutex, broadcast, watch},
+    time::timeout,
+};
+
+/// One serialized connection generation. Use Client for managed replacement.
+pub struct Session {
+    stream: Mutex<Option<Stream>>,
+    host: Address,
+    device: Address,
+    response_timeout: Duration,
+    crc_mode: CrcMode,
+    pub(crate) connected: watch::Sender<bool>,
+    events: broadcast::Sender<Frame>,
+}
+struct Exchange<'a> {
+    stream: &'a mut Option<Stream>,
+    connected: &'a watch::Sender<bool>,
+    complete: bool,
+}
+impl Drop for Exchange<'_> {
+    fn drop(&mut self) {
+        if !self.complete {
+            self.stream.take();
+            self.connected.send_replace(false);
+        }
+    }
+}
+impl Session {
+    pub fn new(
+        stream: Stream,
+        host: Address,
+        device: Address,
+        response_timeout: Duration,
+        crc_mode: CrcMode,
+    ) -> Result<Self, Error> {
+        let (events, _) = broadcast::channel(32);
+        Self::with_events(stream, host, device, response_timeout, crc_mode, events)
+    }
+    pub(crate) fn with_events(
+        stream: Stream,
+        host: Address,
+        device: Address,
+        response_timeout: Duration,
+        crc_mode: CrcMode,
+        events: broadcast::Sender<Frame>,
+    ) -> Result<Self, Error> {
+        host.validate_unicast()?;
+        device.validate_unicast()?;
+        if host == device {
+            return Err(Error::InvalidConfig(
+                "host and device addresses must differ",
+            ));
+        }
+        if response_timeout.is_zero() {
+            return Err(Error::InvalidConfig("response timeout must be positive"));
+        }
+        Ok(Self {
+            stream: Mutex::new(Some(stream)),
+            host,
+            device,
+            response_timeout,
+            crc_mode,
+            connected: watch::channel(true).0,
+            events,
+        })
+    }
+    /// Subscribe to SRBX frames encountered by requests/heartbeats. Receiver may lag.
+    pub fn subscribe_events(&self) -> broadcast::Receiver<Frame> {
+        self.events.subscribe()
+    }
+    pub fn is_connected(&self) -> bool {
+        *self.connected.borrow()
+    }
+    pub async fn disconnect(&self) {
+        self.stream.lock().await.take();
+        self.connected.send_replace(false);
+    }
+
+    /// Run one unicast exchange. No retry or side-effect inference is performed.
+    /// Routed/store-and-forward requests and broadcasts are not supported.
+    pub async fn request(&self, opcode: u8, data: Vec<u8>) -> Result<Vec<u8>, Error> {
+        self.request_decoded(opcode, data, |bytes| Ok(bytes.to_vec()))
+            .await
+    }
+
+    // Decode while the exchange still owns the stream. A malformed typed reply
+    // must poison this generation before another caller can acquire it.
+    async fn request_decoded<T>(
+        &self,
+        opcode: u8,
+        data: Vec<u8>,
+        decode: impl FnOnce(&[u8]) -> Result<T, Error>,
+    ) -> Result<T, Error> {
+        validate_request(opcode, &data)?;
+        let frame = Frame::new(self.device, self.host, opcode, data);
+        let mut slot = self.stream.lock().await;
+        if slot.is_none() {
+            return Err(Error::Disconnected);
+        }
+        let mut exchange = Exchange {
+            stream: &mut slot,
+            connected: &self.connected,
+            complete: false,
+        };
+        let response = timeout(self.response_timeout, async {
+            let stream = exchange.stream.as_mut().ok_or(Error::Disconnected)?;
+            write_frame(stream.as_mut(), &frame).await?;
+            loop {
+                let response = read_frame(stream.as_mut(), self.crc_mode).await?;
+                if response.destination != self.host || response.source != self.device {
+                    return Err(Error::InvalidResponse(
+                        "response addresses do not match request",
+                    ));
+                }
+                if response.opcode == 224 {
+                    if !response.data.is_empty() {
+                        return Err(Error::InvalidResponse("SRBX signal has unexpected data"));
+                    }
+                    let _ = self.events.send(response);
+                    continue;
+                }
+                if response.opcode == 255 {
+                    // A valid protocol rejection completes this exchange without retiring the connection.
+                    let errors = DeviceError::decode(&response.data)?;
+                    return Ok(Err(Error::Device(errors)));
+                }
+                if response.opcode != opcode {
+                    return Err(Error::InvalidResponse(
+                        "response opcode does not match request",
+                    ));
+                }
+                return decode(&response.data).map(Ok);
+            }
+        })
+        .await
+        .map_err(|_| Error::Timeout)??;
+        exchange.complete = true;
+        response
+    }
+    pub async fn read_configuration(&self) -> Result<SystemConfiguration, Error> {
+        self.request_decoded(6, vec![], SystemConfiguration::decode)
+            .await
+    }
+    pub async fn read_clock(&self) -> Result<Clock, Error> {
+        self.request_decoded(7, vec![], Clock::decode).await
+    }
+    pub async fn login(&self, login: &Login) -> Result<(), Error> {
+        self.request_decoded(17, login.payload(), |bytes| {
+            if !bytes.is_empty() {
+                return Err(Error::InvalidResponse(
+                    "login acknowledgement must be empty",
+                ));
+            }
+            Ok(())
+        })
+        .await
+    }
+    pub async fn read_parameters(&self, parameters: &[Parameter]) -> Result<Vec<Value>, Error> {
+        self.request_decoded(180, parameter_request(parameters)?, |bytes| {
+            decode_parameters(parameters, bytes)
+        })
+        .await
+    }
+    pub async fn read_parameter_block(&self, block: &ParameterBlock) -> Result<Vec<Value>, Error> {
+        self.request_decoded(167, block.payload(), |bytes| block.decode(bytes))
+            .await
+    }
+}
+pub(crate) fn validate_request(opcode: u8, data: &[u8]) -> Result<(), Error> {
+    if matches!(opcode, 24 | 224 | 255) {
+        return Err(Error::InvalidRequest(
+            "opcode is routed or device-originated; unsupported by unicast request API",
+        ));
+    }
+    if data.len() > u8::MAX as usize {
+        return Err(Error::InvalidRequest("payload exceeds 255 bytes"));
+    }
+    Ok(())
+}

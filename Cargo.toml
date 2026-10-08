@@ -1,0 +1,33 @@
+[package]
+name = "rocsteady"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "A Rust client for Emerson ROC Plus devices with automatic reconnection and session recovery"
+license = "Apache-2.0"
+repository = "https://github.com/fhenskens/rocsteady"
+keywords = ["roc-plus", "emerson", "industrial", "async", "reconnect"]
+categories = ["network-programming", "asynchronous"]
+include = ["/src/**", "/tests/**", "/examples/**", "/Cargo.toml", "/Cargo.lock", "/README.md", "/LICENSE"]
+
+[features]
+default = []
+serial = ["dep:tokio-serial"]
+simulator = []
+
+[dependencies]
+etherbird = { version = "0.3.1", features = ["pool"] }
+tokio = { version = "1", features = ["io-util", "net", "sync", "time"] }
+tokio-serial = { version = "5.5", optional = true }
+thiserror = "2"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "test-util"] }
+
+[[test]]
+name = "integration"
+required-features = ["simulator"]
+
+[[example]]
+name = "simulator"
+required-features = ["simulator"]
