@@ -7,8 +7,8 @@ The full implementation target is tracked in [the roadmap](OUTSTANDING_WORK.md),
 [service work packages](SPEC_WORK_PLAN.md) and [schema work packages](SCHEMA_WORK_PLAN.md).
 These inventories describe planned scope, not additional implemented support.
 The [extensibility plan](EXTENSIBILITY.md) includes implemented managed setup,
-typed operations and exclusive workflows. Profiles and schema providers remain
-planned. See [contracts and exact evidence](MANAGED_EXTENSIONS.md). Connector,
+typed operations, exclusive workflows, explicit profiles and schema-backed reads.
+See [contracts and exact evidence](MANAGED_EXTENSIONS.md). Connector,
 caller-provided parameter types and raw single-unicast requests remain supported.
 [Reference specifications](reference/README.md) records its source, revision and
 the sections used by the implementation and fixtures.
@@ -22,6 +22,8 @@ the sections used by the implementation and fixtures.
 | 6 | Original/extended configuration, point counts, raw security and identity fields; unknown data retained | Independent Table 2-2 payloads, fixed TCP fixture, malformed reply and recovery tests |
 | 7 | Typed clock read and validation | Table 2-3 fixture and independent peer |
 | 17 | Legacy operator ID/numeric password and optional access level | Fixed request tests, rejected/accepted simulator login, setup recovery |
+| 50 | Both I/O selectors; explicit 160/240/224-entry layouts; repeated consistency checks; physical/per-type logical positions kept distinct | Independent Table 2-12 TCP fixtures in tests/discovery.rs and simulator tests; DEC-3/hardware applicability remains unresolved |
+| 100 | Command 11 point-type classification, echoed headers, counts 0-245, bounded range paging, unknown codes preserved | Independent Table 2-13 fixtures/TCP and tests/discovery_simulator.rs |
 | 167 | Typed contiguous parameter reads | Echo/range/width checks and TCP integration |
 | 180 | Typed arbitrary TLP reads | Echo/count/width/response-budget checks and TCP integration |
 | 224 | Route interleaved signals to stable receiver | Published vector and recovery integration |
@@ -31,6 +33,8 @@ the sections used by the implementation and fixtures.
 | Serial | Configurable stream connector | Compilation only; physical validation outstanding |
 | Supervision | Login/readiness restoration, queue bound, deadlines, heartbeat, cancellation/shutdown | Etherbird-backed integration suite |
 | Managed extensions | Immutable setup strategies, typed operations, exclusive workflows, terminal auth, owned generation state and checked handles | External fixtures, packaged consumer, README/usage doctests and [release evidence](RELEASE.md) |
+| Protocol profiles | Explicit applicability/capabilities, replaceable clock/configuration codecs, contextual operations, tighter budgets and source correlation | Independent TCP cases in tests/profiles_schema.rs; no disputed firmware preset or hardware evidence |
+| Schema providers/catalog | Caller identity, ordered overrides, access/location bounds, generation-bound discovery, bounded opcode-180 batches and confirmed progress; 30 selected PT-91/101/103/109 entries | Independent TCP fixture for every initial catalog row, discovery_catalog example and [manifest](CATALOG.md); no complete PT table or typed writes |
 
 Table 2-3 is used for the clock year representation instead of the older illustration
 in Figure 1-2. Error offsets are retained as raw bytes; their meaning depends on the
@@ -58,7 +62,7 @@ This does not resolve DEC-3 mappings or DEC-8 firmware discovery.
 
 | Service | Opcodes / scope | Status |
 | --- | --- | --- |
-| I/O layout and user-defined point discovery | 50, 100 | Raw unicast exchange only; typed parsing/simulation outstanding |
+| I/O layout and user-defined point discovery | 50, 100 | Typed selectors and command 11 implemented; automatic firmware/layout applicability and DEC-3 hardware evidence outstanding |
 | Set clock / parameter writes | 8, 166, 181 | Raw unicast exchange only; write codecs and partial-write semantics outstanding |
 | Configurable tables | 10, 11 | Raw unicast exchange only; typed codecs outstanding |
 | Enhanced login/session key and logout | Additional forms of 17 | Not implemented |
@@ -68,7 +72,7 @@ This does not resolve DEC-3 mappings or DEC-8 firmware discovery.
 | File transfers | 203 | Raw unicast exchange only; file lifecycle/chunking outstanding |
 | Peer network tunnel | 205 | Raw unicast exchange only; typed tunneled exchange outstanding |
 | SRBX full workflow | 224 / 225 | Signal routing implemented; log-consumption and acknowledgement workflow outstanding |
-| Parameter schema catalog | Device/firmware point dictionaries | Caller-provided types; built-in dictionary outstanding |
+| Parameter schema catalog | Device/firmware point dictionaries | 30-entry initial built-in slice implemented; remaining catalog parameters/rows outstanding |
 | Physical interoperability | Ethernet / serial controller | No hardware tests performed |
 
 A raw request capability is not a complete service implementation. The current
@@ -84,8 +88,8 @@ completion criteria, including transport regressions, hardware evidence and rele
    authentication applicability/logout and outstanding lifecycle cases. The first
    managed slice, API review and alpha onboarding are implemented; see
    [release evidence](RELEASE.md) for pending hosted CI and hardware gates.
-2. Complete protocol profiles and schema providers, then use configuration
-   discovery for supported device/setup policies and firmware-aware selection.
+2. Expand the initial [catalog slice](CATALOG.md), establish remaining firmware/layout
+   applicability and supported discovery/setup policies without guessing identity.
 3. Expand schema-backed parameter models and read-only alarm/history services,
    each starting with independently specified wire fixtures.
 4. Implement built-in enhanced authentication only after its procedure is established;

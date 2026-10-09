@@ -48,8 +48,8 @@ services must have the correct direction; raw request access is not typed covera
 | OP-11 | 2.6 | Table write | Open | None |
 | OP-17 | 2.7 | Authentication/logout | Partial | legacy_login_packs_password_little_endian_and_optional_access; login/recovery tests |
 | OP-24 | 2.8; Ch. 7 | Store and forward | Open | None |
-| OP-50 | 2.9 | I/O layout | Open | None |
-| OP-100 | 2.10 | User-defined information | Open | None |
+| OP-50 | 2.9 | I/O layout | Partial: both selectors and all three explicit lengths; DEC-3 device applicability remains open | tests/discovery.rs; tests/discovery_simulator.rs; per-variant evidence in CATALOG.md |
+| OP-100 | 2.10 | User-defined information | Implemented command 11; firmware exchanges unverified | tests/discovery.rs; tests/discovery_simulator.rs; per-variant evidence in CATALOG.md |
 | OP-105 | 2.11 | Min/max | Open | None |
 | OP-108 | 2.12 | History tags/index | Open | None |
 | OP-118 | 2.13 | Alarms | Open | None |
@@ -135,14 +135,19 @@ services must have the correct direction; raw request access is not typed covera
 
 ### OP-50 and OP-100: discovery
 
-- [ ] OP-50 implement both selectors (point types and logical numbers), with separate codecs and correlated layout results.
-- [ ] Cover all three reported layouts (160/240/224 entries), absent modules, diagnostics and location mapping.
-- [ ] Detect changed layout between the two queries and after reconnect; avoid silently combining incompatible snapshots.
+- [x] OP-50 implement both selectors (point types and logical numbers), with explicit selector request context and correlated layout results.
+- [x] Cover all three reported layouts (160/240/224 entries), absent modules, diagnostics and explicitly selected source-based location mapping. Physical interoperability/DEC-3 resolution remains open.
+- [x] Detect observed changes across repeated selectors/configuration and invalidate snapshot-derived catalogs after reconnect; avoid silently combining generations. No atomic device snapshot is claimed.
 - [ ] Resolve contradictory compatibility labels/examples (DEC-3) before automatically selecting a layout.
-- [ ] OP-100 implement command 11, start/count validation (including zero), echoed header and returned point-type classifications.
-- [ ] Preserve unknown classifications and distinguish program/user-defined/ROC/absent entries.
-- [ ] Bound paging at point-type/range and response limits; test start/end/count errors.
-- [ ] Do not infer a complete parameter schema from opcode 100 classification.
+- [x] OP-100 implement command 11, start/count validation (including zero), echoed header and returned point-type classifications.
+- [x] Preserve unknown classifications and distinguish program/user-defined/ROC/absent entries.
+- [x] Bound paging at point-type/range and profile request/response limits; test start/end/count errors.
+- [x] Do not infer a complete parameter schema from opcode 100 classification.
+
+Exact limits, codec/profile choices, independent fixtures, TCP/simulator evidence,
+firmware assumptions and explicit lack of serial/hardware evidence are recorded in
+[CATALOG.md](CATALOG.md#service-evidence). Profile/codec extensibility does not resolve
+the contradictory DEC-3 prose/diagrams. Full catalog rows remain in SCHEMA_WORK_PLAN.md.
 
 ## Parameter and table access
 

@@ -7,9 +7,10 @@ See [roadmap](OUTSTANDING_WORK.md) and [service plan](SPEC_WORK_PLAN.md).
 ## Common schema infrastructure
 
 The provider boundary is an early deliverable in [EXT-3](EXTENSIBILITY.md).
-The provider API is not implemented yet. Callers can currently supply explicit
-parameter types through Parameter/ParameterBlock; provider lookup and automatic
-schema-aware planning remain future work.
+The provider API and bounded schema-aware opcode-180 reads are implemented.
+An initial 30-parameter built-in ROC800 slice covers selected PT-91/101/103/109
+entries; see [the source/applicability manifest](CATALOG.md). Full catalog rows
+and schema-aware writes remain separate work.
 Provider extensibility and a particular built-in PT row have separate completion
 criteria; caller extensions do not imply verified firmware coverage for the crate.
 
@@ -18,15 +19,15 @@ Research leads and source qualifications are recorded in
 PT-177/0 has a published driver-width correction to verify; PT-91 has distinct
 layout and enhanced-security fields. These leads do not close catalog rows.
 
-- [ ] Define a schema identity including device family, firmware applicability, point type and parameter number.
+- [x] Define a schema identity including device family, firmware applicability, point type and parameter number; caller identity is explicit and discovery-derived providers are generation-bound.
 - [ ] Model width/type, name, units where documented, access (including conditional access), ranges, defaults, update ownership, enumerations, bit fields and reserved fields.
 - [ ] Represent version-introduced/changed/deprecated parameters without selecting a firmware version from opcode 6 revision alone.
 - [ ] Separate known metadata from unspecified metadata; do not invent ranges, defaults or units.
 - [ ] Model logical versus physical location rules from sections 3.1-3.2; validate against opcode 50 discovery.
-- [ ] Support caller-defined/vendor schemas and opcode 100 classifications without claiming that classifications disclose parameter widths.
-- [ ] Define unknown-parameter behavior and explicit overrides for firmware not yet catalogued.
+- [x] Support caller-defined/vendor schemas and opcode 100 classifications without claiming that classifications disclose parameter widths.
+- [x] Define unknown-parameter behavior and explicit overrides for firmware not yet catalogued.
 - [ ] Build schema-aware reads and writes over 167/180 and 166/181; preserve raw access.
-- [ ] Define batch splitting by request AND response budgets; expose partial progress and avoid claiming atomicity across exchanges.
+- [x] Define read batch splitting by request AND response budgets; expose partial progress and avoid claiming atomicity across exchanges. Write batch planning remains open.
 - [ ] Generate or maintain catalog artifacts reproducibly; review redistribution/licensing before copying vendor text.
 - [ ] Add catalog consistency checks for duplicate keys, invalid widths, overlapping applicability and missing source references.
 
@@ -46,8 +47,10 @@ For each row:
 4. Exercise representative reads and applicable writes over TCP; cross-check all catalog metadata against the source.
 5. Record physical evidence separately, with model/firmware; catalogue completion does not establish hardware compatibility.
 
-Status: all rows below are **open**. Existing caller-supplied `DataType` reads and
-a handful of literal values do not constitute a built-in schema for any row.
+Status: four rows have an explicitly **partial** built-in slice; all other rows
+are open. No complete PT table is claimed. Every one of the 30 delivered parameters
+has an independent literal and TCP read fixture; [CATALOG.md](CATALOG.md) lists
+the exact metadata and remaining omissions.
 “Hardware: none” applies to every row. Introduce separate implementation/test/hardware
 statuses as work lands; never replace them with one ambiguous “supported” flag.
 
@@ -56,7 +59,7 @@ statuses as work lands; never replace them with one ambiguous “supported” fl
 | PT-82 | 82 | Virtual discrete outputs | 3.4.1 | Open |
 | PT-84 | 84 | Extended HART | 3.4.2 | Open |
 | PT-85 | 85 | HART | 3.4.3 | Open |
-| PT-91 | 91 | System variables | 3.4.4 | Open |
+| PT-91 | 91 | System variables | 3.4.4 | Partial: 0-6, 8-9, 41-42, 50 |
 | PT-92 | 92 | Logon | 3.4.5 | Open |
 | PT-95 | 95 | Communication ports | 3.4.6 | Open |
 | PT-96 | 96 | FST | 3.4.7 | Open |
@@ -64,15 +67,15 @@ statuses as work lands; never replace them with one ambiguous “supported” fl
 | PT-98 | 98 | Soft points | 3.4.9 | Open |
 | PT-99 | 99 | Configurable opcode tables | 3.4.10 | Open |
 | PT-100 | 100 | Power control | 3.4.11 | Open |
-| PT-101 | 101 | Discrete inputs | 3.4.12 | Open |
+| PT-101 | 101 | Discrete inputs | 3.4.12 | Partial: 0, 1, 3, 6 |
 | PT-102 | 102 | Discrete outputs | 3.4.13 | Open |
-| PT-103 | 103 | Analog inputs | 3.4.14 | Open |
+| PT-103 | 103 | Analog inputs | 3.4.14 | Partial: 0-4, 7, 21, 32 |
 | PT-104 | 104 | Analog outputs | 3.4.15 | Open |
 | PT-105 | 105 | Pulse inputs | 3.4.16 | Open |
 | PT-106 | 106 | RTD | 3.4.17 | Open |
 | PT-107 | 107 | Thermocouple | 3.4.18 | Open |
 | PT-108 | 108 | Multi-variable sensor | 3.4.19 | Open |
-| PT-109 | 109 | System analog inputs | 3.4.20 | Open |
+| PT-109 | 109 | System analog inputs | 3.4.20 | Partial: 0, 1, 4, 7, 12, 23 |
 | PT-110 | 110 | PID | 3.4.21 | Open |
 | PT-111 | 111 | Sampler/odorizer | 3.4.22 | Open |
 | PT-112 | 112 | Station | 3.4.23 | Open |

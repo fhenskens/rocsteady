@@ -26,6 +26,45 @@ pub struct ManagedContext<'a> {
     pub(crate) _ownership: tokio::sync::MutexGuard<'a, ()>,
 }
 impl ManagedContext<'_> {
+    pub async fn read_configuration(&mut self) -> Result<crate::SystemConfiguration, Error> {
+        self.session
+            .exchange_decoded(6, vec![], |bytes| {
+                self.profile()
+                    .decode_configuration(bytes)
+                    .map_err(Error::from)
+            })
+            .await
+    }
+    pub async fn read_io_points(
+        &mut self,
+        request: crate::IoPointRequest,
+    ) -> Result<crate::IoPointReply, Error> {
+        self.operation(crate::discovery::ProfileIoOperation {
+            request,
+            profile: self.session.profile.clone(),
+        })
+        .await
+    }
+    pub async fn read_point_types(
+        &mut self,
+        request: crate::PointTypeRequest,
+    ) -> Result<crate::PointTypePage, Error> {
+        self.operation(crate::discovery::ProfilePointTypeOperation {
+            request,
+            profile: self.session.profile.clone(),
+        })
+        .await
+    }
+    pub fn profile(&self) -> &dyn crate::ProtocolProfile {
+        self.session.profile.as_ref()
+    }
+    pub async fn read_clock(&mut self) -> Result<crate::Clock, Error> {
+        self.session
+            .exchange_decoded(7, vec![], |bytes| {
+                self.profile().decode_clock(bytes).map_err(Error::from)
+            })
+            .await
+    }
     pub fn generation(&self) -> u64 {
         self.session.generation
     }
@@ -88,7 +127,7 @@ impl SetupStrategy for LegacySetup {
                     error => error,
                 })?;
         }
-        context.operation(ReadClock).await?;
+        context.read_clock().await?;
         Ok(Box::new(()))
     }
 }
@@ -105,16 +144,6 @@ impl Operation for LegacyLogin {
         } else {
             Err(DecodeError("login acknowledgement must be empty"))
         }
-    }
-}
-struct ReadClock;
-impl Operation for ReadClock {
-    type Output = crate::Clock;
-    fn encode(&self) -> Result<(u8, Vec<u8>), Error> {
-        Ok((7, vec![]))
-    }
-    fn decode(&self, bytes: &[u8]) -> Result<Self::Output, DecodeError> {
-        crate::Clock::decode(bytes).map_err(|_| DecodeError("invalid clock readiness reply"))
     }
 }
 

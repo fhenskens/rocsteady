@@ -24,6 +24,10 @@ use tokio::{
 
 #[derive(Debug, Clone)]
 pub struct Model {
+    pub io_layout: crate::IoLayout,
+    pub io_point_types: Vec<u8>,
+    pub io_logical_numbers: Vec<u8>,
+    pub point_types: BTreeMap<u8, crate::PointTypeClassification>,
     pub configuration: SystemConfiguration,
     pub address: Address,
     pub clock: Clock,
@@ -33,12 +37,29 @@ pub struct Model {
 impl Default for Model {
     fn default() -> Self {
         Self {
+            io_layout: crate::IoLayout::Compatibility160,
+            io_point_types: {
+                let mut points = vec![0; 160];
+                points[..5].fill(109);
+                points
+            },
+            io_logical_numbers: {
+                let mut points = vec![0; 160];
+                points[..5].copy_from_slice(&[0, 1, 2, 3, 4]);
+                points
+            },
+            point_types: [91, 101, 103, 109]
+                .into_iter()
+                .map(|point_type| (point_type, crate::PointTypeClassification::Roc))
+                .collect(),
             configuration: {
                 let mut bytes = vec![0; 215];
                 bytes[0] = 1;
                 bytes[1] = 1;
                 bytes[5] = 1;
                 bytes[18] = 6;
+                bytes[50] = 1; // One system-variables point.
+                bytes[68] = 5; // Five CPU diagnostic points.
                 SystemConfiguration::decode(&bytes).expect("valid fixture configuration")
             },
             address: Address::new(1, 2),
@@ -57,6 +78,18 @@ impl Default for Model {
     }
 }
 impl Model {
+    /// Reset fixture I/O to five CPU diagnostics and absent field modules in an explicit layout.
+    pub fn set_io_layout(&mut self, layout: crate::IoLayout) {
+        self.io_layout = layout;
+        self.io_point_types = vec![0; layout.len()];
+        self.io_point_types[..5].fill(109);
+        self.io_logical_numbers = vec![0; layout.len()];
+        self.io_logical_numbers[..5].copy_from_slice(&[0, 1, 2, 3, 4]);
+        let mut bytes = self.configuration.as_bytes().to_vec();
+        bytes[4] = layout.status();
+        self.configuration =
+            SystemConfiguration::decode(&bytes).expect("existing fixture configuration");
+    }
     /// Model-level request dispatch also works over in-memory or serial fixture channels.
     pub fn respond(&self, request: &Frame, authenticated: &mut bool) -> Option<Frame> {
         if request.destination != self.address || request.source.unit == 0 {
@@ -82,6 +115,41 @@ impl Model {
             return Some(error(20, 4));
         }
         Some(match request.opcode {
+            50 => {
+                let selector = match request.data.as_slice() {
+                    [0] => &self.io_point_types,
+                    [1] => &self.io_logical_numbers,
+                    [_] => return Some(error(25, 6)),
+                    _ => return Some(error(if request.data.is_empty() { 6 } else { 5 }, 5)),
+                };
+                if selector.len() != self.io_layout.len() {
+                    error(50, 4)
+                } else {
+                    reply(50, selector.clone())
+                }
+            }
+            100 => {
+                let [command, start, count] = request.data.as_slice() else {
+                    return Some(error(if request.data.len() < 3 { 6 } else { 5 }, 5));
+                };
+                if *command != 11 {
+                    return Some(error(50, 6));
+                }
+                if *count > 245 || u16::from(*start) + u16::from(*count) > 256 {
+                    return Some(error(25, 8));
+                }
+                let mut bytes = request.data.clone();
+                for point_type in u16::from(*start)..u16::from(*start) + u16::from(*count) {
+                    bytes.push(
+                        self.point_types
+                            .get(&(point_type as u8))
+                            .copied()
+                            .unwrap_or(crate::PointTypeClassification::Absent)
+                            .as_byte(),
+                    );
+                }
+                reply(100, bytes)
+            }
             6 => {
                 if !request.data.is_empty() {
                     return Some(error(5, 5));

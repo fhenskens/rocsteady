@@ -46,8 +46,12 @@ for ownership, cancellation and generation lifetimes.
 ## Scope and validation
 
 The built-in alpha scope is read-only: configuration discovery, clock and parameter
-reads, legacy login and device errors. Profiles, schema providers, enhanced login
-and typed writes, history, alarms, files and routing remain unavailable. Raw/custom
+reads, legacy login and device errors. The working tree adds explicit profiles,
+contextual reply codecs, discovery services and schema providers with bounded reads; see the
+[extension contracts](docs/MANAGED_EXTENSIONS.md). These additions are unreleased.
+The [initial catalog](docs/CATALOG.md) contains 30 selected ROC800 parameters.
+Remaining catalog tables, enhanced login and typed writes, history, alarms, files
+and routing remain unavailable. Raw/custom
 operations can perform side effects; they are not automatically replayed.
 
 Windows, Linux and macOS checks cover Rust 1.88, independent wire fixtures, loopback TCP,
@@ -68,6 +72,8 @@ firmware applicability; unknown fields are retained rather than guessed.
 | [Local simulator](examples/simulator.rs) | Configuration, clock and parameter reads over loopback TCP; no hardware required. |
 | [Authenticated setup and recovery](examples/authenticated_setup.rs) | An async credential provider, restored login after disconnection, state notifications and interleaved SRBX signals. |
 | [Managed extensions](examples/managed_extensions.rs) | Custom setup, a typed operation and a two-exchange workflow against an independent in-memory peer. |
+| [Profiles and schemas](examples/schema_profiles.rs) | Explicit profile/applicability and a user-defined mixed-width schema read in bounded batches over an independent TCP peer. |
+| [Discovery and built-in catalog](examples/discovery_catalog.rs) | Point classifications and I/O discovery, then system/I/O reads using source-audited metadata and physical locations. |
 | [Configured TCP device](examples/read_device.rs) | Configuration and clock reads using an explicit endpoint and optional legacy credentials from the environment. |
 | [Serial clock read](examples/serial_read.rs) | A serial connector with an explicit port and baud rate; other line settings must match your channel. |
 
@@ -82,6 +88,12 @@ cargo run --locked --features simulator --example authenticated_setup
 
 # Public extension APIs with an independent fixture peer:
 cargo run --locked --example managed_extensions
+
+# Explicit profiles and schema-backed batches (working tree):
+cargo run --locked --example schema_profiles
+
+# Discovery and the initial built-in catalog (working tree):
+cargo run --locked --example discovery_catalog
 ```
 
 For hardware examples, set `ROC_ENDPOINT` and optionally both `ROC_OPERATOR` and

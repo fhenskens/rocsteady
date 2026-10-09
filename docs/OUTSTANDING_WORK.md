@@ -1,6 +1,6 @@
 # Comprehensive implementation roadmap
 
-Status: open. Baseline: the initial implementation created on 2026-10-08.
+Status: open; refreshed 2026-10-10 for profile/schema extensions and initial discovery/catalog support.
 This is the implementation backlog; [COVERAGE.md](COVERAGE.md) records current
 protocol support and [HARDWARE.md](HARDWARE.md) records channel validation.
 
@@ -51,14 +51,45 @@ Update implementation, simulator, evidence and documentation together. Track
 physical evidence independently from software completion, and keep externally
 blocked requirements visible rather than treating them as complete.
 
-Current software evidence after typed-session and layout-applicability fixes:
-**32 tests** (14 codec/discovery tests and 18 integration tests), with all
-features/targets, Clippy and formatting
-passing locally. No physical controller or actual serial fixture has been tested.
+Published **0.1.0-alpha.1** on 2026-10-09 after successful stable/MSRV hosted CI
+on Windows, Linux and macOS; see [release evidence](RELEASE.md). That release used
+Etherbird 0.3.1. The working tree uses published Etherbird 0.4.1 and now adds
+explicit protocol profiles, contextual reply codecs, schema providers and bounded
+schema-backed reads. These changes have not been published; their Linux/macOS
+hosted validation remains pending. The independent TCP fixture includes a
+committed-effect counter proving lost acknowledgements do not trigger replay.
 
-The loopback simulator is runnable. Serial is compiled but not exercised through
-a serial port. The CI workflow exists; successful cross-platform GitHub runs have
-not been established. The crate has not been published.
+Current all-feature software suite: **72 tests**, including 12 profile/schema
+cases and 16 discovery/catalog cases. No physical
+controller or actual serial fixture has been tested. The loopback simulator and
+external extension examples are runnable; serial remains compilation-only.
+
+### Current extension delivery and next work
+
+- [x] Model a committed side effect followed by disconnection; assert no implicit replay.
+- [x] Add immutable explicit profiles, capability/applicability diagnostics, contextual
+  codecs, tighter payload limits and a narrow source-correlation policy.
+- [x] Add schema providers, ordered overrides, access/location validation and bounded
+  opcode-180 read planning with confirmed batch progress on failure.
+- [x] Add an external profile/schema example and independent TCP positive/negative fixtures.
+- [x] Add opcode-100 command 11 with bounded paging and preserved classifications.
+- [x] Add both opcode-50 selectors, three explicitly selected layouts, observed-change
+  checks and generation-bound I/O snapshots; keep DEC-3 contradictions explicit.
+- [x] Add the first 30 source-audited PT-91/101/103/109 catalog entries and independent
+  TCP reads for every entry; demonstrate discovery-backed reads without manual types.
+- [ ] Expand catalog parameters/tables and independently verified device/firmware
+  applicability and discovery/bootstrap policies (remaining M0/M1).
+- [ ] Implement schema-aware write planning alongside the typed write/outcome work (M4).
+- [ ] Complete remaining EXT-1 authentication applicability/logout and EXT-2
+  device-specific presets supported by source evidence; do not invent disputed codecs.
+- [ ] Validate this working tree on the hosted platform matrix and review the next release.
+
+Profiles, firmware identity and layouts are explicitly caller-selected. Snapshot-derived
+catalogs/plans reject replacement generations. No automatic firmware discovery or new
+physical compatibility claim is introduced. Full M0-E and service/schema conformance
+remain open. The catalog is partial; [CATALOG.md](CATALOG.md) records exact source,
+metadata, fixtures, assumptions and missing serial/hardware evidence. Exact completed
+subitems are tracked in [EXTENSIBILITY.md](EXTENSIBILITY.md).
 
 ## Completion rules
 
@@ -205,7 +236,7 @@ Required detail: [CORE-2, OP-50/100/167/180](SPEC_WORK_PLAN.md) and
 writes, firmware variants, enums, bit fields, location rules and every parameter;
 a list of point-type names alone is insufficient.
 
-- [ ] Implement typed opcode 50 I/O layout and opcode 100 user-defined point metadata.
+- [x] Implement typed opcode 50 I/O selectors/explicit layouts and opcode 100 command-11 point classifications; source contradictions and hardware applicability remain open.
 - [ ] Add a versioned parameter-schema interface/catalog for supported point types,
   retaining caller-defined schemas for user/vendor extensions.
 - [ ] Distinguish physical location from logical numbering and use discovery to

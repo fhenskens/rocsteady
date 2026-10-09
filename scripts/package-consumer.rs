@@ -27,6 +27,26 @@ impl SetupStrategy for Setup {
     }
 }
 struct Pair;
+struct Catalog;
+impl rocsteady::SchemaProvider for Catalog {
+    fn lookup(
+        &self,
+        context: &rocsteady::SchemaContext,
+        tlp: rocsteady::Tlp,
+    ) -> Result<Option<rocsteady::ParameterSchema>, Error> {
+        if context.device_family.as_deref() != Some("consumer-fixture") {
+            return Err(Error::CapabilityUnavailable("consumer identity"));
+        }
+        Ok(
+            (tlp == rocsteady::Tlp::new(200, 0, 1)).then_some(rocsteady::ParameterSchema {
+                data_type: rocsteady::DataType::UInt16,
+                access: rocsteady::Access::ReadOnly,
+                logical_range: Some((0, 0)),
+                numeric_range: None,
+            }),
+        )
+    }
+}
 #[etherbird::async_trait]
 impl Workflow for Pair {
     type Output = u16;
@@ -40,7 +60,17 @@ impl Workflow for Pair {
 }
 #[tokio::main]
 async fn main() {
-    let server = Simulator::bind("127.0.0.1:0".parse().unwrap(), Model::default())
+    let mut model = Model::default();
+    model.io_point_types[16] = 103;
+    model.parameters.insert(
+        rocsteady::Tlp::new(103, 16, 21),
+        rocsteady::Value::Float(12.5),
+    );
+    model.parameters.insert(
+        rocsteady::Tlp::new(200, 0, 1),
+        rocsteady::Value::UInt16(123),
+    );
+    let server = Simulator::bind("127.0.0.1:0".parse().unwrap(), model)
         .await
         .unwrap();
     let client = Client::with_setup(
@@ -54,7 +84,73 @@ async fn main() {
     .unwrap();
     assert_eq!(client.operation(Year).await.unwrap(), 2026);
     assert_eq!(client.workflow(Pair).await.unwrap(), 2026);
+    assert_eq!(
+        client
+            .operation(rocsteady::DecodedOperation {
+                request: (),
+                opcode: 7,
+                payload: vec![],
+                codec: rocsteady::ClockCodec
+            })
+            .await
+            .unwrap()
+            .year,
+        2026
+    );
+    assert_eq!(
+        client.profile().capability(180),
+        rocsteady::Capability::Verified
+    );
+    assert_eq!(
+        client
+            .read_schema(
+                &Catalog,
+                &rocsteady::SchemaContext {
+                    device_family: Some("consumer-fixture".into()),
+                    firmware: None
+                },
+                &[rocsteady::Tlp::new(200, 0, 1)]
+            )
+            .await
+            .unwrap(),
+        [rocsteady::Value::UInt16(123)]
+    );
     client.stop().await;
+    // Public discovery/catalog APIs against the extracted publication payload.
+    let discovery_client = Client::tcp(
+        server.endpoint().to_string(),
+        ClientConfig {
+            profile: Arc::new(rocsteady::Roc800Profile {
+                layout: rocsteady::IoLayout::Compatibility160,
+            }),
+            heartbeat_interval: None,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        discovery_client
+            .scan_point_types(0, 256)
+            .await
+            .unwrap()
+            .len(),
+        2
+    );
+    let io = discovery_client
+        .discover_io(rocsteady::FirmwareVersion::new(3, 0).unwrap())
+        .await
+        .unwrap();
+    let ai = io.by_logical(103, 0).unwrap().tlp(21).unwrap();
+    assert_eq!(ai, rocsteady::Tlp::new(103, 16, 21));
+    let catalog = rocsteady::Roc800Catalog::from_discovery(io).unwrap();
+    assert_eq!(
+        discovery_client
+            .read_schema(&catalog, &catalog.context(), &[ai])
+            .await
+            .unwrap(),
+        [rocsteady::Value::Float(12.5)]
+    );
+    discovery_client.stop().await;
     server.stop().await.unwrap();
     println!("packaged external consumer passed");
 }

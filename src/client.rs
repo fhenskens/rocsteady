@@ -1,9 +1,6 @@
 use crate::{
     Error, Session, SystemConfiguration,
-    protocol::{
-        Address, Clock, CrcMode, Frame, Login, Parameter, ParameterBlock, Value, parameter_request,
-    },
-    session::validate_request,
+    protocol::{Address, Clock, CrcMode, Frame, Login, Parameter, ParameterBlock, Value},
     transport::{Connector, SharedConnector, TcpConnector},
 };
 use etherbird::{
@@ -18,6 +15,7 @@ use tokio::{
 /// Response deadline starts after stream acquisition. Call deadline includes queueing/setup/recovery.
 #[derive(Debug, Clone)]
 pub struct ClientConfig {
+    pub profile: Arc<dyn crate::ProtocolProfile>,
     pub host: Address,
     pub device: Address,
     pub login: Option<Login>,
@@ -65,6 +63,7 @@ mod tests {
 impl Default for ClientConfig {
     fn default() -> Self {
         Self {
+            profile: Arc::new(crate::DefaultProfile),
             host: Address::new(1, 0),
             device: Address::new(1, 2),
             login: None,
@@ -101,6 +100,7 @@ impl Lifecycle for Hooks {
             self.config.response_timeout,
             self.config.crc_mode,
             self.events.clone(),
+            self.config.profile.clone(),
         )
     }
     async fn connect(&self, _session: &Session) -> Result<(), Error> {
@@ -144,7 +144,10 @@ impl Lifecycle for Hooks {
         }))
     }
     fn lifecycle_failure(&self, error: &Error) -> etherbird::LifecycleFailurePolicy {
-        if matches!(error, Error::Authentication(_)) {
+        if matches!(
+            error,
+            Error::Authentication(_) | Error::CapabilityUnavailable(_)
+        ) {
             etherbird::LifecycleFailurePolicy::Fail
         } else {
             etherbird::LifecycleFailurePolicy::Retry
@@ -160,7 +163,11 @@ impl Lifecycle for Hooks {
     fn is_expected(&self, error: &Error) -> bool {
         matches!(
             error,
-            Error::Io(_) | Error::Timeout | Error::Disconnected | Error::Device(_)
+            Error::Io(_)
+                | Error::Timeout
+                | Error::Disconnected
+                | Error::Device(_)
+                | Error::DiscoveryChanged(_)
         )
     }
 }
@@ -168,6 +175,7 @@ impl Lifecycle for Hooks {
 /// Operations run once. A failure may still have taken effect remotely.
 #[derive(Clone)]
 pub struct Client {
+    profile: Arc<dyn crate::ProtocolProfile>,
     pool: Pool<Hooks>,
     call_timeout: Duration,
     events: broadcast::Sender<Frame>,
@@ -177,6 +185,14 @@ impl Client {
         Self::new(Arc::new(TcpConnector::new(endpoint)), config)
     }
     pub fn new(connector: Arc<dyn Connector>, config: ClientConfig) -> Result<Self, Error> {
+        crate::profile::validate_profile_request(config.profile.as_ref(), 7, &[])?;
+        if let Some(login) = &config.login {
+            crate::profile::validate_profile_request(
+                config.profile.as_ref(),
+                17,
+                &login.payload(),
+            )?;
+        }
         let setup = Arc::new(crate::LegacySetup {
             login: config.login.clone(),
         });
@@ -235,6 +251,7 @@ impl Client {
         )
         .map_err(|_| Error::InvalidConfig("invalid pool configuration"))?;
         Ok(Self {
+            profile: config.profile,
             pool,
             call_timeout: config.call_timeout,
             events,
@@ -242,6 +259,9 @@ impl Client {
     }
     pub fn state(&self) -> etherbird::ResourceState {
         self.pool.state()
+    }
+    pub fn profile(&self) -> &dyn crate::ProtocolProfile {
+        self.profile.as_ref()
     }
     pub fn subscribe_state(&self) -> watch::Receiver<u64> {
         self.pool.subscribe()
@@ -286,7 +306,8 @@ impl Client {
         operation: O,
     ) -> Result<O::Output, etherbird::Error<Error>> {
         let (opcode, data) = operation.encode().map_err(etherbird::Error::Operation)?;
-        validate_request(opcode, &data).map_err(etherbird::Error::Operation)?;
+        crate::profile::validate_profile_request(self.profile(), opcode, &data)
+            .map_err(etherbird::Error::Operation)?;
         self.map_lifecycle_error(self.pool.execute_with_timeout(
             self.call_timeout,
             move |session| async move {
@@ -338,7 +359,8 @@ impl Client {
         opcode: u8,
         data: Vec<u8>,
     ) -> Result<Vec<u8>, etherbird::Error<Error>> {
-        validate_request(opcode, &data).map_err(etherbird::Error::Operation)?;
+        crate::profile::validate_profile_request(self.profile(), opcode, &data)
+            .map_err(etherbird::Error::Operation)?;
         self.map_lifecycle_error(
             self.pool
                 .execute_with_timeout(self.call_timeout, move |session| async move {
@@ -348,6 +370,8 @@ impl Client {
         .await
     }
     pub async fn read_configuration(&self) -> Result<SystemConfiguration, etherbird::Error<Error>> {
+        crate::profile::validate_profile_request(self.profile(), 6, &[])
+            .map_err(etherbird::Error::Operation)?;
         self.map_lifecycle_error(
             self.pool
                 .execute_with_timeout(self.call_timeout, |session| async move {
@@ -356,7 +380,64 @@ impl Client {
         )
         .await
     }
+    pub async fn read_point_types(
+        &self,
+        request: crate::PointTypeRequest,
+    ) -> Result<crate::PointTypePage, etherbird::Error<Error>> {
+        self.operation(crate::discovery::ProfilePointTypeOperation {
+            request,
+            profile: self.profile.clone(),
+        })
+        .await
+    }
+    /// Returns complete pages from one exclusive generation, or fails without resuming/replay.
+    pub async fn scan_point_types(
+        &self,
+        start: u8,
+        count: u16,
+    ) -> Result<Vec<crate::PointTypePage>, etherbird::Error<Error>> {
+        let scan = crate::discovery::PointTypeScan::new(start, count, self.profile())
+            .map_err(etherbird::Error::Operation)?;
+        self.workflow(scan).await
+    }
+    pub async fn read_io_points(
+        &self,
+        request: crate::IoPointRequest,
+    ) -> Result<crate::IoPointReply, etherbird::Error<Error>> {
+        self.operation(crate::discovery::ProfileIoOperation {
+            request,
+            profile: self.profile.clone(),
+        })
+        .await
+    }
+    pub async fn discover_io(
+        &self,
+        firmware: crate::FirmwareVersion,
+    ) -> Result<crate::IoSnapshot, etherbird::Error<Error>> {
+        let layout = self
+            .profile()
+            .io_layout()
+            .ok_or(etherbird::Error::Operation(Error::CapabilityUnavailable(
+                "explicit I/O layout profile",
+            )))?;
+        self.discover_io_with_layout(firmware, layout).await
+    }
+    pub async fn discover_io_with_layout(
+        &self,
+        firmware: crate::FirmwareVersion,
+        layout: crate::IoLayout,
+    ) -> Result<crate::IoSnapshot, etherbird::Error<Error>> {
+        crate::profile::validate_profile_request(self.profile(), 6, &[])
+            .map_err(etherbird::Error::Operation)?;
+        crate::profile::validate_profile_request(self.profile(), 50, &[0])
+            .map_err(etherbird::Error::Operation)?;
+        crate::profile::validate_expected_response(self.profile(), 50, layout.len())
+            .map_err(etherbird::Error::Operation)?;
+        self.workflow(crate::IoDiscovery { firmware, layout }).await
+    }
     pub async fn read_clock(&self) -> Result<Clock, etherbird::Error<Error>> {
+        crate::profile::validate_profile_request(self.profile(), 7, &[])
+            .map_err(etherbird::Error::Operation)?;
         self.map_lifecycle_error(
             self.pool
                 .execute_with_timeout(self.call_timeout, |session| async move {
@@ -369,7 +450,8 @@ impl Client {
         &self,
         parameters: &[Parameter],
     ) -> Result<Vec<Value>, etherbird::Error<Error>> {
-        parameter_request(parameters).map_err(etherbird::Error::Operation)?;
+        crate::profile::validate_parameter_read(self.profile(), parameters)
+            .map_err(etherbird::Error::Operation)?;
         let parameters = parameters.to_vec();
         self.map_lifecycle_error(
             self.pool
@@ -383,6 +465,10 @@ impl Client {
         &self,
         block: &ParameterBlock,
     ) -> Result<Vec<Value>, etherbird::Error<Error>> {
+        crate::profile::validate_profile_request(self.profile(), 167, &block.payload())
+            .map_err(etherbird::Error::Operation)?;
+        crate::profile::validate_expected_response(self.profile(), 167, block.response_size())
+            .map_err(etherbird::Error::Operation)?;
         let block = block.clone();
         self.map_lifecycle_error(
             self.pool
@@ -391,5 +477,46 @@ impl Client {
                 }),
         )
         .await
+    }
+    /// Lookup and plan all parameters before admission. Each attempt holds one generation.
+    pub async fn read_schema(
+        &self,
+        provider: &dyn crate::SchemaProvider,
+        context: &crate::SchemaContext,
+        tlps: &[crate::Tlp],
+    ) -> Result<Vec<Value>, crate::SchemaReadError> {
+        let plan =
+            crate::ReadPlan::build(provider, context, tlps, self.profile()).map_err(|error| {
+                crate::SchemaReadError {
+                    progress: Default::default(),
+                    error: etherbird::Error::Operation(error),
+                }
+            })?;
+        self.read_plan(plan).await
+    }
+    pub async fn read_plan(
+        &self,
+        plan: crate::ReadPlan,
+    ) -> Result<Vec<Value>, crate::SchemaReadError> {
+        // A plan may have been constructed for another profile; revalidate all budgets.
+        for batch in plan.batches() {
+            let check = crate::profile::validate_parameter_read(self.profile(), batch);
+            check.map_err(|error| crate::SchemaReadError {
+                progress: Default::default(),
+                error: etherbird::Error::Operation(error),
+            })?;
+        }
+        let progress = Arc::new(std::sync::Mutex::new(crate::ReadProgress::default()));
+        let result = self
+            .workflow(crate::schema::PlannedRead {
+                plan,
+                progress: progress.clone(),
+            })
+            .await;
+        let progress = std::mem::take(&mut *progress.lock().unwrap());
+        match result {
+            Ok(()) => Ok(progress.values),
+            Err(error) => Err(crate::SchemaReadError { progress, error }),
+        }
     }
 }

@@ -1,6 +1,8 @@
 # Extensible client work plan
 
-Status: first managed EXT-1/4/5 slice implemented; EXT-2/3 and remaining acceptance tasks are open.
+Status: managed EXT-1/4/5 slice plus explicit EXT-2 profiles/codecs and EXT-3
+schema-backed reads implemented. Remaining device presets, write planning and
+authentication acceptance tasks stay open. Updated 2026-10-09.
 This is the early delivery milestone in [the roadmap](OUTSTANDING_WORK.md).
 The published Etherbird crate remains responsible for lifecycle supervision,
 admission, exclusive leases, recovery and awaited shutdown.
@@ -36,22 +38,32 @@ and state/secrets stay within the specified lifetime.
 
 ## EXT-2: protocol profiles and disputed reply codecs
 
-- [ ] Implement predefined selectable alternatives through the same public
+- [x] Implement predefined selectable alternatives through the same public
   extension contracts available to consumers, without privileged codec paths.
-- [ ] Permit callers to replace a predefined alternative with their own implementation;
+- [x] Permit callers to replace a predefined alternative with their own implementation;
   document applicability, assumptions and independent evidence for each preset.
-- [ ] Define coherent profiles with identity, applicable family/firmware, capabilities and assumption/validation metadata.
-- [ ] Keep supported defaults simple; require explicit selection of provisional/custom profiles.
-- [ ] Allow selected typed request/reply codecs to receive raw payloads and original request context.
-- [ ] Provide a narrow address/correlation policy seam for known direct-connect/routed behavior; keep mandatory framing/size validation and stream-retirement ownership in the framework.
+- [x] Define coherent profiles with identity, applicable family/firmware, capabilities and assumption/validation metadata.
+- [x] Keep supported defaults simple; require explicit selection of provisional/custom profiles.
+- [x] Allow selected typed request/reply codecs to receive raw payloads and original request context.
+- [x] Provide a narrow source-correlation policy seam for ordinary unicast; keep mandatory destination/opcode/framing/size validation and stream-retirement ownership in the framework. Routed framing remains unsupported.
 - [ ] Audit whether any supported alternative actually requires a framing seam; do not infer that reply-payload extensibility permits arbitrary transport framing.
-- [ ] Keep config-layout status, legacy layout flag and family-specific clock formats distinct.
-- [ ] Define profile selection/override when discovery is absent, protected or inconclusive.
-- [ ] Reject unsupported capabilities clearly; return unknown raw data where a type can honestly retain it.
+- [x] Keep config-layout status, legacy layout flag and family-specific clock formats distinct.
+- [x] Define profile selection/override when discovery is absent, protected or inconclusive.
+- [x] Reject unsupported capabilities clearly; return unknown raw data where a type can honestly retain it.
 - [ ] Preserve raw occurrence-time/unknown fields when an extension cannot establish their meaning.
 - [ ] Invalidate profile-derived caches when verified replacement identity/capabilities change.
-- [ ] Test wrong echoes/opcodes/addresses, malformed typed replies and profiles with identical-length alternatives.
-- [ ] Do not autodetect a format solely because it parses; never trial alternative writes/deletes/logins.
+- [x] Test wrong echoes/opcodes/addresses, malformed typed replies and profiles with identical-length alternatives.
+- [x] Do not autodetect a format solely because it parses; never trial alternative writes/deletes/logins.
+
+Evidence: [profiles_schema tests](../tests/profiles_schema.rs),
+[profile/schema consumer example](../examples/schema_profiles.rs), and
+[contracts](MANAGED_EXTENSIONS.md). DefaultProfile, ClockCodec and ConfigurationCodec
+are named presets for existing verified codec forms, not new disputed firmware
+alternatives. The subsequent discovery slice adds Roc800Profile with explicit I/O
+layouts, contextual opcode-50/100 presets and generation-bound Roc800Catalog snapshots;
+see [CATALOG.md](CATALOG.md). Automatic profile caches remain absent. Device-specific
+interoperability, occurrence-time
+interpretation and routed framing still need their own evidence; these remain open.
 
 Acceptance: an external consumer supplies a disputed decoder/profile explicitly.
 The framework continues to reject unsafe/malformed exchanges, retire interrupted
@@ -59,13 +71,21 @@ streams and preserve valid device-rejection semantics.
 
 ## EXT-3: schema providers
 
-- [ ] Define lookup by point type/parameter and applicable device/firmware, including location rules.
-- [ ] Support width/type, access and optional constraints without guessing missing metadata.
-- [ ] Define deterministic precedence for caller overrides and built-in catalogs; preserve caller-supplied raw parameter access.
+- [x] Define lookup by point type/parameter and applicable device/firmware, including location rules.
+- [x] Support width/type, access and optional constraints without guessing missing metadata.
+- [x] Define deterministic precedence for caller overrides and built-in catalogs; preserve caller-supplied raw parameter access.
 - [ ] Integrate provider lookup with bounded read/write batch planning.
-- [ ] Separate local validation from device rejection and uncertain remote outcomes.
-- [ ] Add an external-provider example for a vendor/user-defined point type, with mixed widths and bounds.
-- [ ] Keep comprehensive catalog manifests in SCHEMA_WORK_PLAN.md; a provider seam does not close those rows.
+- [x] Integrate provider lookup with bounded read batch planning and confirmed failure progress; write planning awaits M4 codecs/outcome semantics.
+- [x] Separate local validation from device rejection and uncertain remote outcomes.
+- [x] Add an external-provider example for a vendor/user-defined point type, with mixed widths and bounds.
+- [x] Keep comprehensive catalog manifests in SCHEMA_WORK_PLAN.md; a provider seam does not close those rows.
+
+Evidence: [schema implementation](../src/schema.rs),
+[independent mixed-width/budget/progress tests](../tests/profiles_schema.rs), and
+[external provider example](../examples/schema_profiles.rs). SchemaContext is explicit
+caller identity, not inferred discovery. Access and logical bounds are enforced for
+reads; optional numeric bounds are metadata reserved for future writes. Missing schema,
+unsupported identity, conditional access and invalid widths fail before admission.
 
 Acceptance: a user adds a point type and correct typed access without changing
 rocsteady, and oversized/unsupported requests fail before channel use.
@@ -83,7 +103,7 @@ rocsteady, and oversized/unsupported requests fail before channel use.
 - [x] Prevent extensions from bypassing queue bounds, receiving an untracked shared stream or retaining an exclusive context after its scope ends.
 - [x] Provide a compile-checked custom operation and multi-exchange fixture workflow in an external consumer crate/example.
 - [x] Test competing clones, late replies, decoder failure and stop with in-flight work.
-- [ ] Test disconnect after a simulated side effect with an independent committed-effect counter; the current extension fixture observes a request but does not model a write effect.
+- [x] Test disconnect after a simulated side effect with an independent committed-effect counter: committed_side_effect_with_lost_ack_is_never_replayed in tests/profiles_schema.rs models a fixture-only effect and lost acknowledgement over TCP, then checks recovery and explicit caller attempts.
 
 Acceptance: typed operations and workflows can be implemented outside the crate
 while preserving managed admission, ownership and cancellation guarantees. Remote
@@ -93,10 +113,10 @@ completion remains an operation-specific contract; no implicit side-effect repla
 
 - [x] Write API/design contracts before fixing public trait signatures: ownership, async lifetimes, Send/Sync, error types, supported dependency versions and versioning policy.
 - [x] Keep extension registration/configuration immutable or define atomic changes and generation invalidation explicitly.
-- [ ] Distinguish built-in verified, built-in provisional, user-supplied and unavailable capabilities in docs/diagnostics.
-- [ ] Publish guides for all four extension seams, including what knowledge/evidence an implementer must supply.
+- [x] Distinguish built-in verified, built-in provisional, user-supplied and unavailable capabilities in docs/diagnostics.
+- [x] Publish guides for all four extension seams, including what knowledge/evidence an implementer must supply.
 - [x] Test external implementation ergonomics with a consumer using the published Etherbird dependency; examples must not depend on crate-private access.
-- [ ] Maintain framework contract tests across dependency upgrades.
+- [x] Maintain framework contract tests across dependency upgrades; existing extension tests and new profile/schema tests run against published Etherbird 0.4.1. Hosted platform evidence for this tree remains pending.
 - [x] Establish a contribution path: source/evidence, independent fixtures, applicable model/firmware, review, simulator/integration tests, then promotion to built-in support.
 - [x] Keep extension compatibility claims separate from the crate's built-in conformance matrix.
 
@@ -153,7 +173,7 @@ in [extensions](../tests/extensions.rs). This does not close full EXT acceptance
 
 Scope: EXT-5 contracts and the managed exchange boundary needed by EXT-1/4.
 Demonstrate custom setup, a typed operation and a two-exchange fixture workflow
-from an external consumer. EXT-2/3 follow once ownership is demonstrated.
+from an external consumer. The subsequent EXT-2/3 read slice is now implemented above.
 No disputed device codec is required for this slice.
 
 Before fixing public signatures, record these decisions here or in a linked design

@@ -141,6 +141,36 @@ Run `cargo run --example managed_extensions` for custom setup, a typed operation
 and a two-exchange fixture workflow. See [managed contracts](MANAGED_EXTENSIONS.md)
 for lifetimes, retirement, dependency versions and contribution requirements.
 
+## Discovery and the initial catalog
+
+Use an independently established firmware version and explicitly selected I/O layout.
+This example assumes ROC800 firmware 3.00 with the 160-entry compatibility layout;
+choose settings applicable to your controller. Discovery may require custom authenticated
+setup. Opcode 100 classifies point types without revealing widths. Opcode 50 reports
+per-type logical ordinals alongside physical locations; I/O TLPs use the physical location.
+
+```rust,no_run
+use rocsteady::{Client, FirmwareVersion, IoLayout, Roc800Catalog, Value};
+
+async fn read_first_analog_input(client: &Client)
+    -> Result<Vec<Value>, Box<dyn std::error::Error>>
+{
+    let io = client.discover_io_with_layout(
+        FirmwareVersion::new(3, 0)?, IoLayout::Compatibility160,
+    ).await?;
+    let input = io.by_logical(103, 0)?.tlp(21)?;
+    let catalog = Roc800Catalog::from_discovery(io)?;
+    Ok(client.read_schema(&catalog, &catalog.context(), &[input]).await?)
+}
+```
+
+The catalog supplies the parameter type and checks its discovered physical location.
+It covers 30 selected parameters; [the manifest](CATALOG.md) records source references,
+applicability and omissions. Snapshot-derived catalogs/plans fail with StaleGeneration
+after replacement; rediscover before starting a new attempt. The owning application
+must await client.stop(). Run `cargo run --example discovery_catalog` for a complete
+independent TCP fixture example without controller access.
+
 ## Serial and notifications
 
 Enable `serial` and construct SerialConnector with the actual electrical channel,

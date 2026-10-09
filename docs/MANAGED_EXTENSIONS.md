@@ -1,4 +1,4 @@
-# Managed extension contracts (EXT-1/4/5 first slice)
+# Managed extension contracts (setup, profiles, schemas and workflows)
 
 Implemented against the published Etherbird 0.4.1 registry source, with the `pool`
 feature, Rust 1.88 minimum, and Tokio 1. No fork or private dependency APIs.
@@ -124,8 +124,138 @@ validation, terminal unsupported authentication and swallowed decoder errors.
 README/usage snippets and the context escape compile-fail case are doctests;
 the package is also exercised from an independent extracted-package consumer.
 
-EXT-2 profiles/address policies and EXT-3 schema providers remain planned. No arbitrary
-framing seam, unsupported authentication algorithm or disputed codec is introduced.
+EXT-2 profiles/contextual codecs and EXT-3 schema-backed reads are implemented below.
+No arbitrary framing seam, unsupported authentication algorithm or disputed firmware
+codec is introduced.
 Contributions should provide source sections, model/firmware applicability,
 independent positive/negative fixtures, simulator/integration coverage and review
 before promotion to built-in support; user extensions do not close conformance rows.
+
+## Explicit profiles and contextual codecs
+
+Set `ClientConfig.profile` to an `Arc<dyn ProtocolProfile>` before constructing a
+client. Clones and replacement generations keep this immutable selection. The default
+is `DefaultProfile`, with the existing ordinary-unicast clock/configuration codecs.
+`Client::profile()` and `ManagedContext::profile()` expose metadata and capabilities.
+ProfileMetadata records name, applicability, assumptions and evidence; these are
+implementer assertions, not a certification or automatically discovered device identity.
+Protected/inconclusive discovery requires explicit caller selection and, when needed,
+`with_setup` using the existing managed authentication boundary.
+
+Capability distinguishes Verified, Provisional, UserSupplied and Unavailable.
+DefaultProfile labels tested built-in codec forms Verified; this does not certify
+every firmware variant of that opcode. Capability describes outgoing requests;
+device-originated SRBX/errors retain their framework support independently.
+Other legal raw/custom requests are
+UserSupplied, preserving the existing escape hatch. Unavailable services fail locally
+before ordinary Client admission. A missing required setup capability is terminal
+instead of repeatedly reconnecting. Provisional/custom profiles are never auto-selected.
+The built-in setup requires clock capability and optional legacy-login capability.
+Custom setup owns its capability requirements; configure heartbeats only when its
+profile supports opcode 7. Changed profiles require awaited stop and a new client.
+
+`decode_clock` and `decode_configuration` return DecodeError and run under the
+exchange guard. Clock setup and heartbeats use the same selected decoder as reads.
+`ClockCodec` and `ConfigurationCodec` are named public ReplyCodec presets; a custom
+profile can call or replace them. `DecodedOperation<Q, C>` supplies the original typed
+request Q to `ReplyCodec<Q>::decode` alongside raw reply bytes. Use it through
+`Client::operation` or `context.operation`; preserve unknown fields/raw bytes in
+your output when interpretation is unavailable. No alternative is trial-parsed.
+
+PayloadLimits can tighten request/reply budgets per opcode; limits above 255 never
+relax the framework's ordinary payload ceiling. Opcode-180 plans additionally retain
+the existing 240-byte response budget. Normal matching replies exceeding a profile
+limit retire the stream. Valid device errors and SRBX signals retain their framework
+formats. The only address policy seam is `accepts_source`: reply destination must
+still match the host, source must be a legal unicast address, opcode/correlation,
+CRC policy and exact frame lengths stay enforced. Routing/broadcast framing is not
+enabled by source overrides. Neither transport ownership nor cancellation can be
+overridden. Profiles should be deterministic and synchronous methods bounded.
+
+No discovery-based profile cache exists; no cache is carried across replacement.
+Extensions must bind remote handles to generations and revalidate identity-dependent
+state in setup. Source/firmware evidence is required before contributing device presets.
+The example's synthetic profile and identical-length test decoder certify framework
+behavior only, not another ROC format.
+
+## Schema providers and bounded reads
+
+Implement `SchemaProvider::lookup(context, tlp)` for explicit SchemaContext family/
+firmware identity. Return None only for missing entries; return an error for unsupported
+applicability. ParameterSchema supplies DataType (and therefore width), Access,
+optional logical bounds and optional numeric bounds. Missing metadata is never guessed.
+ReadOnly/ReadWrite are readable; WriteOnly and unresolved Conditional fail locally.
+Logical bounds are enforced; numeric bounds are write metadata, not a read-value filter.
+The initial built-in Roc800Catalog covers 30 selected parameters; schema-aware
+writes and complete PT tables remain unavailable. See [CATALOG.md](CATALOG.md).
+
+`SchemaChain` searches providers in order: place caller overrides first, catalogs
+after them. First Some wins; an error stops lookup, so unsupported identity cannot
+silently fall back. Raw `read_parameters` with caller-supplied types remains available.
+Providers are shared Send + Sync objects; provide an immutable metadata snapshot during
+planning. Supply independently established identity rather than deriving firmware from
+configuration length. The framework does not discover or refresh that caller assertion.
+
+`ReadPlan::build` resolves and validates the entire ordered TLP list before admission.
+It preserves duplicates and packs opcode-180 batches within both request and expected
+response limits. A single value that cannot fit is rejected locally. `Client::read_schema`
+builds and executes a plan; `read_plan` rechecks all batches against its selected profile
+in case the plan was built for another client. One Workflow holds exclusive ownership
+of one generation for the entire attempt, including all batch decodes. No batch resumes
+after reconnection; competing clones/heartbeats cannot interleave.
+
+On success the result is ordered Vec<Value>. SchemaReadError preserves the original
+Etherbird error and ReadProgress with fully decoded values and completed_batches.
+A failed batch contributes no values; progress is the confirmed snapshot at failure,
+including overall call timeout. Malformed replies retire the stream; valid device
+rejections remain healthy. Caller cancellation has no returned progress. To resume,
+explicitly choose new work after reestablishing identity and considering consistency:
+even exclusive ownership does not freeze the controller's values across batches.
+Overall call expiry signals asynchronous job cancellation in Etherbird; an immediately
+submitted call can still observe Disconnected while retirement reaches the supervisor.
+Observe replacement/readiness before an explicit subsequent attempt. This is separate
+from automatic operation replay, which is never used.
+
+Run `cargo run --locked --example schema_profiles` for public external profile/schema
+implementations with mixed widths and bounds over an independent loopback TCP peer.
+`tests/profiles_schema.rs` covers identity, precedence, local failures, both budgets,
+partial progress, codec replacement, malformed replies, setup/heartbeat selection,
+healthy rejection and a committed fixture effect followed by lost acknowledgement.
+All wire framing and values in that peer are independent of production codecs.
+No physical-device or serial interoperability evidence is supplied by these tests.
+
+## Discovery-backed schemas
+
+ProtocolProfile now also exposes contextual `decode_point_types` and `decode_io_points`,
+explicit `io_layout`, `validate_io_layout` and an `io_location` policy. PointTypeCodec
+and IoPointCodec are public presets implementing ReplyCodec; read_point_types and
+read_io_points on Client, Session and ManagedContext use selected profile decoders.
+The public request Operation implementations use the source-based presets directly,
+allowing explicit per-operation selection like the existing ClockCodec.
+
+`Roc800Profile` selects a named 160/240/224-entry layout. FirmwareVersion is an
+independent caller assertion; configuration revision/length do not establish it.
+`IoDiscovery` holds exclusive ownership while reading configuration and both selectors
+twice, then comparing final configuration. An observed change returns DiscoveryChanged
+and keeps a healthy stream. This does not freeze device state. Profiles retain a narrow
+source-based mapping default, with contradictory diagram/compatibility choices recorded
+in [the discovery evidence](CATALOG.md#discovery-contracts).
+
+IoSnapshot keeps raw selector arrays, physical positions, per-type logical numbers,
+configuration, explicit firmware and generation. `by_logical(...).tlp(...)` maps
+types 101-109 to the physical TLP component. A bare logical ordinal is not a wire
+location. Absent/reserved positions and unknown point types are not guessed into schemas.
+
+`Roc800Catalog::from_discovery` checks the ROC800 identity and installed I/O locations.
+`SchemaProvider::generation` optionally declares a generation requirement. ReadPlan
+captures it before admission, then rejects a different generation before wire use.
+SchemaChain conservatively combines all declared requirements and rejects conflicts.
+Static providers remain unbound by default. Old snapshot/catalog objects can remain in
+caller memory, but schema reads through the managed plan cannot reuse them after
+replacement. Arbitrary copied TLPs remain caller-owned, as with other copied handles.
+
+Run `cargo run --locked --example discovery_catalog` for both discovery services and
+catalog-backed reads through an independent TCP peer. Tests in `tests/discovery.rs`
+and `tests/discovery_simulator.rs` distinguish source-derived byte oracles from the
+shared-codec simulator. Individual malformed replies retire the stream; valid device
+errors, unsupported local metadata and observed discovery changes retain it.

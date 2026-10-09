@@ -6,6 +6,8 @@ cargo test --locked
 cargo test --locked --all-features --all-targets
 cargo test --locked --all-features --doc
 cargo run --locked --example managed_extensions
+cargo run --locked --example schema_profiles
+cargo run --locked --example discovery_catalog
 cargo run --locked --features simulator --example authenticated_setup
 cargo run --locked --features simulator --example simulator
 cargo package --locked --allow-dirty --all-features

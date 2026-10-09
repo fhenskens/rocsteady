@@ -13,6 +13,30 @@ Migration checks on Windows pass on stable and Rust 1.88: all 43 regression test
 Linux/macOS validation of this migration remains pending the existing CI matrix;
 the local Docker daemon is unavailable. This change has not been published.
 
+The working tree additionally implements explicit protocol profiles/contextual codecs
+and schema providers with bounded opcode-180 reads. Current Windows stable and
+Rust 1.88 validation: **72 tests** with all features/targets, **10 doctests**, strict
+stable Clippy, formatting, the profile/schema TCP example and an offline-verified
+package plus extracted-package consumer exercising the public codec/schema APIs.
+The 12 new independent profile/schema tests include confirmed progress after a
+second-batch failure or call timeout and no replay after a committed fixture effect
+with lost acknowledgement. The package check used cached dependencies because the
+registry endpoint was unavailable. Hosted Linux/macOS validation and publication
+of these changes remain pending. No hardware evidence has been added.
+
+The discovery/catalog slice adds 14 independent cases in tests/discovery.rs and
+two simulator cases, extends standalone malformed-reply checks to opcodes 50/100,
+and adds the discovery_catalog example to the hosted stable/MSRV matrix. Every
+one of the 30 initial catalog parameters has a source-derived literal and independent
+TCP read fixture. The packaged consumer exercises discovery, physical TLP mapping
+and the built-in provider using only public APIs. Source audit and final checks are
+recorded on 2026-10-10 (local date); hosted results for this uncommitted tree remain pending.
+
+`ClientConfig.profile` is a new required field for exhaustive struct literals;
+existing configurations using `..Default::default()` keep the same default behavior.
+Review this experimental API addition under the pre-1.0 versioning policy before
+selecting the next release version. This working tree does not republish alpha.1.
+
 Rust minimum: 1.88. Etherbird: published 0.4.1 with pool; Tokio: compatible 1.x.
 Cargo.lock pins the validated versions. Consumers may resolve newer compatible
 dependencies; re-run framework tests before updating the lockfile. All public APIs
@@ -52,6 +76,8 @@ cargo test --locked --all-features --all-targets
 cargo test --locked --all-features --doc
 cargo clippy --locked --all-features --all-targets -- -D warnings
 cargo run --locked --example managed_extensions
+cargo run --locked --example schema_profiles
+cargo run --locked --example discovery_catalog
 cargo run --locked --features simulator --example authenticated_setup
 cargo run --locked --features simulator --example simulator
 cargo package --locked --allow-dirty --all-features

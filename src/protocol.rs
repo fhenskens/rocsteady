@@ -416,6 +416,9 @@ pub struct ParameterBlock {
     types: Vec<DataType>,
 }
 impl ParameterBlock {
+    pub(crate) fn response_size(&self) -> usize {
+        4 + self.types.iter().map(|kind| kind.width()).sum::<usize>()
+    }
     pub fn new(
         point_type: u8,
         logical: u8,

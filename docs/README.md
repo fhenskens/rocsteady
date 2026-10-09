@@ -28,6 +28,7 @@ same contracts, so callers can replace them with their own implementations.
 | [Extensibility](EXTENSIBILITY.md) | Delivered/planned extension boundaries and external-consumer acceptance |
 | [Service plan](SPEC_WORK_PLAN.md) | Baseline opcode/core inventory and closure criteria |
 | [Schema plan](SCHEMA_WORK_PLAN.md) | Point-type inventory and per-parameter closure criteria |
+| [Initial catalog](CATALOG.md) | Selected source-audited parameter metadata, discovery policies, per-variant fixtures and explicit firmware/hardware limitations |
 | [Architecture](ARCHITECTURE.md) | Existing ownership, recovery and stream behavior |
 | [Hardware](HARDWARE.md) | Channel prerequisites and physical-validation requirements |
 | [Reference index](reference/README.md) | Normative source identity and research navigation |

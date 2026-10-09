@@ -2,11 +2,12 @@ use crate::{
     Error, SystemConfiguration,
     protocol::{
         Address, Clock, CrcMode, DeviceError, Frame, Login, Parameter, ParameterBlock, Value,
-        decode_parameters, parameter_request,
+        decode_parameters,
     },
     transport::{Stream, read_frame, write_frame},
 };
 use std::{
+    sync::Arc,
     sync::atomic::{AtomicU64, Ordering},
     time::Duration,
 };
@@ -27,6 +28,7 @@ pub struct Session {
     crc_mode: CrcMode,
     pub(crate) connected: watch::Sender<bool>,
     events: broadcast::Sender<Frame>,
+    pub(crate) profile: Arc<dyn crate::ProtocolProfile>,
 }
 struct Exchange<'a> {
     stream: &'a mut Option<Stream>,
@@ -50,7 +52,15 @@ impl Session {
         crc_mode: CrcMode,
     ) -> Result<Self, Error> {
         let (events, _) = broadcast::channel(32);
-        Self::with_events(stream, host, device, response_timeout, crc_mode, events)
+        Self::with_events(
+            stream,
+            host,
+            device,
+            response_timeout,
+            crc_mode,
+            events,
+            Arc::new(crate::DefaultProfile),
+        )
     }
     pub(crate) fn with_events(
         stream: Stream,
@@ -59,6 +69,7 @@ impl Session {
         response_timeout: Duration,
         crc_mode: CrcMode,
         events: broadcast::Sender<Frame>,
+        profile: Arc<dyn crate::ProtocolProfile>,
     ) -> Result<Self, Error> {
         host.validate_unicast()?;
         device.validate_unicast()?;
@@ -81,6 +92,7 @@ impl Session {
             crc_mode,
             connected: watch::channel(true).0,
             events,
+            profile,
         })
     }
     /// Subscribe to SRBX frames encountered by requests/heartbeats. Receiver may lag.
@@ -129,7 +141,7 @@ impl Session {
         data: Vec<u8>,
         decode: impl FnOnce(&[u8]) -> Result<T, Error>,
     ) -> Result<T, Error> {
-        validate_request(opcode, &data)?;
+        crate::profile::validate_profile_request(self.profile.as_ref(), opcode, &data)?;
         let frame = Frame::new(self.device, self.host, opcode, data);
         let mut slot = self.stream.lock().await;
         if slot.is_none() || !self.is_connected() {
@@ -145,7 +157,10 @@ impl Session {
             write_frame(stream.as_mut(), &frame).await?;
             loop {
                 let response = read_frame(stream.as_mut(), self.crc_mode).await?;
-                if response.destination != self.host || response.source != self.device {
+                if response.destination != self.host
+                    || response.source.validate_unicast().is_err()
+                    || !self.profile.accepts_source(self.device, response.source)
+                {
                     return Err(Error::InvalidResponse(
                         "response addresses do not match request",
                     ));
@@ -167,6 +182,11 @@ impl Session {
                         "response opcode does not match request",
                     ));
                 }
+                if response.data.len() > self.profile.limits(opcode).response.min(255) {
+                    return Err(Error::InvalidResponse(
+                        "reply exceeds selected profile limit",
+                    ));
+                }
                 return decode(&response.data).map(Ok);
             }
         })
@@ -176,11 +196,50 @@ impl Session {
         response
     }
     pub async fn read_configuration(&self) -> Result<SystemConfiguration, Error> {
-        self.request_decoded(6, vec![], SystemConfiguration::decode)
-            .await
+        self.request_decoded(6, vec![], |bytes| {
+            self.profile
+                .decode_configuration(bytes)
+                .map_err(Error::from)
+        })
+        .await
     }
     pub async fn read_clock(&self) -> Result<Clock, Error> {
-        self.request_decoded(7, vec![], Clock::decode).await
+        self.request_decoded(7, vec![], |bytes| {
+            self.profile.decode_clock(bytes).map_err(Error::from)
+        })
+        .await
+    }
+    pub async fn read_point_types(
+        &self,
+        request: crate::PointTypeRequest,
+    ) -> Result<crate::PointTypePage, Error> {
+        crate::profile::validate_expected_response(
+            self.profile.as_ref(),
+            100,
+            request.response_size(),
+        )?;
+        self.request_decoded(100, request.payload(), |bytes| {
+            self.profile
+                .decode_point_types(&request, bytes)
+                .map_err(Error::from)
+        })
+        .await
+    }
+    pub async fn read_io_points(
+        &self,
+        request: crate::IoPointRequest,
+    ) -> Result<crate::IoPointReply, Error> {
+        crate::profile::validate_expected_response(
+            self.profile.as_ref(),
+            50,
+            request.layout.len(),
+        )?;
+        self.request_decoded(50, request.payload(), |bytes| {
+            self.profile
+                .decode_io_points(&request, bytes)
+                .map_err(Error::from)
+        })
+        .await
     }
     pub async fn login(&self, login: &Login) -> Result<(), Error> {
         self.request_decoded(17, login.payload(), |bytes| {
@@ -194,12 +253,19 @@ impl Session {
         .await
     }
     pub async fn read_parameters(&self, parameters: &[Parameter]) -> Result<Vec<Value>, Error> {
-        self.request_decoded(180, parameter_request(parameters)?, |bytes| {
-            decode_parameters(parameters, bytes)
-        })
+        self.request_decoded(
+            180,
+            crate::profile::validate_parameter_read(self.profile.as_ref(), parameters)?,
+            |bytes| decode_parameters(parameters, bytes),
+        )
         .await
     }
     pub async fn read_parameter_block(&self, block: &ParameterBlock) -> Result<Vec<Value>, Error> {
+        crate::profile::validate_expected_response(
+            self.profile.as_ref(),
+            167,
+            block.response_size(),
+        )?;
         self.request_decoded(167, block.payload(), |bytes| block.decode(bytes))
             .await
     }

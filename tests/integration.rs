@@ -13,7 +13,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[tokio::test]
 async fn standalone_session_retires_every_malformed_typed_reply() {
-    for opcode in [6, 7, 17, 167, 180] {
+    for opcode in [6, 7, 17, 50, 100, 167, 180] {
         let (stream, mut peer) = tokio::io::duplex(512);
         let responder = tokio::spawn(async move {
             assert_eq!(
@@ -52,6 +52,17 @@ async fn standalone_session_retires_every_malformed_typed_reply() {
             6 => session.read_configuration().await.map(|_| ()),
             7 => session.read_clock().await.map(|_| ()),
             17 => session.login(&Login::new(*b"TST", 1, None).unwrap()).await,
+            50 => session
+                .read_io_points(rocsteady::IoPointRequest {
+                    layout: rocsteady::IoLayout::Compatibility160,
+                    selector: rocsteady::IoSelector::PointTypes,
+                })
+                .await
+                .map(|_| ()),
+            100 => session
+                .read_point_types(rocsteady::PointTypeRequest::new(91, 1).unwrap())
+                .await
+                .map(|_| ()),
             167 => session
                 .read_parameter_block(
                     &ParameterBlock::new(103, 0, 0, vec![DataType::UInt8]).unwrap(),

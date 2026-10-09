@@ -26,6 +26,8 @@ pub enum Error {
     Authentication(AuthenticationFailure),
     #[error("required capability unavailable: {0}")]
     CapabilityUnavailable(&'static str),
+    #[error("discovery changed: {0}; obtain a fresh snapshot")]
+    DiscoveryChanged(&'static str),
     #[error("remote handle belongs to generation {expected}, current generation is {actual}")]
     StaleGeneration { expected: u64, actual: u64 },
 }
@@ -48,6 +50,7 @@ pub enum ErrorKind {
     MalformedReply,
     Transport,
     Authentication,
+    DiscoveryChanged,
 }
 impl Error {
     pub fn kind(&self) -> ErrorKind {
@@ -62,12 +65,13 @@ impl Error {
             }
             Self::Io(_) | Self::Timeout | Self::Disconnected => ErrorKind::Transport,
             Self::Authentication(_) => ErrorKind::Authentication,
+            Self::DiscoveryChanged(_) => ErrorKind::DiscoveryChanged,
         }
     }
     pub(crate) fn preserves_connection(&self) -> bool {
         matches!(
             self.kind(),
-            ErrorKind::LocalValidation | ErrorKind::DeviceRejection
+            ErrorKind::LocalValidation | ErrorKind::DeviceRejection | ErrorKind::DiscoveryChanged
         )
     }
 }

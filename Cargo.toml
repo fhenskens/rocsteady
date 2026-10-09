@@ -8,7 +8,7 @@ license = "Apache-2.0"
 repository = "https://github.com/fhenskens/rocsteady"
 keywords = ["roc-plus", "emerson", "industrial", "async", "reconnect"]
 categories = ["network-programming", "asynchronous"]
-include = ["/src/**", "/tests/**", "/examples/**", "/Cargo.toml", "/Cargo.lock", "/README.md", "/LICENSE", "/CHANGELOG.md", "/docs/USAGE.md", "/docs/MANAGED_EXTENSIONS.md", "/docs/RELEASE.md", "/docs/DEPENDENCIES.md"]
+include = ["/src/**", "/tests/**", "/examples/**", "/Cargo.toml", "/Cargo.lock", "/README.md", "/LICENSE", "/CHANGELOG.md", "/docs/USAGE.md", "/docs/MANAGED_EXTENSIONS.md", "/docs/CATALOG.md", "/docs/RELEASE.md", "/docs/DEPENDENCIES.md"]
 
 [features]
 default = []

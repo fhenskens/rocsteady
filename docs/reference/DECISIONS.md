@@ -82,9 +82,16 @@ Evidence: [search assessment](SEARCH_RECORD.md#dec-3--layout-status-and-physical
 | ID | Subquestion | Current conclusion | Delivery disposition | Evidence needed to close |
 | --- | --- | --- | --- | --- |
 | DEC-3.01 | Configuration flag versus reported layout status | Documented as distinct fields | Documented direction | Keep separate representations; source/table audit |
-| DEC-3.02 | Slot/point mapping for 160/240/224 entries | Candidate mappings; legacy driver examples support only a subset | User extension: EXT-2/3 | Expanded-layout examples and independent selector replies |
+| DEC-3.02 | Slot/point mapping for 160/240/224 entries | Explicit source-based lengths/sequential-position presets implemented; conflicting diagrams and device applicability remain unresolved | Named explicit preset / user extension: EXT-2/3 | Applicable physical-device selector replies and first/last slot mapping evidence |
 | DEC-3.03 | CPU diagnostics/unused slots and end boundaries | Some textual examples; diagram conflicts remain | User extension: EXT-2/3 | First/last valid physical position and absent-module fixtures |
-| DEC-3.04 | Driver logical syntax versus wire location | Driver abstraction must not be confused with wire numbering | Deferred framework | Verify conversion before passing a logical alias into a TLP |
+| DEC-3.04 | Driver logical syntax versus wire location | IoSnapshot preserves both; by_logical(...).tlp(...) uses physical positions for types 101-109 | Implemented framework: EXT-2/3; physical interoperability open | Independent TCP conversion fixtures exist; applicable device evidence and other type mappings remain open |
+
+Delivery update 2026-10-10: [CATALOG.md](../CATALOG.md) records both selectors,
+all three explicitly selected response lengths, the section-3.2 mapping policy,
+observed-change detection and generation-bound catalog/plan invalidation. Independent
+fixtures validate framework/wire choices, not resolution of contradictory source
+diagrams or hardware behavior. No automatic firmware or compatibility-mode selection
+is inferred from successful parsing.
 
 ## DEC-4 — occurrence times, clock and history indices
 

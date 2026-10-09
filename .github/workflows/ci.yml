@@ -2,6 +2,7 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
 jobs:
   test:
     strategy:
@@ -24,6 +25,8 @@ jobs:
         if: matrix.toolchain == 'stable'
       - run: cargo run --locked --features simulator --example simulator
       - run: cargo run --locked --example managed_extensions
+      - run: cargo run --locked --example schema_profiles
+      - run: cargo run --locked --example discovery_catalog
       - run: cargo run --locked --features simulator --example authenticated_setup
       - run: cargo package --locked --allow-dirty --all-features
       - name: Compile and run a consumer of the extracted package
