@@ -247,6 +247,7 @@ async fn terminal_authentication_wakes_queued_clones_and_stop_takes_precedence()
         client.authentication_failure(),
         Some(rocsteady::AuthenticationFailure::Unsupported)
     );
+    assert_eq!(client.state(), rocsteady::ResourceState::Failed);
     client.stop().await;
     assert!(matches!(
         client.read_clock().await,

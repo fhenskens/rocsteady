@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Adopt published Etherbird 0.4.1: terminal lifecycle authentication failures,
+  healthy operation error retention, checked configuration and shutdown cache release.
+- Remove local authentication latch/gate and nested healthy-error results while
+  preserving authentication error compatibility, positive deadlines, no replay,
+  cancellation retirement and explicit Session teardown.
+- Use upstream BoundedFifoQueue and single-attempt readiness/call timeouts;
+  remove the local FIFO and timeout/shutdown race wrapper.
+
 ## 0.1.0-alpha.1 — 2026-10-09
 
 - Configuration discovery, clock/parameter reads, legacy login, frame/CRC validation

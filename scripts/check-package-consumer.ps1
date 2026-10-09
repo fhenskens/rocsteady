@@ -15,7 +15,7 @@ version = "0.0.0"
 edition = "2024"
 [dependencies]
 rocsteady = { path = "$packagePath", features = ["serial", "simulator"] }
-etherbird = { version = "0.3.1", features = ["pool"] }
+etherbird = { version = "0.4.1", features = ["pool"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 "@ | Set-Content -Encoding UTF8 (Join-Path $consumerPath 'Cargo.toml')
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'package-consumer.rs') -Destination (Join-Path $consumerPath 'src/main.rs')

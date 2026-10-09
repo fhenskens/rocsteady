@@ -1,6 +1,6 @@
 # Managed extension contracts (EXT-1/4/5 first slice)
 
-Implemented against the published Etherbird 0.3.1 registry source, with the `pool`
+Implemented against the published Etherbird 0.4.1 registry source, with the `pool`
 feature, Rust 1.88 minimum, and Tokio 1. No fork or private dependency APIs.
 `Cargo.lock` identifies the tested dependency versions. Public traits are early
 0.1 APIs: breaking signature changes require a minor version change while below
@@ -9,14 +9,18 @@ lifecycle suites on every dependency upgrade.
 
 Requested upstream improvements and their eventual adoption are tracked in
 [the Etherbird upgrade work package](OUTSTANDING_WORK.md#adopt-upstream-etherbird-lifecycle-improvements).
-Until released and integrated, the alpha retains its local authentication latch,
-nested healthy-error results, lifecycle configuration checks and explicit state cleanup.
+Etherbird 0.4.1 supplies terminal lifecycle failures, operation retain/recover
+classification, checked configuration, post-stop cache release, bounded FIFO and
+single-attempt call/readiness timeouts. Rocsteady retains
+stricter positive hook deadlines and explicit stream/generation-state cleanup.
 
 ## Audit and ownership
 
-Etherbird `Pool::execute` supplies bounded admission and an exclusive lease;
+Etherbird `BoundedFifoQueue` and `Pool::execute_with_timeout` supply bounded
+admission, an exclusive lease and the overall call deadline;
 `Lifecycle::setup` runs before resource publication under `Config::setup_timeout`.
-Pool operation cancellation drops the operation future, and `Pool::stop` cancels
+Pool timeout/cancellation signals the tracked job to drop its operation future;
+destruction occurs when that job next runs. `Pool::stop` cancels
 and drains tracked jobs and awaits supervisor teardown. `execute` does not replay;
 rocsteady does not call the retry variants. `Lifecycle::is_expected` affects error
 reporting, not a permanent rejection policy.
@@ -47,6 +51,9 @@ whole operation/workflow. Each exchange uses `response_timeout` from inner strea
 acquisition through write, read and decode. Setup additionally has Etherbird's
 setup deadline. Dropping queued calls sends cancellation to Etherbird; they do not
 run after admission. No remote completion claim follows from a timeout.
+Cancellation pruning reclaims queue space asynchronously. Rocsteady requires
+positive queue capacity and call/hook deadlines, although upstream permits zero
+capacity (reject all) and zero call deadlines (expire without starting work).
 
 | Result | Classification and retirement |
 | --- | --- |
@@ -89,9 +96,11 @@ Failed or cancelled setup is never published ready, even if extension code handl
 a transport error. Transport setup failures retain the retry policy. Explicit
 `Authentication(Rejected/Unsupported)` latches across Client clones, wakes waiting
 calls and prevents further connector/setup invocation. Legacy login maps a valid
-opcode-255 rejection to terminal Rejected. The supervisor retains bounded lifecycle
-bookkeeping until stop; `state()` need not show a dedicated authentication state.
-`authentication_failure()` exposes the latch. Stop takes precedence over the latch.
+opcode-255 rejection to terminal Rejected. Etherbird publishes `ResourceState::Failed`
+and performs bounded teardown. `authentication_failure()` reads the framework cause;
+Client maps authentication lifecycle errors to the existing public
+Operation(Authentication) result. Stop takes precedence over the latch.
+After stop the framework cause may be absent.
 Changing credentials/strategy requires awaited stop and a new immutable Client.
 Stop is local disconnect, not an invented wire logout. Explicit on-wire logout,
 enhanced procedures and applicability metadata remain outstanding EXT-1 tasks.

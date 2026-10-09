@@ -45,7 +45,7 @@ trying again without changing setup cannot succeed.
 ## Errors and recovery
 
 Client methods return `etherbird::Error<rocsteady::Error>`. Use a direct Etherbird
-0.3.1 dependency if naming that type in your application; the pool feature matches
+0.4.1 dependency if naming that type in your application; the pool feature matches
 rocsteady. Matching ErrorKind avoids tying application policy to each new variant.
 
 ```rust
@@ -64,6 +64,7 @@ fn next_action(error: &etherbird::Error<Error>) -> &'static str {
         etherbird::Error::Timeout => "overall deadline elapsed; remote outcome may be unknown",
         etherbird::Error::Queue(_) => "reduce concurrent work or apply application backpressure",
         etherbird::Error::Stopped => "this client cannot restart",
+        etherbird::Error::Lifecycle(_) => "inspect the terminal lifecycle cause",
     }
 }
 assert_eq!(next_action(&etherbird::Error::Operation(Error::InvalidRequest("fixture"))),
@@ -77,8 +78,10 @@ queued or after send, so the error alone does not establish remote completion.
 ownership and the whole workflow. A cancelled scope retires its generation.
 
 Setup Authentication errors latch across clones. `authentication_failure()` reports
-the reason, and pending/subsequent calls fail promptly. The supervisor may continue
-bounded lifecycle bookkeeping, but no further connector or setup invocation occurs.
+the reason, and pending/subsequent calls fail promptly. Etherbird publishes Failed
+and suspends further connector/setup attempts while bounded teardown completes.
+Client maps the typed lifecycle authentication cause to the existing
+`Error::Operation(Error::Authentication(_))` result for compatibility.
 Registration is immutable: await `stop()` and construct a new Client to change
 credentials or strategy. Stop takes precedence over the latched failure. Stop
 closes the local channel; no unspecified device logout command is invented. A raw

@@ -16,7 +16,7 @@ serial = ["dep:tokio-serial"]
 simulator = []
 
 [dependencies]
-etherbird = { version = "0.3.1", features = ["pool"] }
+etherbird = { version = "0.4.1", features = ["pool"] }
 tokio = { version = "1", features = ["io-util", "net", "sync", "time"] }
 tokio-serial = { version = "5.5", optional = true }
 thiserror = "2"

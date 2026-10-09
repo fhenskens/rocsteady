@@ -411,39 +411,40 @@ from hardware evidence.
 
 ## Adopt upstream Etherbird lifecycle improvements
 
-Status: open; current dependency remains published Etherbird 0.3.1. Upstream work
-is recorded in Etherbird's `docs/OUTSTANDING_WORK.md` under EB-ROC-1 through
-EB-ROC-4, informed by this alpha implementation. These are requested features,
-not capabilities already available in the dependency.
+Status: implemented locally against published Etherbird 0.4.1. Supported-platform
+CI and the next Rocsteady release remain pending. Framework release:
+[Etherbird 0.4.1](https://github.com/fhenskens/etherbird/releases/tag/v0.4.1).
 
-- [ ] Track EB-ROC-1: non-retryable lifecycle failures. Once a published version
-  provides the required fail-fast readiness/admission semantics, replace Client's
-  authentication watch/latch and connector gate with that upstream policy while
-  retaining credential-free errors, immutable registration and stop precedence.
-- [ ] Track EB-ROC-2: operation failure classification. Replace
-  `preserve_device_error`'s nested-result workaround with upstream retain/recover
-  classification when supported. Valid device rejections and local validation must
-  stay healthy; malformed replies and interrupted exchanges must still retire.
-- [ ] Track EB-ROC-3: configuration validation. Delegate Etherbird lifecycle
-  deadline/backoff checks to its validated configuration API, preserving rocsteady's
-  address, queue, heartbeat and call/wire timeout validation. Review zero-duration
-  semantics and error compatibility rather than assuming they match.
-- [ ] Track EB-ROC-4: resource retention after shutdown. Adopt/document the upstream
-  retention contract and verify that awaited shutdown releases internal references
-  as specified. Keep Session's explicit generation-state/stream cleanup: external
-  handles can retain objects, and dropping an object is not a secret-erasure guarantee.
-- [ ] Upgrade Cargo.toml/Cargo.lock to a published Etherbird version delivering the
-  chosen features; do not switch consumers to a sibling path dependency.
-- [ ] Re-run external/package-consumer, authentication, healthy rejection, malformed
-  decoding, generation-state destruction, cancellation, queue/deadline, recovery,
-  no-replay and awaited-stop regressions on Windows/Linux/macOS and Rust 1.88.
-- [ ] Update MANAGED_EXTENSIONS.md, USAGE.md, DEPENDENCIES.md, RELEASE.md and the
-  changelog with actual adopted APIs, versions and evidence. Mark each item complete
-  only after its implementation is released upstream and integrated here.
+- [x] EB-ROC-1: framework terminal lifecycle failures replace the authentication
+  latch/gate. Credential-free errors, immutable registration and stop precedence remain.
+- [x] EB-ROC-2: retain/recover operation policies replace nested healthy results.
+  Healthy device/local errors retain the session; malformed/interrupted exchanges retire.
+- [x] EB-ROC-3: delegate framework backoff validation and use checked pool construction;
+  retain ROC address, queue, heartbeat, call/wire and positive hook deadline policies.
+- [x] EB-ROC-4: adopt post-stop cache/entry release; keep explicit Session stream/state
+  teardown. External handles and abandoned hooks may still retain objects.
+- [x] Replace the local FIFO with BoundedFifoQueue and the call timeout/shutdown wrapper
+  with connected_with_timeout/execute_with_timeout. Preserve authentication error mapping.
+- [x] Use registry 0.4.1 in Cargo.toml/Cargo.lock and independent consumer scripts.
+- [x] Update guides, dependency audit and changelog with actual adopted APIs.
+- [ ] Complete Linux/macOS supported-platform CI for this Rocsteady migration.
+- [ ] Publish the next Rocsteady release after its own release review.
 
-Managed ROC exchanges, contextual decoders, heartbeat/reader coordination and
-remote-handle semantics remain rocsteady responsibilities.
+Windows stable and Rust 1.88 pass 44 tests and nine doctests against registry 0.4.1;
+strict Clippy, fixture examples, package verification and the extracted-package
+consumer pass. The shutdown ownership regression checks cache/entry release,
+retained external handles and closed sessions. Cargo.lock records a registry checksum
+with no path override. Queue cancellation pruning and active-job destruction are
+asynchronous; awaited stop drains tracked jobs. Calls never replay.
 
+Etherbird's exact release commit 7a9e63d4cbba7098d4f0a093a8a14b4f0619d60a passed
+[cross-platform CI](https://github.com/fhenskens/etherbird/actions/runs/37925614763)
+and [real MQTT broker verification](https://github.com/fhenskens/etherbird/actions/runs/37925880687)
+before publication. Those results validate Etherbird, not the pending Rocsteady matrix.
+
+ROC framing/codecs, authentication procedures, heartbeat/reader coordination,
+exchange/workflow cancellation poisoning and generation/remote-handle rules remain
+here. Framework completion does not close outstanding protocol/extension work.
 ## Recommended next slice
 
 Continue M0-E: the first managed slice is implemented (see

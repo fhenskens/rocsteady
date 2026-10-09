@@ -196,7 +196,7 @@ Use `Client::request` only when raw payload interpretation belongs to your calle
 
 A workflow holds one generation across all its exchanges. Competing clones and
 heartbeats cannot consume its responses. This builds on the `ClockYear` operation
-above; add Etherbird 0.3.1 as a dependency for its async-trait re-export.
+above; add Etherbird 0.4.1 as a dependency for its async-trait re-export.
 
 ```rust,no_run
 use rocsteady::{Client, Error, ManagedContext, Workflow};

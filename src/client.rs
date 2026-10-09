@@ -7,12 +7,12 @@ use crate::{
     transport::{Connector, SharedConnector, TcpConnector},
 };
 use etherbird::{
-    Config, Lifecycle, LifecycleFuture, OperationQueue, Pool, PoolConfig, QueueError, Supervisor,
+    BoundedFifoQueue, Config, Lifecycle, LifecycleFuture, Pool, PoolConfig, Supervisor,
 };
-use std::{collections::VecDeque, future::Future, sync::Arc, time::Duration};
+use std::{future::Future, sync::Arc, time::Duration};
 use tokio::{
     sync::{broadcast, watch},
-    time::{sleep, timeout},
+    time::sleep,
 };
 
 /// Response deadline starts after stream acquisition. Call deadline includes queueing/setup/recovery.
@@ -27,6 +27,40 @@ pub struct ClientConfig {
     pub crc_mode: CrcMode,
     pub queue_capacity: usize,
     pub recovery: Config,
+}
+
+#[cfg(all(test, feature = "simulator"))]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn awaited_stop_releases_caches_but_external_handle_retains_closed_session() {
+        let server = crate::simulator::Simulator::bind(
+            "127.0.0.1:0".parse().unwrap(),
+            crate::simulator::Model::default(),
+        )
+        .await
+        .unwrap();
+        let client = Client::tcp(
+            server.endpoint().to_string(),
+            ClientConfig {
+                heartbeat_interval: None,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        client.connected().await.unwrap();
+        let handle = client.pool.resources().pop().unwrap();
+        let weak = Arc::downgrade(handle.resource());
+        client.stop().await;
+        assert!(client.pool.resources().is_empty());
+        assert!(client.pool.supervisors().is_empty());
+        assert!(!handle.resource().is_connected());
+        assert!(weak.upgrade().is_some());
+        drop(handle);
+        assert!(weak.upgrade().is_none());
+        server.stop().await.unwrap();
+    }
 }
 impl Default for ClientConfig {
     fn default() -> Self {
@@ -52,16 +86,12 @@ struct Hooks {
     config: ClientConfig,
     setup: Arc<dyn crate::SetupStrategy>,
     events: broadcast::Sender<Frame>,
-    authentication: watch::Sender<Option<crate::AuthenticationFailure>>,
 }
 #[etherbird::async_trait]
 impl Lifecycle for Hooks {
     type Resource = Session;
     type Error = Error;
     async fn create(&self) -> Result<Session, Error> {
-        if let Some(failure) = *self.authentication.borrow() {
-            return Err(Error::Authentication(failure));
-        }
         // Fresh stream on every generation, bounded by Etherbird create timeout.
         let stream = self.connector.connect().await?;
         Session::with_events(
@@ -78,13 +108,7 @@ impl Lifecycle for Hooks {
     }
     async fn setup(&self, session: &Session) -> Result<(), Error> {
         let mut context = session.managed().await;
-        let state = match self.setup.setup(&mut context).await {
-            Err(Error::Authentication(failure)) => {
-                self.authentication.send_replace(Some(failure));
-                return Err(Error::Authentication(failure));
-            }
-            result => result?,
-        };
+        let state = self.setup.setup(&mut context).await?;
         if !session.is_connected() {
             return Err(Error::Disconnected);
         }
@@ -119,6 +143,20 @@ impl Lifecycle for Hooks {
             }
         }))
     }
+    fn lifecycle_failure(&self, error: &Error) -> etherbird::LifecycleFailurePolicy {
+        if matches!(error, Error::Authentication(_)) {
+            etherbird::LifecycleFailurePolicy::Fail
+        } else {
+            etherbird::LifecycleFailurePolicy::Retry
+        }
+    }
+    fn operation_failure(&self, error: &Error) -> etherbird::OperationFailurePolicy {
+        if error.preserves_connection() {
+            etherbird::OperationFailurePolicy::Retain
+        } else {
+            etherbird::OperationFailurePolicy::Recover
+        }
+    }
     fn is_expected(&self, error: &Error) -> bool {
         matches!(
             error,
@@ -126,29 +164,6 @@ impl Lifecycle for Hooks {
         )
     }
 }
-struct BoundedFifo<T> {
-    items: VecDeque<T>,
-    capacity: usize,
-}
-impl<T: Send> OperationQueue<T> for BoundedFifo<T> {
-    fn push(&mut self, item: T) -> Result<(), QueueError> {
-        if self.items.len() >= self.capacity {
-            return Err(QueueError::Full);
-        }
-        self.items.push_back(item);
-        Ok(())
-    }
-    fn pop(&mut self) -> Option<T> {
-        self.items.pop_front()
-    }
-    fn len(&self) -> usize {
-        self.items.len()
-    }
-    fn retain(&mut self, predicate: &mut dyn FnMut(&T) -> bool) {
-        self.items.retain(predicate);
-    }
-}
-
 /// Stable client clones share one supervised, exclusively accessed channel.
 /// Operations run once. A failure may still have taken effect remotely.
 #[derive(Clone)]
@@ -156,7 +171,6 @@ pub struct Client {
     pool: Pool<Hooks>,
     call_timeout: Duration,
     events: broadcast::Sender<Frame>,
-    authentication: watch::Sender<Option<crate::AuthenticationFailure>>,
 }
 impl Client {
     pub fn tcp(endpoint: impl Into<String>, config: ClientConfig) -> Result<Self, Error> {
@@ -188,44 +202,42 @@ impl Client {
             || config.recovery.create_timeout.is_some_and(|d| d.is_zero())
             || config.recovery.created_timeout.is_some_and(|d| d.is_zero())
             || config.recovery.destroy_timeout.is_some_and(|d| d.is_zero())
-            || config.recovery.retry_delay.is_zero()
-            || config.recovery.max_retry_delay < config.recovery.retry_delay
         {
             return Err(Error::InvalidConfig(
                 "invalid addresses, capacity or deadlines",
             ));
         }
+        // Preserve the public error shape and our stricter positive hook deadlines.
+        config
+            .recovery
+            .validate()
+            .map_err(|_| Error::InvalidConfig("invalid addresses, capacity or deadlines"))?;
         if config.recovery.create_timeout.is_none() {
             config.recovery.create_timeout = Some(config.recovery.connect_timeout);
         }
         let (events, _) = broadcast::channel(32);
-        let authentication = watch::channel(None).0;
         let hooks = Hooks {
             connector,
             config: config.clone(),
             setup,
             events: events.clone(),
-            authentication: authentication.clone(),
         };
         let recovery = config.recovery.clone();
         let capacity = config.queue_capacity;
-        let pool = Pool::new_with_queue_factory(
+        let pool = Pool::try_new_with_queue_factory(
             move || Supervisor::new(hooks.clone(), recovery.clone()),
             PoolConfig {
                 min_size: 1,
                 max_size: 1,
                 ..PoolConfig::default()
             },
-            move || BoundedFifo {
-                items: VecDeque::new(),
-                capacity,
-            },
-        );
+            move || BoundedFifoQueue::new(capacity),
+        )
+        .map_err(|_| Error::InvalidConfig("invalid pool configuration"))?;
         Ok(Self {
             pool,
             call_timeout: config.call_timeout,
             events,
-            authentication,
         })
     }
     pub fn state(&self) -> etherbird::ResourceState {
@@ -239,44 +251,29 @@ impl Client {
         self.events.subscribe()
     }
     pub async fn connected(&self) -> Result<(), etherbird::Error<Error>> {
-        self.pool.begin();
-        self.wait_managed(self.pool.connected()).await
+        self.map_lifecycle_error(self.pool.connected_with_timeout(self.call_timeout))
+            .await
     }
     /// Terminal setup failure, shared by clones. It cannot be cleared in place.
+    /// Awaited stop releases the pool entries and may clear this diagnostic.
     pub fn authentication_failure(&self) -> Option<crate::AuthenticationFailure> {
-        *self.authentication.borrow()
+        self.pool.failure().and_then(|cause| match cause.as_ref() {
+            Error::Authentication(failure) => Some(*failure),
+            _ => None,
+        })
     }
-    async fn wait_managed<T>(
+    async fn map_lifecycle_error<T>(
         &self,
         work: impl Future<Output = Result<T, etherbird::Error<Error>>>,
     ) -> Result<T, etherbird::Error<Error>> {
-        let mut authentication = self.authentication.subscribe();
-        let mut stopping = self.pool.stopped();
-        let failure = async {
-            loop {
-                if let Some(failure) = *authentication.borrow_and_update() {
-                    return etherbird::Error::Operation(Error::Authentication(failure));
+        match work.await {
+            Err(etherbird::Error::Lifecycle(cause)) => match cause.as_ref() {
+                Error::Authentication(failure) => {
+                    Err(etherbird::Error::Operation(Error::Authentication(*failure)))
                 }
-                if authentication.changed().await.is_err() {
-                    return etherbird::Error::Operation(Error::Disconnected);
-                }
-            }
-        };
-        let stopped = async {
-            loop {
-                if *stopping.borrow_and_update() {
-                    return;
-                }
-                if stopping.changed().await.is_err() {
-                    return;
-                }
-            }
-        };
-        tokio::select! {
-            biased;
-            _ = stopped => Err(etherbird::Error::Stopped),
-            error = failure => Err(error),
-            result = timeout(self.call_timeout, work) => result.map_err(|_| etherbird::Error::Timeout)?,
+                _ => Err(etherbird::Error::Lifecycle(cause)),
+            },
+            result => result,
         }
     }
     pub async fn stop(&self) {
@@ -290,8 +287,9 @@ impl Client {
     ) -> Result<O::Output, etherbird::Error<Error>> {
         let (opcode, data) = operation.encode().map_err(etherbird::Error::Operation)?;
         validate_request(opcode, &data).map_err(etherbird::Error::Operation)?;
-        let result = self
-            .wait_managed(self.pool.execute(move |session| async move {
+        self.map_lifecycle_error(self.pool.execute_with_timeout(
+            self.call_timeout,
+            move |session| async move {
                 let mut context = session.managed().await;
                 let result = context
                     .session
@@ -300,18 +298,19 @@ impl Client {
                     })
                     .await;
                 context.complete = true;
-                preserve_device_error(result)
-            }))
-            .await?;
-        result.map_err(etherbird::Error::Operation)
+                result
+            },
+        ))
+        .await
     }
     /// call_timeout covers admission and the entire workflow; response_timeout bounds each exchange.
     pub async fn workflow<W: crate::Workflow>(
         &self,
         workflow: W,
     ) -> Result<W::Output, etherbird::Error<Error>> {
-        let result = self
-            .wait_managed(self.pool.execute(move |session| async move {
+        self.map_lifecycle_error(self.pool.execute_with_timeout(
+            self.call_timeout,
+            move |session| async move {
                 let mut context = session.managed().await;
                 let result = workflow.run(&mut context).await;
                 if result
@@ -328,10 +327,10 @@ impl Client {
                 if healthy_result && !session.is_connected() {
                     return Err(Error::Disconnected);
                 }
-                preserve_device_error(result)
-            }))
-            .await?;
-        result.map_err(etherbird::Error::Operation)
+                result
+            },
+        ))
+        .await
     }
     /// Low-level escape hatch for single unicast exchanges. Payload interpretation is caller-owned.
     pub async fn request(
@@ -340,28 +339,31 @@ impl Client {
         data: Vec<u8>,
     ) -> Result<Vec<u8>, etherbird::Error<Error>> {
         validate_request(opcode, &data).map_err(etherbird::Error::Operation)?;
-        let result = self
-            .wait_managed(self.pool.execute(move |session| async move {
-                preserve_device_error(session.request(opcode, data).await)
-            }))
-            .await?;
-        result.map_err(etherbird::Error::Operation)
+        self.map_lifecycle_error(
+            self.pool
+                .execute_with_timeout(self.call_timeout, move |session| async move {
+                    session.request(opcode, data).await
+                }),
+        )
+        .await
     }
     pub async fn read_configuration(&self) -> Result<SystemConfiguration, etherbird::Error<Error>> {
-        let result = self
-            .wait_managed(self.pool.execute(|session| async move {
-                preserve_device_error(session.read_configuration().await)
-            }))
-            .await?;
-        result.map_err(etherbird::Error::Operation)
+        self.map_lifecycle_error(
+            self.pool
+                .execute_with_timeout(self.call_timeout, |session| async move {
+                    session.read_configuration().await
+                }),
+        )
+        .await
     }
     pub async fn read_clock(&self) -> Result<Clock, etherbird::Error<Error>> {
-        let result = self
-            .wait_managed(self.pool.execute(|session| async move {
-                preserve_device_error(session.read_clock().await)
-            }))
-            .await?;
-        result.map_err(etherbird::Error::Operation)
+        self.map_lifecycle_error(
+            self.pool
+                .execute_with_timeout(self.call_timeout, |session| async move {
+                    session.read_clock().await
+                }),
+        )
+        .await
     }
     pub async fn read_parameters(
         &self,
@@ -369,32 +371,25 @@ impl Client {
     ) -> Result<Vec<Value>, etherbird::Error<Error>> {
         parameter_request(parameters).map_err(etherbird::Error::Operation)?;
         let parameters = parameters.to_vec();
-        let result = self
-            .wait_managed(self.pool.execute(move |session| async move {
-                preserve_device_error(session.read_parameters(&parameters).await)
-            }))
-            .await?;
-        result.map_err(etherbird::Error::Operation)
+        self.map_lifecycle_error(
+            self.pool
+                .execute_with_timeout(self.call_timeout, move |session| async move {
+                    session.read_parameters(&parameters).await
+                }),
+        )
+        .await
     }
     pub async fn read_parameter_block(
         &self,
         block: &ParameterBlock,
     ) -> Result<Vec<Value>, etherbird::Error<Error>> {
         let block = block.clone();
-        let result = self
-            .wait_managed(self.pool.execute(move |session| async move {
-                preserve_device_error(session.read_parameter_block(&block).await)
-            }))
-            .await?;
-        result.map_err(etherbird::Error::Operation)
-    }
-}
-// Device rejection is a successful exchange at the transport layer. It must not
-// force reconnect/login on a healthy session; retain the original protocol error.
-fn preserve_device_error<T>(result: Result<T, Error>) -> Result<Result<T, Error>, Error> {
-    match result {
-        Err(error) if error.preserves_connection() => Ok(Err(error)),
-        Err(error) => Err(error),
-        Ok(value) => Ok(Ok(value)),
+        self.map_lifecycle_error(
+            self.pool
+                .execute_with_timeout(self.call_timeout, move |session| async move {
+                    session.read_parameter_block(&block).await
+                }),
+        )
+        .await
     }
 }

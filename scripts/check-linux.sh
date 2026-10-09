@@ -19,7 +19,7 @@ version = "0.0.0"
 edition = "2024"
 [dependencies]
 rocsteady = { path = "/tmp/rocsteady-target/package/rocsteady-$package_version", features = ["serial", "simulator"] }
-etherbird = { version = "0.3.1", features = ["pool"] }
+etherbird = { version = "0.4.1", features = ["pool"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 EOF
 cp scripts/package-consumer.rs "$consumer/src/main.rs"

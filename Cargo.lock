@@ -61,9 +61,9 @@ checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 
 [[package]]
 name = "etherbird"
-version = "0.3.1"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40bf0401bb5ee62e4e4a2a7684acdbfa68ee24b400d8df04f185e95ac1d8f62c"
+checksum = "c1a540c44be41afa10ffb179ed41647152d7cd1ea08373386fea78b118197233"
 dependencies = [
  "async-trait",
  "tokio",

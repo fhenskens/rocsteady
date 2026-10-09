@@ -6,7 +6,14 @@ scope, not full EXT-1/4/5 acceptance or the complete specification backlog.
 
 ## API and compatibility policy
 
-Rust minimum: 1.88. Etherbird: published 0.3.1 with pool; Tokio: compatible 1.x.
+The working tree adopts Etherbird 0.4.1 for the next release; published
+0.1.0-alpha.1 used 0.3.1. The evidence below describes that original release.
+Migration checks on Windows pass on stable and Rust 1.88: all 43 regression tests plus a shutdown ownership test,
+9 doctests, strict Clippy, fixture examples and extracted-package consumer.
+Linux/macOS validation of this migration remains pending the existing CI matrix;
+the local Docker daemon is unavailable. This change has not been published.
+
+Rust minimum: 1.88. Etherbird: published 0.4.1 with pool; Tokio: compatible 1.x.
 Cargo.lock pins the validated versions. Consumers may resolve newer compatible
 dependencies; re-run framework tests before updating the lockfile. All public APIs
 are experimental before 1.0: breaking changes require a minor version increase;
