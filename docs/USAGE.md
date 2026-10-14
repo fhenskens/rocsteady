@@ -1,11 +1,9 @@
 # Using the experimental monitoring client
 
-This guide describes the unreleased 0.1.0 candidate. All releases below 1.0 are
-experimental. Published 0.1.0-alpha.1 has
-configuration, clock and parameter reads, legacy login and device errors. The
-unreleased update adds explicit profiles, discovery, schema-backed catalog reads,
-alarm/event retrieval and opt-in SRBX polling/acknowledgement. Use a checkout for
-those additions. Acknowledgement explicitly changes controller SRBX status.
+This guide describes published 0.1.0. All releases below 1.0 are experimental.
+Built-ins include configuration/clock/parameter reads, legacy login, explicit
+profiles, discovery, schema-backed catalog reads, alarm/event retrieval and opt-in
+SRBX polling/acknowledgement. Acknowledgement explicitly changes controller status.
 
 Configure addresses, credentials, firmware applicability and parameter types from
 the actual controller. Physical device/serial compatibility remains unverified.

@@ -33,8 +33,8 @@ application-provided byte streams use the same protocol implementation.
 - **State and shutdown:** optional heartbeats detect idle failure, state notifications
   report changes, and awaited shutdown cancels/drains work and closes the channel.
 
-Use the current stable Rust toolchain. The next release is `0.1.0`; it is not yet
-published. Use a checkout until publication. All releases below 1.0 are experimental
+Use the current stable Rust toolchain. Version `0.1.0` is available on crates.io.
+All releases below 1.0 are experimental
 and may have incomplete protocol coverage; see the scope below.
 
 ```toml
@@ -52,13 +52,12 @@ for ownership, cancellation and generation lifetimes.
 
 ## Scope and validation
 
-The published alpha scope is read-only: configuration discovery, clock and parameter
-reads, legacy login and device errors. The working tree also includes typed alarm/event
-retrieval with bounded pages and explicit checkpoints, plus opt-in idle SRBX polling
-and explicit consumed-alarm acknowledgements. Acknowledgement changes controller
-SRBX status; it is never automatic. The working tree adds explicit profiles,
-contextual reply codecs, discovery services and schema providers with bounded reads; see the
-[extension contracts](docs/MANAGED_EXTENSIONS.md). These additions are unreleased.
+Version 0.1.0 supports configuration discovery, clock/parameter reads, legacy
+login and device errors, typed alarm/event retrieval with bounded pages and
+explicit checkpoints, plus opt-in idle SRBX polling and explicit consumed-alarm
+acknowledgement. Acknowledgement changes controller SRBX status; it is never
+automatic. Explicit profiles, contextual codecs, discovery and bounded schema reads
+are covered by the [extension contracts](docs/MANAGED_EXTENSIONS.md).
 The [catalog](docs/CATALOG.md) contains 130 ROC800 parameters, including every discrete-input and analog-input read width, plus clock, port and module fields.
 Remaining catalog tables, enhanced login and typed writes, history, automatic durable alarm delivery, files
 and routing remain unavailable. Raw/custom
@@ -66,8 +65,8 @@ operations can perform side effects; they are not automatically replayed.
 
 Local macOS/stable validation passes 122 all-feature tests, 14 doctests, strict
 Clippy, fixture examples, package verification and an extracted-package consumer.
-Stable Windows/Linux/macOS CI is configured; hosted validation of the new release
-commit remains pending. Published alpha.1 passed its historical six-job matrix.
+The user confirmed stable Windows/Linux/macOS CI passed for release commit
+`2c43da0`. See the release record for the evidence source.
 Physical ROC hardware and actual serial exchanges have not been validated. The simulator
 is a deterministic fault-injection fixture, not a full ROC800 emulator.
 
@@ -101,10 +100,10 @@ cargo run --locked --features simulator --example authenticated_setup
 # Public extension APIs with an independent fixture peer:
 cargo run --locked --example managed_extensions
 
-# Explicit profiles and schema-backed batches (working tree):
+# Explicit profiles and schema-backed batches:
 cargo run --locked --example schema_profiles
 
-# Discovery and the built-in catalog (working tree):
+# Discovery and the built-in catalog:
 cargo run --locked --example discovery_catalog
 
 # Alarm/event windows, checkpoint resume and explicit SRBX handling:

@@ -1,15 +1,14 @@
 # Experimental monitoring release checklist
 
-## Current assessment — 0.1.0 candidate, 2026-10-14
+## Published 0.1.0 — 2026-10-15
 
-The unreleased tree is a substantial feature update over published
+[Version 0.1.0](https://crates.io/crates/rocsteady/0.1.0) is a substantial feature update over
 [0.1.0-alpha.1](https://crates.io/crates/rocsteady/0.1.0-alpha.1): discovery,
 schema-backed reads, a 130-parameter ROC800 catalog, typed alarm/event retrieval,
-and explicit SRBX polling and consumed-alarm acknowledgement. It is suitable for
-an experimental monitoring release after the release gates below. It does not
-claim complete ROC Plus coverage or physical-controller interoperability.
+and explicit SRBX polling and consumed-alarm acknowledgement. This experimental
+monitoring release does not claim complete ROC Plus coverage or physical-controller interoperability.
 
-Published alpha.1 remains the original read-only release. The current tree adds
+Published alpha.1 remains the original read-only release. Version 0.1.0 adds
 opcode-225 acknowledgement, which changes controller SRBX status only when the
 caller explicitly requests it. Nothing automatically acknowledges or replays work.
 See [CHANGELOG](../CHANGELOG.md), [coverage](COVERAGE.md), [catalog](CATALOG.md)
@@ -29,9 +28,9 @@ Supply it explicitly or use `..Default::default()` to retain default behavior.
 Releases use ordinary `0.x.y` versions without alpha/beta suffixes. All versions
 below 1.0 are experimental and may have incomplete protocol coverage or unverified
 hardware compatibility. Breaking API changes use a new minor version; compatible
-additions and fixes use patch releases. The first ordinary release candidate is
+additions and fixes use patch releases. The first ordinary release is
 **0.1.0**, following the historical 0.1.0-alpha.1 prerelease. Cargo.toml and
-Cargo.lock now carry 0.1.0; it has not been published.
+Cargo.lock carry published version 0.1.0.
 Error and ErrorKind are non-exhaustive; callers must include fallback match arms.
 
 ## Current software evidence
@@ -56,18 +55,24 @@ signals, newer alarms, rollover, lost acknowledgements, cancellation and no repl
 Matching anchors do not prove durable gap-free continuity. A confirmed empty
 acknowledgement proves receipt, not that SRBX pending status cleared.
 
-CI is configured for stable Linux/macOS/Windows, but the exact new release commit
-has not yet passed that hosted matrix. Local evidence does not establish Windows
-PowerShell runtime success or physical serial/controller compatibility. Serial
-support compiles; actual serial exchanges and physical-controller tests remain
-follow-up evidence, not blockers for an explicitly unverified experimental release.
+The user confirmed hosted stable Linux/macOS/Windows CI passed for exact release
+commit `2c43da00b72ef251a94e87ca84425b20ac3740ae` on 2026-10-15. This is user-reported
+hosted evidence: the agent could not independently inspect the private Actions
+results because GitHub API authentication was unavailable. A clean-commit
+`cargo publish --dry-run --locked --all-features` passed, followed by successful
+publication and annotated tag `v0.1.0`. The downloaded crates.io archive's VCS
+metadata matches that exact clean commit. A GitHub release page remains pending
+API authentication; prepared notes are represented by the changelog.
+
+Serial support compiles; actual serial exchanges and physical-controller tests
+remain follow-up evidence for compatibility claims.
 The simulator is a deterministic fixture rather than a complete controller emulator.
 
 Upstream etherbird's [0.4.2 release CI](https://github.com/fhenskens/etherbird/actions/runs/38539621339)
 and [subsequent cleanup CI](https://github.com/fhenskens/etherbird/actions/runs/38547036690)
 passed seven jobs each. Those runs do not validate this rocsteady candidate.
 
-## Current candidate gates
+## Release gates
 
 - [x] Scope, unsupported services and physical-validation limitations disclosed.
 - [x] Explicit SRBX effects, acknowledgement outcomes, checkpoint limitations and
@@ -79,10 +84,11 @@ passed seven jobs each. Those runs do not validate this rocsteady candidate.
 - [x] Select ordinary experimental version 0.1.0 and update Cargo.toml/Cargo.lock.
 - [x] Review the final 0.1.0 package payload: 70 files, resolving local Markdown
   links and no excluded secret/build paths.
-- [ ] Commit and push the complete candidate; pass stable Linux/macOS/Windows CI
-  for that exact commit, including the PowerShell consumer.
-- [ ] Run `cargo publish --dry-run --locked --all-features` from the clean release
-  commit, then publish/tag/create release notes when authorized.
+- [x] Commit/push the candidate; user confirmed hosted stable Linux/macOS/Windows
+  CI passed for the release commit.
+- [x] Clean-commit publication dry-run, crates.io publication, pushed annotated tag
+  and downloaded-package commit verification.
+- [ ] Create the GitHub release page when API authentication is available.
 - [ ] Record model, firmware, security mode and independent Ethernet/serial results
   before making production compatibility claims (experimental-release follow-up).
 

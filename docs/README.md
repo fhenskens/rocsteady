@@ -38,11 +38,11 @@ same contracts, so callers can replace them with their own implementations.
 Work plans do not replace the vendor wire specification. The research records
 explain evidence and its limitations; they do not establish hardware compatibility.
 
-For the current monitoring candidate, see [usage and errors](USAGE.md),
+For published 0.1.0, see [usage and errors](USAGE.md),
 [managed API contracts](MANAGED_EXTENSIONS.md), [release evidence](RELEASE.md)
 and the [dependency/license inventory](DEPENDENCIES.md). Hosted Windows/Linux/macOS
-CI passed for published alpha.1; the new monitoring candidate has local software
-evidence and awaits its own hosted run. Physical controller evidence remains pending.
+CI for 0.1.0 was confirmed by the user; the release record distinguishes this
+from independently observed local checks. Physical controller evidence remains pending.
 
 ## Working on a slice
 

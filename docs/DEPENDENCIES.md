@@ -12,7 +12,7 @@ checks before publication are separate from registry package/consumer evidence.
 
 Other direct dependencies: Tokio 1.53.2 (MIT), thiserror 2.0.21
 (MIT OR Apache-2.0), optional tokio-serial 5.5.0 (MIT). Current macOS/stable tests
-and registry-package consumer checks pass; hosted candidate checks are tracked in
+and registry-package consumer checks pass; user-confirmed hosted release checks are recorded in
 [RELEASE.md](RELEASE.md). Earlier stable/MSRV results are historical evidence.
 Serial adds serialport 4.10.1 (MPL-2.0); retain its original source/license
 notices if redistributing that dependency. unescaper permits MIT as an alternative

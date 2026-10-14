@@ -54,11 +54,11 @@ blocked requirements visible rather than treating them as complete.
 
 Published **0.1.0-alpha.1** on 2026-10-09 after successful stable/MSRV hosted CI
 on Windows, Linux and macOS; see [release evidence](RELEASE.md). That release used
-etherbird 0.3.1. The current unreleased update uses registry etherbird 0.4.2 and
+etherbird 0.3.1. Published 0.1.0 (2026-10-15) uses registry etherbird 0.4.2 and
 adds profiles/codecs, schema-backed reads, discovery, a 130-parameter catalog,
 alarm/event retrieval and explicit SRBX polling/acknowledgement. Current local
 software and package evidence is recorded in [RELEASE.md](RELEASE.md); hosted
-stable-platform checks for the complete candidate remain pending.
+stable-platform checks for release commit `2c43da0` were confirmed by the user.
 Current development supports stable Rust; the historical 1.88 validation is not
 an ongoing compatibility requirement.
 The independent TCP fixture includes a
@@ -101,7 +101,7 @@ external extension examples are runnable; serial remains compilation-only.
 - [ ] Implement schema-aware write planning alongside the typed write/outcome work (M4).
 - [ ] Complete remaining EXT-1 authentication applicability/logout and EXT-2
   device-specific presets supported by source evidence; do not invent disputed codecs.
-- [ ] Validate this working tree on the hosted platform matrix and review the next release.
+- [x] Release 0.1.0; user confirmed its hosted platform matrix passed.
 
 Profiles, firmware identity and layouts are explicitly caller-selected. Snapshot-derived
 catalogs/plans reject replacement generations. No automatic firmware discovery or new
@@ -463,7 +463,8 @@ from hardware evidence.
 
 Historical 0.4.1 migration record below. The current helper/refactor adoption
 uses published registry 0.4.2 and passes local stable suites, package and consumer
-checks; Rocsteady's hosted CI and next release remain pending. Framework release:
+checks. Rocsteady 0.1.0 is published; the user confirmed its hosted CI passed.
+Historical framework release:
 [etherbird 0.4.1](https://github.com/fhenskens/etherbird/releases/tag/v0.4.1).
 
 - [x] EB-ROC-1: framework terminal lifecycle failures replace the authentication
@@ -478,8 +479,8 @@ checks; Rocsteady's hosted CI and next release remain pending. Framework release
   with connected_with_timeout/execute_with_timeout. Preserve authentication error mapping.
 - [x] Use registry 0.4.1 in Cargo.toml/Cargo.lock and independent consumer scripts.
 - [x] Update guides, dependency audit and changelog with actual adopted APIs.
-- [ ] Complete Linux/macOS supported-platform CI for this Rocsteady migration.
-- [ ] Publish the next Rocsteady release after its own release review.
+- [x] Supported-platform CI confirmed by the user for 0.1.0 with registry 0.4.2.
+- [x] Publish rocsteady 0.1.0 after release review.
 
 Windows stable and Rust 1.88 pass 44 tests and nine doctests against registry 0.4.1;
 strict Clippy, fixture examples, package verification and the extracted-package

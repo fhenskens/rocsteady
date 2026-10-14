@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 — Unreleased
+## 0.1.0 — 2026-10-15
 
 - Add explicit protocol profiles, contextual reply codecs and replaceable
   configuration/clock/log decoding, with capability and payload-budget validation.
