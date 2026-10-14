@@ -1,6 +1,6 @@
 # Comprehensive implementation roadmap
 
-Status: open; refreshed 2026-10-10 for profile/schema extensions and initial discovery/catalog support.
+Status: open; refreshed 2026-10-14 for the PT-136 clock catalog slice.
 This is the implementation backlog; [COVERAGE.md](COVERAGE.md) records current
 protocol support and [HARDWARE.md](HARDWARE.md) records channel validation.
 
@@ -11,7 +11,8 @@ Chapters 1-7**, including all services and parameter tables defined there.
 [Original Emerson manual](https://www.documentation.emersonprocess.com/groups/public/documents/instruction_manuals/d301180x012.pdf).
 Earlier ROC protocols, other firmware manuals and undocumented extensions require
 separate scope/evidence; a stale index reference is not a service definition.
-The published Etherbird crate remains the lifecycle dependency.
+The published etherbird crate is the lifecycle dependency. The architecture
+slice adopts registry 0.4.2 with no sibling path override.
 
 Delivery now prioritizes an **extensible client with verified defaults**. Users
 with additional device knowledge can supply authentication, protocol profiles,
@@ -53,14 +54,19 @@ blocked requirements visible rather than treating them as complete.
 
 Published **0.1.0-alpha.1** on 2026-10-09 after successful stable/MSRV hosted CI
 on Windows, Linux and macOS; see [release evidence](RELEASE.md). That release used
-Etherbird 0.3.1. The working tree uses published Etherbird 0.4.1 and now adds
+etherbird 0.3.1. The later migration adopted published etherbird 0.4.1; the current
+architecture slice adopts published 0.4.2 and adds
 explicit protocol profiles, contextual reply codecs, schema providers and bounded
-schema-backed reads. These changes have not been published; their Linux/macOS
-hosted validation remains pending. The independent TCP fixture includes a
+schema-backed reads. These changes have not been published; their hosted validation
+remains pending. Local macOS Rust 1.99 evidence for the clock slice is recorded in
+[RELEASE.md](RELEASE.md); hosted stable-platform checks remain pending.
+Current development supports stable Rust; the historical 1.88 validation is not
+an ongoing compatibility requirement.
+The independent TCP fixture includes a
 committed-effect counter proving lost acknowledgements do not trigger replay.
 
-Current all-feature software suite: **72 tests**, including 12 profile/schema
-cases and 16 discovery/catalog cases. No physical
+Current all-feature software suite: **78 tests**, including 12 profile/schema
+cases and 20 discovery/catalog cases. No physical
 controller or actual serial fixture has been tested. The loopback simulator and
 external extension examples are runnable; serial remains compilation-only.
 
@@ -77,6 +83,9 @@ external extension examples are runnable; serial remains compilation-only.
   checks and generation-bound I/O snapshots; keep DEC-3 contradictions explicit.
 - [x] Add the first 30 source-audited PT-91/101/103/109 catalog entries and independent
   TCP reads for every entry; demonstrate discovery-backed reads without manual types.
+- [x] Add all 20 PT-136 clock read widths, singleton addressing and source-based
+  firmware gates, with independent literals/TCP, simulator and consumer evidence.
+  Rich metadata/writes and the disputed end-week constraint remain open.
 - [ ] Expand catalog parameters/tables and independently verified device/firmware
   applicability and discovery/bootstrap policies (remaining M0/M1).
 - [ ] Implement schema-aware write planning alongside the typed write/outcome work (M4).
@@ -121,7 +130,7 @@ cross-platform CI and serial fixtures run alongside service development.
 
 | Milestone | Required work packages | Dependencies | Exit behavior |
 | --- | --- | --- | --- |
-| M0-E: extension platform | EXT-1 through EXT-5 in EXTENSIBILITY.md | Existing Session/Connector/Etherbird guarantees; explicit extension contracts | External consumers add auth, profiles, schemas and operations/workflows while managed ownership and recovery remain enforced |
+| M0-E: extension platform | EXT-1 through EXT-5 in EXTENSIBILITY.md | Existing Session/Connector/etherbird guarantees; explicit extension contracts | External consumers add auth, profiles, schemas and operations/workflows while managed ownership and recovery remain enforced |
 | M0: usable discovery and profiles | CORE-1/2/3 foundations; OP-6/7/17/50/100; dispositions for DEC-1/2/3/8 | M0-E; evidence for built-in behavior or explicit custom profile | Identify supported device/port/layout, select configured auth/readiness strategy, restore setup or report a missing capability |
 | M1: schema-backed parameter access | OP-167/180; schema infrastructure; foundation and basic I/O PT batches | M0 layout/version policy | Read common parameters without manually guessing types; distinguish missing, unsupported and rejected points |
 | M2: logs and spontaneous reporting | OP-118/119/224/225; applicable communication/system schemas | M0; index/error/time models | Consume all alarm/event variants with checkpoints and acknowledge only consumed alarms, including while idle |
@@ -385,7 +394,7 @@ test. Compilation and in-memory stream tests alone do not establish serial behav
   across replacement; invalidate caches whose identity no longer holds.
 - [x] Test exclusive ownership across compound workflows, with competing reads,
   heartbeat/unsolicited traffic, cancellation and stop from another clone.
-- [x] Keep Etherbird responsible for lifecycle/admission/shutdown and rocsteady
+- [x] Keep etherbird responsible for lifecycle/admission/shutdown and rocsteady
   responsible for protocol/session semantics; validate against its published crate.
 
 Completion: regression tests assert bounded outcomes and operation/setup counts,
@@ -417,7 +426,7 @@ matrix. Hardware-dependent tests should be explicitly opt-in; no-hardware CI rem
   Credentials, serial and state/events examples are delivered; log/history
   pagination examples remain blocked on their unimplemented typed services.
 - [x] Compile README and usage examples as library doctests, including context lifetime checks.
-- [x] Verify the declared Rust 1.88 minimum with default/all-feature/target/doctest
+- [x] Verify the historical Rust 1.88 minimum with default/all-feature/target/doctest
   checks on Windows and Linux; see [release evidence](RELEASE.md).
 - [x] Establish successful Linux/macOS/Windows CI results, including optional serial.
 - [x] Audit dependencies/licenses and packaged contents; validate cargo package.
@@ -429,7 +438,7 @@ matrix. Hardware-dependent tests should be explicitly opt-in; no-hardware CI rem
   files and routing; show state changes and explicit interrupted-operation outcomes.
   Read/authenticated-setup recovery is delivered; logs/history, files and routing
   remain future services. See [current examples](../README.md#concrete-examples).
-- [x] Establish dependency upgrade regression checks for the published Etherbird
+- [x] Establish dependency upgrade regression checks for the published etherbird
   crate, without requiring a sibling checkout for users or CI.
 - [ ] Document ownership and cancellation for pagers, file handles, subscriptions,
   routed clients and broadcast sends; give bounded defaults and useful errors.
@@ -440,11 +449,12 @@ Completion: a user can tell exactly which services, firmware and channels are
 supported, reproduce the documented examples, and distinguish simulator coverage
 from hardware evidence.
 
-## Adopt upstream Etherbird lifecycle improvements
+## Adopt upstream etherbird lifecycle improvements
 
-Status: implemented locally against published Etherbird 0.4.1. Supported-platform
-CI and the next Rocsteady release remain pending. Framework release:
-[Etherbird 0.4.1](https://github.com/fhenskens/etherbird/releases/tag/v0.4.1).
+Historical 0.4.1 migration record below. The current helper/refactor adoption
+uses published registry 0.4.2 and passes local stable suites, package and consumer
+checks; Rocsteady's hosted CI and next release remain pending. Framework release:
+[etherbird 0.4.1](https://github.com/fhenskens/etherbird/releases/tag/v0.4.1).
 
 - [x] EB-ROC-1: framework terminal lifecycle failures replace the authentication
   latch/gate. Credential-free errors, immutable registration and stop precedence remain.
@@ -464,30 +474,33 @@ CI and the next Rocsteady release remain pending. Framework release:
 Windows stable and Rust 1.88 pass 44 tests and nine doctests against registry 0.4.1;
 strict Clippy, fixture examples, package verification and the extracted-package
 consumer pass. The shutdown ownership regression checks cache/entry release,
-retained external handles and closed sessions. Cargo.lock records a registry checksum
-with no path override. Queue cancellation pruning and active-job destruction are
+retained external handles and closed sessions. That migration recorded a registry
+checksum with no path override; the newer 0.4.2 helper integration also uses the registry source.
+Queue cancellation pruning and active-job destruction are
 asynchronous; awaited stop drains tracked jobs. Calls never replay.
 
-Etherbird's exact release commit 7a9e63d4cbba7098d4f0a093a8a14b4f0619d60a passed
+etherbird's exact release commit 7a9e63d4cbba7098d4f0a093a8a14b4f0619d60a passed
 [cross-platform CI](https://github.com/fhenskens/etherbird/actions/runs/37925614763)
 and [real MQTT broker verification](https://github.com/fhenskens/etherbird/actions/runs/37925880687)
-before publication. Those results validate Etherbird, not the pending Rocsteady matrix.
+before publication. Those results validate etherbird, not the pending Rocsteady matrix.
 
 ROC framing/codecs, authentication procedures, heartbeat/reader coordination,
 exchange/workflow cancellation poisoning and generation/remote-handle rules remain
 here. Framework completion does not close outstanding protocol/extension work.
 ## Recommended next slice
 
-Continue M0-E: the first managed slice is implemented (see
-[contracts](MANAGED_EXTENSIONS.md)). Complete remaining authentication applicability/logout,
-remote-handle and lifecycle acceptance tasks, then add profiles and schema
-providers with external examples and failure/recovery tests. Catalogue each known
-ambiguity's extension disposition before committing to disputed built-in behavior.
+Profiles, schema providers, OP-50/100 discovery and the initial catalog are
+implemented (see [contracts](MANAGED_EXTENSIONS.md)); PT-136 now has all 20 read
+widths. Continue M0/M1 with a bounded source-audited PT-91/95/139 foundation slice
+and explicit location/applicability policies. Rich schema metadata and catalog
+consistency checks remain open; PT-136/17 needs evidence before selecting a range.
 
-Then continue OP-50/100 discovery and schema-backed reads using verified defaults
-or explicitly supplied profiles. Opcode 6 parsing is already implemented;
-automatic compatibility/security/readiness decisions remain open. Research and
-promotion of proven community solutions continue alongside service delivery.
+Alongside catalog work, complete remaining M0-E authentication applicability/logout,
+identity/cache and lifecycle acceptance, and validate the next release on the
+hosted stable-platform matrix. Automatic compatibility/security/readiness decisions
+remain open. Serial exchange fixtures and physical controller evidence can proceed
+independently. Do not wait for unresolved enhanced-security procedures to expand
+well-specified read-only services.
 
 A useful read-only release can precede complete protocol coverage if its advertised
 scope is explicit. Completing that release does not close the broader backlog.

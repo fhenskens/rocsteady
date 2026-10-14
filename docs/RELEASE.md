@@ -6,7 +6,34 @@ scope, not full EXT-1/4/5 acceptance or the complete specification backlog.
 
 ## API and compatibility policy
 
-The working tree adopts Etherbird 0.4.1 for the next release; published
+The architecture refactor uses published **etherbird 0.4.2** from crates.io.
+The sibling path has been removed and Cargo.lock records its registry checksum.
+The downloaded package's VCS commit matches release commit
+`d3431ea84920505a2de3214164b8f8eb82039d70`. Local pre-publication patched checks
+remain separate from the subsequent registry/package consumer checks.
+
+Registry adoption verified 2026-10-14 on macOS ARM64 / stable Rust 1.99:
+default tests, all 76 all-feature/target tests, 10 doctests, strict Clippy,
+formatting, package verification and the extracted-package external consumer
+pass with registry etherbird only. All other locked packages are unchanged.
+The etherbird release's seven Linux/macOS/Windows/serial jobs passed in
+[its hosted CI run](https://github.com/fhenskens/etherbird/actions/runs/38539621339);
+that upstream evidence is separate from Rocsteady's pending hosted checks.
+
+The subsequent decoder/template cleanup passes 78 all-feature/target tests,
+10 doctests, strict Clippy and the shell workflow's examples, package verification
+and generated consumer on macOS/stable. Both consumer runners now use
+`scripts/package-consumer.toml.in`; quoted-path substitutions are checked.
+PowerShell runtime execution remains a hosted Windows check.
+
+Shared operation preparation/decoding and parameter budgets retain the public
+API, managed ownership, local validation, healthy rejections and no replay.
+The generic RetireOnDrop helper is also used in etherbird's serial/Modbus examples.
+Current development supports stable Rust on Linux/macOS/Windows, with no fixed
+older-toolchain compatibility promise. The 1.88 entries below are historical
+release evidence. The hosted stable-platform matrix remains a follow-up gate.
+
+The previous migration adopted etherbird 0.4.1; published
 0.1.0-alpha.1 used 0.3.1. The evidence below describes that original release.
 Migration checks on Windows pass on stable and Rust 1.88: all 43 regression tests plus a shutdown ownership test,
 9 doctests, strict Clippy, fixture examples and extracted-package consumer.
@@ -30,14 +57,28 @@ and adds the discovery_catalog example to the hosted stable/MSRV matrix. Every
 one of the 30 initial catalog parameters has a source-derived literal and independent
 TCP read fixture. The packaged consumer exercises discovery, physical TLP mapping
 and the built-in provider using only public APIs. Source audit and final checks are
-recorded on 2026-10-10 (local date); hosted results for this uncommitted tree remain pending.
+recorded on 2026-10-10 (local date); hosted results for the unreleased changes remain pending.
+
+The 2026-10-14 PT-136 slice adds 20 clock catalog entries (50 total), with
+independent literals/TCP reads for every entry, 1.20/3.40 firmware gates, singleton
+location checks and raw TIME values. PT-136/17's disputed end-week range remains
+unspecified; full schema conformance, writes and hardware evidence remain open.
+The example and extracted-package consumer now exercise clock reads. A pre-existing
+setup test's scheduling race is removed by counting connector attempts directly
+rather than relying on the peer accept task having run.
+
+Local macOS ARM64 / stable Rust 1.99 validation for this slice: **76 tests** with
+all features/targets, **10 doctests**, strict Clippy and formatting, the
+discovery/catalog example, offline package verification and extracted-package
+consumer. This is local evidence, not hosted CI evidence for the new slice.
+Publication and the hosted stable-platform matrix remain pending.
 
 `ClientConfig.profile` is a new required field for exhaustive struct literals;
 existing configurations using `..Default::default()` keep the same default behavior.
 Review this experimental API addition under the pre-1.0 versioning policy before
 selecting the next release version. This working tree does not republish alpha.1.
 
-Rust minimum: 1.88. Etherbird: published 0.4.1 with pool; Tokio: compatible 1.x.
+Rust policy: current stable. Current etherbird: published registry 0.4.2 with pool; Tokio: compatible 1.x.
 Cargo.lock pins the validated versions. Consumers may resolve newer compatible
 dependencies; re-run framework tests before updating the lockfile. All public APIs
 are experimental before 1.0: breaking changes require a minor version increase;
@@ -109,7 +150,7 @@ the consumer live only in the container. Windows/package CI uses
 [dependency/license audit](DEPENDENCIES.md) for the locked inventory, serial MPL
 dependency and reviewed publication payload.
 
-The hosted workflow covers stable and 1.88.0 on Linux/macOS/Windows, including
+The historical hosted workflow covered stable and 1.88.0 on Linux/macOS/Windows, including
 examples and package consumer. All six jobs passed on candidate commit
 `d83cd1d59e7b0246f5417dfc904ac55ac60d9138`:
 [hosted validation run](https://github.com/fhenskens/rocsteady/actions/runs/37788381127).

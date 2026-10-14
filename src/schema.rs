@@ -83,7 +83,7 @@ impl ReadPlan {
         let response_limit = limits.response.min(crate::protocol::MAX_PARAMETER_RESPONSE);
         let mut batches = Vec::new();
         let mut batch = Vec::new();
-        let (mut request_size, mut response_size) = (1, 1);
+        let mut budget = crate::protocol::ParameterBudget::EMPTY;
         for &tlp in tlps {
             let schema = provider
                 .lookup(context, tlp)?
@@ -99,21 +99,20 @@ impl ReadPlan {
                 return Err(Error::InvalidRequest("logical number outside schema range"));
             }
             let parameter = Parameter::new(tlp, schema.data_type);
-            // Existing codec checks widths before arithmetic/allocation.
-            crate::protocol::parameter_request(&[parameter])?;
-            let width = 3 + schema.data_type.width();
-            if 4 > request_limit || 1 + width > response_limit {
+            let single =
+                crate::protocol::ParameterBudget::EMPTY.with_parameter(schema.data_type)?;
+            if !single.fits(request_limit, response_limit) {
                 return Err(Error::InvalidRequest(
                     "parameter cannot fit selected profile limits",
                 ));
             }
-            if request_size + 3 > request_limit || response_size + width > response_limit {
+            let next = budget.with_parameter(schema.data_type)?;
+            if !next.fits(request_limit, response_limit) {
                 batches.push(std::mem::take(&mut batch));
-                request_size = 1;
-                response_size = 1;
+                budget = single;
+            } else {
+                budget = next;
             }
-            request_size += 3;
-            response_size += width;
             batch.push(parameter);
         }
         if !batch.is_empty() {
@@ -146,17 +145,6 @@ pub(crate) struct PlannedRead {
     pub plan: ReadPlan,
     pub progress: Arc<Mutex<ReadProgress>>,
 }
-struct ReadBatch(Vec<Parameter>);
-impl crate::Operation for ReadBatch {
-    type Output = Vec<Value>;
-    fn encode(&self) -> Result<(u8, Vec<u8>), Error> {
-        Ok((180, crate::protocol::parameter_request(&self.0)?))
-    }
-    fn decode(&self, payload: &[u8]) -> Result<Vec<Value>, crate::DecodeError> {
-        crate::protocol::decode_parameters(&self.0, payload)
-            .map_err(|_| crate::DecodeError("invalid schema parameter reply"))
-    }
-}
 #[etherbird::async_trait]
 impl crate::Workflow for PlannedRead {
     type Output = ();
@@ -170,7 +158,9 @@ impl crate::Workflow for PlannedRead {
             });
         }
         for batch in self.plan.batches {
-            let values = context.operation(ReadBatch(batch)).await?;
+            let values = context
+                .exchange_operation(crate::operations::parameters(&batch)?)
+                .await?;
             let mut progress = self.progress.lock().unwrap();
             progress.values.extend(values);
             progress.completed_batches += 1;

@@ -1,7 +1,8 @@
 # Current specification decision register
 
-Updated: 2026-10-09. Evidence baseline: public research reviewed 2026-10-08.
-This register introduces no new wire evidence or physical validation. All DEC
+Updated: 2026-10-14. Initial evidence baseline: public research reviewed 2026-10-08;
+PT-136 Table 3-48 visually audited 2026-10-14 for DEC-10.05.
+This register introduces no physical validation. All DEC
 parents remain open. It is the current delivery index; historical findings remain
 in [first-pass research](AMBIGUITIES.md), [second-pass research](SECOND_PASS.md)
 and the [systematic search ledger](SEARCH_RECORD.md).
@@ -29,9 +30,9 @@ progress without claiming the underlying wire question is resolved:
 - **Documented direction:** apply established distinctions without inferring
   missing device behavior.
 - **User extension:** a customization boundary for callers with applicable knowledge.
-  EXT-1 setup and EXT-4 typed operations/workflows are implemented; EXT-2 profiles
-  and EXT-3 providers remain planned. A row naming several seams may still require
-  an undelivered profile/provider or framework capability. Affected built-in
+  EXT-1 setup, EXT-4 typed operations/workflows, EXT-2 ordinary-unicast profiles
+  and EXT-3 read providers are implemented. A row naming several seams may still
+  require an undelivered write, routing or other framework capability. Affected built-in
   variants remain unavailable unless coverage explicitly records them.
 - **Deferred framework:** define ownership, validation or outcome contracts before
   exposing behavior. Extensions cannot bypass those contracts.
@@ -188,6 +189,7 @@ Evidence: [search assessment](SEARCH_RECORD.md#dec-10--widths-conditional-access
 | DEC-10.02 | Conditional writes and configuration mode | Tags/parameter-level conditions found; no universal rule established | User extension: EXT-3 | Each affected parameter's preconditions and device outcomes |
 | DEC-10.03 | Firmware-dependent schema differences | Broad audit remains ongoing | User extension: EXT-3 | Per-parameter manifests for all 62 catalog rows |
 | DEC-10.04 | Naming/description defects in other drivers | Indexed release-note lead only | Deferred evidence | Read original release notes before adopting corrections |
+| DEC-10.05 | PT-136/17 DST end-week range 1-56 versus /12 start-week range 1-6 | October 2022 Table 3-48 visually confirms the discrepancy; UInt8 read width/access/version are clear, constraint left unspecified | User extension: EXT-3; built-in raw read available | Applicable erratum or model/firmware evidence establishing valid week values; never substitute a guessed range |
 
 ## Managed extension delivery evidence (2026-10-09)
 
@@ -197,5 +199,7 @@ through `SetupStrategy`, and ordinary unicast multi-exchange procedures through
 `Workflow`/`ManagedContext`, with typed codecs through `Operation`. This makes
 these seams available without resolving any DEC-2 authentication algorithm or
 DEC-4/5/6 payload/remote-outcome ambiguity. No preset is promoted and all DEC rows
-remain open. Routing, framing budgets, profiles and schemas retain their existing
-framework/evidence prerequisites. Physical evidence remains none.
+remain open. Ordinary-unicast profiles and read schema providers were subsequently
+delivered; see the current contracts/catalog for their exact scope. Routing, broader
+framing and schema/write conformance retain their framework/evidence prerequisites.
+Physical evidence remains none.

@@ -155,11 +155,18 @@ pub(crate) fn validate_profile_request(
     opcode: u8,
     data: &[u8],
 ) -> Result<(), Error> {
-    crate::session::validate_request(opcode, data)?;
+    validate_profile_request_size(profile, opcode, data.len())
+}
+pub(crate) fn validate_profile_request_size(
+    profile: &dyn ProtocolProfile,
+    opcode: u8,
+    size: usize,
+) -> Result<(), Error> {
+    crate::protocol::validate_request(opcode, size)?;
     if profile.capability(opcode) == Capability::Unavailable {
         return Err(Error::CapabilityUnavailable("selected profile service"));
     }
-    if data.len() > profile.limits(opcode).request.min(255) {
+    if size > profile.limits(opcode).request.min(255) {
         return Err(Error::InvalidRequest(
             "request exceeds selected profile limit",
         ));
@@ -183,15 +190,10 @@ pub(crate) fn validate_expected_response(
 pub(crate) fn validate_parameter_read(
     profile: &dyn ProtocolProfile,
     parameters: &[crate::Parameter],
-) -> Result<Vec<u8>, Error> {
-    let payload = crate::protocol::parameter_request(parameters)?;
-    validate_profile_request(profile, 180, &payload)?;
-    let size = 1 + parameters
-        .iter()
-        .map(|p| 3 + p.data_type.width())
-        .sum::<usize>();
-    validate_expected_response(profile, 180, size)?;
-    Ok(payload)
+) -> Result<(), Error> {
+    let budget = crate::protocol::parameter_budget(parameters)?;
+    validate_profile_request_size(profile, 180, budget.request)?;
+    validate_expected_response(profile, 180, budget.response)
 }
 
 /// A codec receives the original typed request, including selectors/echo context.

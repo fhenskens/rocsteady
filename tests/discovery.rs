@@ -364,14 +364,30 @@ fn expected_catalog_value(pt: u8, p: u8) -> Value {
         (109, 7) => Value::UInt16(0x5678),
         (109, 12) => Value::Float(12.0),
         (109, 23) => Value::Binary(0x81),
+        (136, 0 | 1) => Value::UInt8(59),
+        (136, 2 | 10 | 15) => Value::UInt8(23),
+        (136, 3) => Value::UInt8(31),
+        (136, 4 | 13 | 18) => Value::UInt8(12),
+        (136, 5) => Value::UInt16(2104),
+        (136, 6 | 11 | 16) => Value::UInt8(7),
+        (136, 7) => Value::Time(u32::MAX),
+        (136, 8) => Value::UInt8(1),
+        (136, 9) => Value::UInt32(999999),
+        (136, 12) => Value::UInt8(6),
+        (136, 14) => Value::Time(0x12345678),
+        (136, 17) => Value::UInt8(56),
+        (136, 19) => Value::Time(0),
         _ => panic!("unexpected catalog row"),
     }
 }
 #[tokio::test]
-async fn every_initial_catalog_row_reads_independent_literal_values_over_tcp() {
+async fn every_catalog_row_reads_independent_literal_values_over_tcp() {
     let peer = DiscoveryFixture::start(0).await;
     let client = client(&peer, IoLayout::Compatibility160);
-    let snapshot = client.discover_io(firmware()).await.unwrap();
+    let snapshot = client
+        .discover_io(FirmwareVersion::new(3, 40).unwrap())
+        .await
+        .unwrap();
     let catalog = Roc800Catalog::from_discovery(snapshot).unwrap();
     let mut tlps = Vec::new();
     let mut expected = Vec::new();
@@ -380,7 +396,7 @@ async fn every_initial_catalog_row_reads_independent_literal_values_over_tcp() {
         assert!(keys.insert((entry.point_type, entry.parameter)));
         assert!(!entry.source.is_empty());
         let logical = match entry.point_type {
-            91 | 109 => 0,
+            91 | 109 | 136 => 0,
             101 => 32,
             103 => 16,
             _ => panic!("unreviewed row"),
@@ -396,7 +412,11 @@ async fn every_initial_catalog_row_reads_independent_literal_values_over_tcp() {
         );
         // Independently audited table access, including unlike PT-103/7 and PT-109/7.
         let access = match (entry.point_type, entry.parameter) {
-            (91, 0..=2 | 50) | (101, _) | (103, 0..=3) | (109, 0 | 1 | 7 | 12) => Access::ReadWrite,
+            (91, 0..=2 | 50)
+            | (101, _)
+            | (103, 0..=3)
+            | (109, 0 | 1 | 7 | 12)
+            | (136, 8 | 10..=13 | 15..=18) => Access::ReadWrite,
             _ => Access::ReadOnly,
         };
         assert_eq!(entry.access, access);
@@ -405,12 +425,14 @@ async fn every_initial_catalog_row_reads_independent_literal_values_over_tcp() {
             match (entry.point_type, entry.parameter) {
                 (91, 41 | 42) => (1, 20),
                 (91, 50) => (2, 0),
+                (136, 9) => (1, 20),
+                (136, 10..=19) => (3, 40),
                 _ => (1, 0),
             }
         );
         expected.push(value);
     }
-    assert_eq!(tlps.len(), 30);
+    assert_eq!(tlps.len(), 50);
     assert_eq!(
         client
             .read_schema(&catalog, &catalog.context(), &tlps)
@@ -449,6 +471,149 @@ fn catalog_identity_version_introductions_and_omissions_are_explicit() {
     );
     assert!(v120.lookup(&old.context(), Tlp::new(91, 0, 0)).is_err());
 }
+
+#[test]
+fn clock_catalog_firmware_ranges_and_singleton_location_follow_table_3_48() {
+    let ranges = [
+        Some((0.0, 59.0)),
+        Some((0.0, 59.0)),
+        Some((0.0, 23.0)),
+        Some((1.0, 31.0)),
+        Some((1.0, 12.0)),
+        Some((2000.0, 2104.0)),
+        Some((1.0, 7.0)),
+        None,
+        Some((0.0, 1.0)),
+        Some((0.0, 999999.0)),
+        Some((0.0, 23.0)),
+        Some((1.0, 7.0)),
+        Some((1.0, 6.0)),
+        Some((1.0, 12.0)),
+        None,
+        Some((0.0, 23.0)),
+        Some((1.0, 7.0)),
+        None,
+        Some((1.0, 12.0)),
+        None,
+    ];
+    // Test both sides of each introduction boundary, independently of metadata.
+    for (major, minor, last) in [(1, 0, 8), (1, 19, 8), (1, 20, 9), (3, 39, 9), (3, 40, 19)] {
+        let catalog = Roc800Catalog::new(FirmwareVersion::new(major, minor).unwrap()).unwrap();
+        for parameter in 0..20 {
+            let result = catalog.lookup(&catalog.context(), Tlp::new(136, 0, parameter));
+            if parameter > last {
+                assert!(matches!(result, Err(Error::CapabilityUnavailable(_))));
+            } else {
+                let schema = result.unwrap().unwrap();
+                assert_eq!(schema.numeric_range, ranges[usize::from(parameter)]);
+                assert_eq!(schema.logical_range, Some((0, 0)));
+                assert!(matches!(
+                    catalog.lookup(&catalog.context(), Tlp::new(136, 1, parameter)),
+                    Err(Error::InvalidRequest(_))
+                ));
+            }
+        }
+        assert!(
+            catalog
+                .lookup(&catalog.context(), Tlp::new(136, 0, 20))
+                .unwrap()
+                .is_none()
+        );
+    }
+}
+
+#[tokio::test]
+async fn clock_catalog_reads_without_io_discovery_and_rejects_unavailable_batches_locally() {
+    let peer = DiscoveryFixture::start(0).await;
+    let client = client(&peer, IoLayout::Compatibility160);
+    let old = Roc800Catalog::new(FirmwareVersion::new(1, 19).unwrap()).unwrap();
+    for tlps in [
+        vec![Tlp::new(136, 0, 0), Tlp::new(136, 0, 9)],
+        vec![Tlp::new(136, 0, 10)],
+        vec![Tlp::new(136, 1, 0)],
+        vec![Tlp::new(136, 0, 20)],
+    ] {
+        assert!(
+            client
+                .read_schema(&old, &old.context(), &tlps)
+                .await
+                .is_err()
+        );
+    }
+    assert_eq!(peer.peer.parameter_reads.load(Ordering::SeqCst), 0);
+    let catalog = Roc800Catalog::new(FirmwareVersion::new(3, 40).unwrap()).unwrap();
+    // Order and duplicates survive; time is a raw u32 and the disputed week
+    // byte is not narrowed into an assumed DST calendar rule.
+    let tlps = [
+        Tlp::new(136, 0, 7),
+        Tlp::new(136, 0, 5),
+        Tlp::new(136, 0, 9),
+        Tlp::new(136, 0, 17),
+        Tlp::new(136, 0, 7),
+    ];
+    assert_eq!(
+        client
+            .read_schema(&catalog, &catalog.context(), &tlps)
+            .await
+            .unwrap(),
+        [
+            Value::Time(u32::MAX),
+            Value::UInt16(2104),
+            Value::UInt32(999999),
+            Value::UInt8(56),
+            Value::Time(u32::MAX)
+        ]
+    );
+    assert!(peer.peer.requests.lock().unwrap().contains(&(
+        180,
+        vec![5, 136, 0, 7, 136, 0, 5, 136, 0, 9, 136, 0, 17, 136, 0, 7]
+    )));
+    assert_eq!(peer.peer.type_queries.load(Ordering::SeqCst), 0);
+    assert_eq!(peer.peer.logical_queries.load(Ordering::SeqCst), 0);
+    client.stop().await;
+}
+
+#[tokio::test]
+async fn clock_schema_malformed_reply_retires_but_device_rejection_keeps_connection() {
+    let peer = DiscoveryFixture::start(0).await;
+    let client = client(&peer, IoLayout::Compatibility160);
+    let catalog = Roc800Catalog::new(FirmwareVersion::new(3, 40).unwrap()).unwrap();
+    peer.peer.fault_opcode.store(180, Ordering::SeqCst);
+    peer.peer.fault.store(3, Ordering::SeqCst);
+    let tlps = [Tlp::new(136, 0, 5), Tlp::new(136, 0, 7)];
+    let rejected = client
+        .read_schema(&catalog, &catalog.context(), &tlps)
+        .await
+        .unwrap_err();
+    assert!(matches!(
+        rejected.error,
+        etherbird::Error::Operation(Error::Device(_))
+    ));
+    assert!(rejected.progress.values.is_empty());
+    client
+        .read_schema(&catalog, &catalog.context(), &tlps)
+        .await
+        .unwrap();
+    assert_eq!(peer.peer.connections.load(Ordering::SeqCst), 1);
+    peer.peer.fault.store(1, Ordering::SeqCst);
+    let malformed = client
+        .read_schema(&catalog, &catalog.context(), &tlps)
+        .await
+        .unwrap_err();
+    assert!(malformed.progress.values.is_empty());
+    assert_eq!(malformed.progress.completed_batches, 0);
+    assert_eq!(
+        client
+            .read_schema(&catalog, &catalog.context(), &tlps)
+            .await
+            .unwrap(),
+        [Value::UInt16(2104), Value::Time(u32::MAX)]
+    );
+    assert_eq!(peer.peer.connections.load(Ordering::SeqCst), 2);
+    // Exactly one exchange per explicit call, with no failed-read replay.
+    assert_eq!(peer.peer.parameter_reads.load(Ordering::SeqCst), 4);
+    client.stop().await;
+}
 #[tokio::test]
 async fn invalid_locations_fail_locally_and_replacement_invalidates_catalog_and_plans() {
     let peer = DiscoveryFixture::start(0).await;
@@ -461,6 +626,7 @@ async fn invalid_locations_fail_locally_and_replacement_invalidates_catalog_and_
         Tlp::new(103, 32, 21),
         Tlp::new(101, 16, 3),
         Tlp::new(91, 1, 0),
+        Tlp::new(136, 1, 5),
     ] {
         assert!(
             client
@@ -473,7 +639,7 @@ async fn invalid_locations_fail_locally_and_replacement_invalidates_catalog_and_
     let plan = rocsteady::ReadPlan::build(
         &catalog,
         &catalog.context(),
-        &[Tlp::new(103, 16, 21)],
+        &[Tlp::new(103, 16, 21), Tlp::new(136, 0, 5)],
         client.profile(),
     )
     .unwrap();
@@ -487,7 +653,7 @@ async fn invalid_locations_fail_locally_and_replacement_invalidates_catalog_and_
     );
     assert!(
         client
-            .read_schema(&catalog, &catalog.context(), &[Tlp::new(91, 0, 3)])
+            .read_schema(&catalog, &catalog.context(), &[Tlp::new(136, 0, 5)])
             .await
             .is_err()
     );

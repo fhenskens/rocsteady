@@ -2,7 +2,6 @@ use crate::{
     Error, SystemConfiguration,
     protocol::{
         Address, Clock, CrcMode, DeviceError, Frame, Login, Parameter, ParameterBlock, Value,
-        decode_parameters,
     },
     transport::{Stream, read_frame, write_frame},
 };
@@ -29,19 +28,6 @@ pub struct Session {
     pub(crate) connected: watch::Sender<bool>,
     events: broadcast::Sender<Frame>,
     pub(crate) profile: Arc<dyn crate::ProtocolProfile>,
-}
-struct Exchange<'a> {
-    stream: &'a mut Option<Stream>,
-    connected: &'a watch::Sender<bool>,
-    complete: bool,
-}
-impl Drop for Exchange<'_> {
-    fn drop(&mut self) {
-        if !self.complete {
-            self.stream.take();
-            self.connected.send_replace(false);
-        }
-    }
 }
 impl Session {
     pub fn new(
@@ -111,21 +97,10 @@ impl Session {
     /// Run one unicast exchange. No retry or side-effect inference is performed.
     /// Routed/store-and-forward requests and broadcasts are not supported.
     pub async fn request(&self, opcode: u8, data: Vec<u8>) -> Result<Vec<u8>, Error> {
-        self.request_decoded(opcode, data, |bytes| Ok(bytes.to_vec()))
+        self.request_operation(crate::operations::raw(opcode, data))
             .await
     }
 
-    // Decode while the exchange still owns the stream. A malformed typed reply
-    // must poison this generation before another caller can acquire it.
-    async fn request_decoded<T>(
-        &self,
-        opcode: u8,
-        data: Vec<u8>,
-        decode: impl FnOnce(&[u8]) -> Result<T, Error>,
-    ) -> Result<T, Error> {
-        let _ownership = self.ownership.lock().await;
-        self.exchange_decoded(opcode, data, decode).await
-    }
     pub(crate) async fn managed(&self) -> crate::ManagedContext<'_> {
         let ownership = self.ownership.lock().await;
         crate::ManagedContext {
@@ -135,25 +110,28 @@ impl Session {
             _ownership: ownership,
         }
     }
-    pub(crate) async fn exchange_decoded<T>(
+    pub(crate) async fn exchange_operation<T, D>(
         &self,
-        opcode: u8,
-        data: Vec<u8>,
-        decode: impl FnOnce(&[u8]) -> Result<T, Error>,
-    ) -> Result<T, Error> {
-        crate::profile::validate_profile_request(self.profile.as_ref(), opcode, &data)?;
+        operation: crate::operations::PreparedOperation<D>,
+    ) -> Result<T, Error>
+    where
+        D: FnOnce(&[u8]) -> Result<T, Error>,
+    {
+        operation.validate(self.profile.as_ref())?;
+        let crate::operations::PreparedOperation {
+            opcode,
+            payload: data,
+            decode,
+            ..
+        } = operation;
         let frame = Frame::new(self.device, self.host, opcode, data);
         let mut slot = self.stream.lock().await;
         if slot.is_none() || !self.is_connected() {
             return Err(Error::Disconnected);
         }
-        let mut exchange = Exchange {
-            stream: &mut slot,
-            connected: &self.connected,
-            complete: false,
-        };
+        let mut exchange = etherbird::RetireOnDrop::new(&mut slot, &self.connected);
         let response = timeout(self.response_timeout, async {
-            let stream = exchange.stream.as_mut().ok_or(Error::Disconnected)?;
+            let stream = exchange.resource().ok_or(Error::Disconnected)?;
             write_frame(stream.as_mut(), &frame).await?;
             loop {
                 let response = read_frame(stream.as_mut(), self.crc_mode).await?;
@@ -192,94 +170,57 @@ impl Session {
         })
         .await
         .map_err(|_| Error::Timeout)??;
-        exchange.complete = true;
+        exchange.complete();
         response
     }
+    pub(crate) async fn request_operation<T, D>(
+        &self,
+        operation: crate::operations::PreparedOperation<D>,
+    ) -> Result<T, Error>
+    where
+        D: FnOnce(&[u8]) -> Result<T, Error>,
+    {
+        operation.validate(self.profile.as_ref())?;
+        let _ownership = self.ownership.lock().await;
+        self.exchange_operation(operation).await
+    }
     pub async fn read_configuration(&self) -> Result<SystemConfiguration, Error> {
-        self.request_decoded(6, vec![], |bytes| {
-            self.profile
-                .decode_configuration(bytes)
-                .map_err(Error::from)
-        })
-        .await
+        self.request_operation(crate::operations::configuration(self.profile.clone()))
+            .await
     }
     pub async fn read_clock(&self) -> Result<Clock, Error> {
-        self.request_decoded(7, vec![], |bytes| {
-            self.profile.decode_clock(bytes).map_err(Error::from)
-        })
-        .await
+        self.request_operation(crate::operations::clock(self.profile.clone()))
+            .await
     }
     pub async fn read_point_types(
         &self,
         request: crate::PointTypeRequest,
     ) -> Result<crate::PointTypePage, Error> {
-        crate::profile::validate_expected_response(
-            self.profile.as_ref(),
-            100,
-            request.response_size(),
-        )?;
-        self.request_decoded(100, request.payload(), |bytes| {
-            self.profile
-                .decode_point_types(&request, bytes)
-                .map_err(Error::from)
-        })
+        self.request_operation(crate::operations::point_types(
+            request,
+            self.profile.clone(),
+        ))
         .await
     }
     pub async fn read_io_points(
         &self,
         request: crate::IoPointRequest,
     ) -> Result<crate::IoPointReply, Error> {
-        crate::profile::validate_expected_response(
-            self.profile.as_ref(),
-            50,
-            request.layout.len(),
-        )?;
-        self.request_decoded(50, request.payload(), |bytes| {
-            self.profile
-                .decode_io_points(&request, bytes)
-                .map_err(Error::from)
-        })
-        .await
-    }
-    pub async fn login(&self, login: &Login) -> Result<(), Error> {
-        self.request_decoded(17, login.payload(), |bytes| {
-            if !bytes.is_empty() {
-                return Err(Error::InvalidResponse(
-                    "login acknowledgement must be empty",
-                ));
-            }
-            Ok(())
-        })
-        .await
-    }
-    pub async fn read_parameters(&self, parameters: &[Parameter]) -> Result<Vec<Value>, Error> {
-        self.request_decoded(
-            180,
-            crate::profile::validate_parameter_read(self.profile.as_ref(), parameters)?,
-            |bytes| decode_parameters(parameters, bytes),
-        )
-        .await
-    }
-    pub async fn read_parameter_block(&self, block: &ParameterBlock) -> Result<Vec<Value>, Error> {
-        crate::profile::validate_expected_response(
-            self.profile.as_ref(),
-            167,
-            block.response_size(),
-        )?;
-        self.request_decoded(167, block.payload(), |bytes| block.decode(bytes))
+        self.request_operation(crate::operations::io(request, self.profile.clone()))
             .await
     }
-}
-pub(crate) fn validate_request(opcode: u8, data: &[u8]) -> Result<(), Error> {
-    if matches!(opcode, 24 | 224 | 255) {
-        return Err(Error::InvalidRequest(
-            "opcode is routed or device-originated; unsupported by unicast request API",
-        ));
+    pub async fn login(&self, login: &Login) -> Result<(), Error> {
+        self.request_operation(crate::operations::login(login))
+            .await
     }
-    if data.len() > u8::MAX as usize {
-        return Err(Error::InvalidRequest("payload exceeds 255 bytes"));
+    pub async fn read_parameters(&self, parameters: &[Parameter]) -> Result<Vec<Value>, Error> {
+        self.request_operation(crate::operations::parameters(parameters)?)
+            .await
     }
-    Ok(())
+    pub async fn read_parameter_block(&self, block: &ParameterBlock) -> Result<Vec<Value>, Error> {
+        self.request_operation(crate::operations::block(block))
+            .await
+    }
 }
 
 static NEXT_GENERATION: AtomicU64 = AtomicU64::new(1);

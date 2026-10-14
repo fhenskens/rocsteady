@@ -4,7 +4,7 @@ Status: managed EXT-1/4/5 slice plus explicit EXT-2 profiles/codecs and EXT-3
 schema-backed reads implemented. Remaining device presets, write planning and
 authentication acceptance tasks stay open. Updated 2026-10-09.
 This is the early delivery milestone in [the roadmap](OUTSTANDING_WORK.md).
-The published Etherbird crate remains responsible for lifecycle supervision,
+The published etherbird crate remains responsible for lifecycle supervision,
 admission, exclusive leases, recovery and awaited shutdown.
 
 ## Product objective and scope
@@ -115,8 +115,8 @@ completion remains an operation-specific contract; no implicit side-effect repla
 - [x] Keep extension registration/configuration immutable or define atomic changes and generation invalidation explicitly.
 - [x] Distinguish built-in verified, built-in provisional, user-supplied and unavailable capabilities in docs/diagnostics.
 - [x] Publish guides for all four extension seams, including what knowledge/evidence an implementer must supply.
-- [x] Test external implementation ergonomics with a consumer using the published Etherbird dependency; examples must not depend on crate-private access.
-- [x] Maintain framework contract tests across dependency upgrades; existing extension tests and new profile/schema tests run against published Etherbird 0.4.1. Hosted platform evidence for this tree remains pending.
+- [x] Test external implementation ergonomics with a consumer using the published etherbird dependency; examples must not depend on crate-private access.
+- [x] Maintain framework contract tests across dependency upgrades; existing extension tests and new profile/schema tests run against published etherbird 0.4.2. Hosted platform evidence for this tree remains pending.
 - [x] Establish a contribution path: source/evidence, independent fixtures, applicable model/firmware, review, simulator/integration tests, then promotion to built-in support.
 - [x] Keep extension compatibility claims separate from the crate's built-in conformance matrix.
 
@@ -182,7 +182,7 @@ document and check them against the existing architecture:
 | Contract | Required decision and validation |
 | --- | --- |
 | Ownership and lifetimes | One managed exclusive context per setup/workflow; exchanges borrow it; no stream/context escapes. Demonstrate async lifetime and Send/Sync ergonomics externally. |
-| Admission and deadlines | Retain bounded Etherbird admission and lifecycle setup deadlines; specify overall workflow and per-exchange deadlines. Test queued and active timeouts separately. |
+| Admission and deadlines | Retain bounded etherbird admission and lifecycle setup deadlines; specify overall workflow and per-exchange deadlines. Test queued and active timeouts separately. |
 | Error classification | Separate local validation, healthy device rejection, malformed typed decoding and transport failure; specify stream retirement for each. |
 | Cancellation and stop | Interrupted exchanges retire their generation; dropped work releases ownership; stop cancels/drains work and is awaited. Test late replies. |
 | Generation state | Setup reruns on replacement; keys/handles remain generation-local. Workflows cannot silently resume or replay side effects across replacement. |
@@ -191,7 +191,7 @@ document and check them against the existing architecture:
 
 Implementation sequence:
 
-1. Audit Client/Session/Connector and published Etherbird interfaces against these
+1. Audit Client/Session/Connector and published etherbird interfaces against these
    contracts; record any missing framework capability before exposing it.
 2. Implement the minimum scoped managed exchange context and typed operation,
    retaining existing APIs and legacy login/clock readiness defaults.
@@ -217,7 +217,7 @@ checklist items. Applicability metadata and device logout remain explicit design
 ## Delivery order
 
 1. Write EXT contracts and map known DEC questions to seams and remaining framework requirements.
-2. Implement EXT-1 and EXT-4 using existing Session/Connector paths and Etherbird ownership.
+2. Implement EXT-1 and EXT-4 using existing Session/Connector paths and etherbird ownership.
 3. Implement EXT-2 and EXT-3, then exercise all seams from outside the crate.
    Implement sufficiently specified alternatives as predefined extensions using
    these interfaces; demonstrate replacing one preset from the external consumer.

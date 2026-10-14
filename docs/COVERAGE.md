@@ -31,10 +31,10 @@ the sections used by the implementation and fixtures.
 | Parameter types | Binary, fixed ASCII, signed/unsigned integers, float/double, TLP, time | Literal byte-order/width tests |
 | TCP | Fresh connection seam and simulator transport | Real loopback sockets |
 | Serial | Configurable stream connector | Compilation only; physical validation outstanding |
-| Supervision | Login/readiness restoration, queue bound, deadlines, heartbeat, cancellation/shutdown | Etherbird-backed integration suite |
+| Supervision | Login/readiness restoration, queue bound, deadlines, heartbeat, cancellation/shutdown | etherbird-backed integration suite |
 | Managed extensions | Immutable setup strategies, typed operations, exclusive workflows, terminal auth, owned generation state and checked handles | External fixtures, packaged consumer, README/usage doctests and [release evidence](RELEASE.md) |
 | Protocol profiles | Explicit applicability/capabilities, replaceable clock/configuration codecs, contextual operations, tighter budgets and source correlation | Independent TCP cases in tests/profiles_schema.rs; no disputed firmware preset or hardware evidence |
-| Schema providers/catalog | Caller identity, ordered overrides, access/location bounds, generation-bound discovery, bounded opcode-180 batches and confirmed progress; 30 selected PT-91/101/103/109 entries | Independent TCP fixture for every initial catalog row, discovery_catalog example and [manifest](CATALOG.md); no complete PT table or typed writes |
+| Schema providers/catalog | Caller identity, ordered overrides, access/location bounds, generation-bound discovery, bounded opcode-180 batches and confirmed progress; 50 PT-91/101/103/109/136 entries | Independent TCP fixture for every catalog entry, discovery_catalog example and [manifest](CATALOG.md); no complete PT conformance or typed writes |
 
 Table 2-3 is used for the clock year representation instead of the older illustration
 in Figure 1-2. Error offsets are retained as raw bytes; their meaning depends on the
@@ -72,7 +72,7 @@ This does not resolve DEC-3 mappings or DEC-8 firmware discovery.
 | File transfers | 203 | Raw unicast exchange only; file lifecycle/chunking outstanding |
 | Peer network tunnel | 205 | Raw unicast exchange only; typed tunneled exchange outstanding |
 | SRBX full workflow | 224 / 225 | Signal routing implemented; log-consumption and acknowledgement workflow outstanding |
-| Parameter schema catalog | Device/firmware point dictionaries | 30-entry initial built-in slice implemented; remaining catalog parameters/rows outstanding |
+| Parameter schema catalog | Device/firmware point dictionaries | 50-entry built-in slice, including all PT-136 read widths; remaining metadata/parameters/rows outstanding |
 | Physical interoperability | Ethernet / serial controller | No hardware tests performed |
 
 A raw request capability is not a complete service implementation. The current

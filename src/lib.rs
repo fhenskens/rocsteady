@@ -1,4 +1,4 @@
-//! Async ROC Plus client with Etherbird recovery.
+//! Async ROC Plus client with etherbird recovery.
 //!
 //! The initial typed API covers configuration discovery, clock reads, parameter reads, legacy login and
 //! device errors. The framing/transport seam is independent of supervision.
@@ -9,6 +9,7 @@ mod configuration;
 mod discovery;
 mod error;
 mod extensions;
+mod operations;
 mod profile;
 pub mod protocol;
 mod schema;

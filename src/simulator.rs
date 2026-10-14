@@ -48,7 +48,7 @@ impl Default for Model {
                 points[..5].copy_from_slice(&[0, 1, 2, 3, 4]);
                 points
             },
-            point_types: [91, 101, 103, 109]
+            point_types: [91, 101, 103, 109, 136]
                 .into_iter()
                 .map(|point_type| (point_type, crate::PointTypeClassification::Roc))
                 .collect(),
@@ -60,6 +60,7 @@ impl Default for Model {
                 bytes[18] = 6;
                 bytes[50] = 1; // One system-variables point.
                 bytes[68] = 5; // Five CPU diagnostic points.
+                bytes[95] = 1; // One ROC clock point; values are supplied via parameters.
                 SystemConfiguration::decode(&bytes).expect("valid fixture configuration")
             },
             address: Address::new(1, 2),

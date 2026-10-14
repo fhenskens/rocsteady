@@ -1,8 +1,10 @@
-# Initial ROC800 catalog and discovery evidence
+# ROC800 catalog and discovery evidence
 
 Source: [Emerson D301180X012, October 2022](https://www.documentation.emersonprocess.com/groups/public/documents/instruction_manuals/d301180x012.pdf).
-Reviewed 2026-10-10. This document records a selected technical metadata slice,
-not the vendor's descriptions or complete parameter tables. No PT row is complete.
+Initial slice reviewed 2026-10-10; PT-136 audited 2026-10-14 against printed
+pp.3-200–201 (PDF pages 259–260), including visual inspection of the disputed row.
+This document records 50 entries as technical metadata, not vendor descriptions.
+No PT row meets the full schema completion contract.
 
 ## Discovery contracts
 
@@ -44,7 +46,7 @@ discovery decoders; framing, transport ownership and cancellation remain enforce
 
 ## Catalog applicability and generation
 
-`Roc800Catalog::new(firmware)` provides system-variable metadata for an explicitly
+`Roc800Catalog::new(firmware)` provides system-variable and clock metadata for an explicitly
 asserted ROC800 identity. The conservative reviewed window is 1.00-3.60; later firmware
 requires a caller provider/override. Introduction versions below are enforced.
 This source-applicability window is not a tested firmware interoperability matrix.
@@ -57,6 +59,12 @@ Lookup returns None for omitted metadata, permitting explicitly ordered provider
 overrides in SchemaChain; unsupported applicability errors do not silently fall back.
 An I/O lookup without a discovery snapshot fails rather than guessing module presence.
 
+PT-91 and PT-136 use logical zero and need no I/O map. Static metadata establishes
+types, not point availability or read permission; the controller may reject a read.
+Discovery-bound catalogs still bind singleton reads to their connection generation.
+PT-136/0-8 require 1.00, /9 requires 1.20, and /10-19 require 3.40.
+These gates are source applicability, not physical firmware validation.
+
 SchemaProvider now optionally declares its generation. ReadPlan carries it and checks
 it before its first exchange, including after waiting for readiness/admission. A
 replacement invalidates an old catalog/plan even if the replacement has an identical
@@ -65,9 +73,10 @@ generation requirements. User providers with static metadata remain unbound by d
 
 ## Per-parameter manifest
 
-All rows below: source edition October 2022; implementation `src/catalog.rs`;
+All rows below: source edition October 2022; metadata `src/catalog/entries.rs`,
+provider policy `src/catalog.rs`;
 literal fixture `catalog_literal` in `examples/support/discovery_fixture.rs`;
-independent TCP evidence `every_initial_catalog_row_reads_independent_literal_values_over_tcp`
+independent TCP evidence `every_catalog_row_reads_independent_literal_values_over_tcp`
 in `tests/discovery.rs`; actual serial evidence **none**; hardware evidence **none**.
 Access is source metadata; this release only reads. Numeric constraints are metadata
 for later writes and never filter observed read values. Units/defaults and textual
@@ -106,7 +115,38 @@ descriptions are not guessed; dynamic units tags remain strings and bit fields r
 | 109 | 12 | Float / 4 | R/W | 1.00 | 3.4.20, Table 3-21, p.3-91 |
 | 109 | 23 | Binary / 1 | R/O | 1.00 | 3.4.20, Table 3-21, p.3-93 |
 
-Unresolved scope: remaining parameters/reserved rows in all four PT tables, complete
+PT-136 source: section 3.4.47, Table 3-48, printed pp.3-200–201.
+Every parameter 0-19 has a literal and independent TCP read; the rows group only
+entries with matching widths/access/version. Numeric constraints are in
+`CatalogEntry.numeric_range` and audited independently in the clock boundary test.
+
+| PT | Parameters | Types / widths | Access | Introduced |
+| --- | --- | --- | --- | --- |
+| 136 | 0-4, 6 | UInt8 / 1 | R/O | 1.00 |
+| 136 | 5 | UInt16 / 2 | R/O | 1.00 |
+| 136 | 7 | Time / 4 | R/O | 1.00 |
+| 136 | 8 | UInt8 / 1 | R/W | 1.00 |
+| 136 | 9 | UInt32 / 4 | R/O | 1.20 |
+| 136 | 10-13, 15-18 | UInt8 / 1 | R/W | 3.40 |
+| 136 | 14, 19 | Time / 4 | R/O | 3.40 |
+
+Clock-specific limitations: reads of separate fields are not an atomic clock
+snapshot. TIME stays a raw u32; no timezone, UTC conversion or DST computation
+is inferred. Calendar bytes and unknown values remain representable. The printed
+PT-136/17 end-week range is 1-56, while /12 uses 1-6 for the start week. The former
+constraint is deliberately None pending clarification (DEC-10.05); its raw byte is
+readable, including 56. No write validation or corrected range is claimed.
+Defaults, update ownership and enum meanings remain outside the current schema
+model; PT-136 is partial even though all 20 read widths are accounted for.
+
+Additional evidence in `tests/discovery.rs`: clock firmware/range boundaries,
+static reads without I/O discovery, local rejection before parameter exchange,
+healthy rejection versus malformed-response retirement, and generation invalidation.
+`tests/discovery_simulator.rs` supplies all 20 clock values explicitly; the simulator
+does not calculate clock/DST parameter values from its opcode-7 clock.
+The example and packaged consumer read PT-136 through the public provider.
+
+Unresolved scope: remaining parameters/reserved rows in the original four PT tables, complete
 bit/enumeration/default/unit metadata, typed write semantics and firmware/hardware
 interoperability. In particular PT-109's measurement is parameter 12, not PT-103's
 parameter 21; PT-109/7 is R/W while PT-103/7 is R/O. These distinctions are fixtures.
@@ -124,5 +164,5 @@ replay. Tests also cover call cancellation, disconnection, healthy device errors
 malformed replies, budget failures, overrides and stale catalog rejection.
 
 Run `cargo run --locked --example discovery_catalog` to discover both services and
-read firmware identification, an analog input, a discrete input and battery value
+read firmware identification, clock year/raw time, an analog input, a discrete input and battery value
 through the built-in provider, without manually supplying widths.

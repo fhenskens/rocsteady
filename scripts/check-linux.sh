@@ -12,18 +12,13 @@ cargo run --locked --features simulator --example authenticated_setup
 cargo run --locked --features simulator --example simulator
 cargo package --locked --allow-dirty --all-features
 consumer=/tmp/rocsteady-consumer
-package_version=$(cargo pkgid --offline | sed 's/.*@//')
+package_id=$(cargo pkgid --offline)
+# Cargo emits either #version or #name@version for a local package.
+package_version=${package_id##*[@#]}
 mkdir -p "$consumer/src"
-cat > "$consumer/Cargo.toml" <<EOF
-[package]
-name = "rocsteady-release-consumer"
-version = "0.0.0"
-edition = "2024"
-[dependencies]
-rocsteady = { path = "/tmp/rocsteady-target/package/rocsteady-$package_version", features = ["serial", "simulator"] }
-etherbird = { version = "0.4.1", features = ["pool"] }
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-EOF
+# The package version is a Cargo-validated semver and the container path is fixed.
+sed "s|@PACKAGE_PATH@|\"/tmp/rocsteady-target/package/rocsteady-$package_version\"|" \
+    scripts/package-consumer.toml.in > "$consumer/Cargo.toml"
 cp scripts/package-consumer.rs "$consumer/src/main.rs"
-cp Cargo.lock "$consumer/Cargo.lock"
+cp "/tmp/rocsteady-target/package/rocsteady-$package_version/Cargo.lock" "$consumer/Cargo.lock"
 cargo run --offline --manifest-path "$consumer/Cargo.toml"

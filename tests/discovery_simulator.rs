@@ -78,6 +78,70 @@ async fn simulator_supports_each_discovery_layout_classification_and_catalog_rea
 }
 
 #[tokio::test]
+async fn simulator_reads_all_clock_catalog_parameters_with_explicit_model_values() {
+    // Table 3-48 types; values are explicit fixture inputs, not an emulated clock
+    // or DST calculation. Keep TIME and UINT32 distinct despite equal widths.
+    let values = [
+        Value::UInt8(0),
+        Value::UInt8(59),
+        Value::UInt8(23),
+        Value::UInt8(29),
+        Value::UInt8(2),
+        Value::UInt16(2024),
+        Value::UInt8(5),
+        Value::Time(0),
+        Value::UInt8(0),
+        Value::UInt32(999999),
+        Value::UInt8(2),
+        Value::UInt8(1),
+        Value::UInt8(6),
+        Value::UInt8(3),
+        Value::Time(0x12345678),
+        Value::UInt8(2),
+        Value::UInt8(1),
+        Value::UInt8(56),
+        Value::UInt8(11),
+        Value::Time(u32::MAX),
+    ];
+    let mut model = Model::default();
+    let tlps: Vec<_> = (0..20)
+        .map(|parameter| Tlp::new(136, 0, parameter))
+        .collect();
+    model
+        .parameters
+        .extend(tlps.iter().copied().zip(values.iter().cloned()));
+    let server = Simulator::bind("127.0.0.1:0".parse().unwrap(), model)
+        .await
+        .unwrap();
+    let client = Client::tcp(
+        server.endpoint().to_string(),
+        ClientConfig {
+            heartbeat_interval: None,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let catalog = Roc800Catalog::new(FirmwareVersion::new(3, 40).unwrap()).unwrap();
+    assert_eq!(
+        client
+            .read_schema(&catalog, &catalog.context(), &tlps)
+            .await
+            .unwrap(),
+        values
+    );
+    assert_eq!(
+        client
+            .read_point_types(PointTypeRequest::new(136, 1).unwrap())
+            .await
+            .unwrap()
+            .classifications(),
+        [PointTypeClassification::Roc]
+    );
+    client.stop().await;
+    server.stop().await.unwrap();
+}
+
+#[tokio::test]
 async fn simulator_rejects_invalid_selector_command_and_ranges_as_healthy_device_errors() {
     let server = Simulator::bind("127.0.0.1:0".parse().unwrap(), Model::default())
         .await

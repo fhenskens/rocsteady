@@ -2,7 +2,6 @@
 name = "rocsteady"
 version = "0.1.0-alpha.1"
 edition = "2024"
-rust-version = "1.88"
 description = "A Rust client for Emerson ROC Plus devices with automatic reconnection and session recovery"
 license = "Apache-2.0"
 repository = "https://github.com/fhenskens/rocsteady"
@@ -16,7 +15,7 @@ serial = ["dep:tokio-serial"]
 simulator = []
 
 [dependencies]
-etherbird = { version = "0.4.1", features = ["pool"] }
+etherbird = { version = "0.4.2", features = ["pool"] }
 tokio = { version = "1", features = ["io-util", "net", "sync", "time"] }
 tokio-serial = { version = "5.5", optional = true }
 thiserror = "2"

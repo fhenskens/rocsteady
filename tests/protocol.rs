@@ -146,6 +146,66 @@ fn opcode_167_validates_count_range_and_echoed_block_header() {
 }
 
 #[test]
+fn mixed_width_parameter_decoders_preserve_truncation_and_ascii_errors() {
+    let params = [
+        Parameter::new(Tlp::new(200, 1, 5), DataType::Ascii(4)),
+        Parameter::new(Tlp::new(200, 1, 6), DataType::Int16),
+        Parameter::new(Tlp::new(200, 1, 7), DataType::Double),
+    ];
+    let block = ParameterBlock::new(
+        200,
+        1,
+        5,
+        vec![DataType::Ascii(4), DataType::Int16, DataType::Double],
+    )
+    .unwrap();
+    // Independent literals: fixed ASCII, signed -1 and IEEE double 1.0.
+    let arbitrary = [
+        3, 200, 1, 5, b'T', b'E', b'S', b'T', 200, 1, 6, 0xff, 0xff, 200, 1, 7, 0, 0, 0, 0, 0, 0,
+        0xf0, 0x3f,
+    ];
+    let contiguous = [
+        200, 1, 3, 5, b'T', b'E', b'S', b'T', 0xff, 0xff, 0, 0, 0, 0, 0, 0, 0xf0, 0x3f,
+    ];
+    let expected = [
+        Value::Ascii("TEST".into()),
+        Value::Int16(-1),
+        Value::Double(1.0),
+    ];
+    assert_eq!(decode_parameters(&params, &arbitrary).unwrap(), expected);
+    assert_eq!(block.decode(&contiguous).unwrap(), expected);
+    for length in 0..contiguous.len() {
+        assert!(block.decode(&contiguous[..length]).is_err());
+    }
+    for length in 0..arbitrary.len() {
+        assert!(decode_parameters(&params, &arbitrary[..length]).is_err());
+    }
+    let mut bad_arbitrary = arbitrary;
+    let mut bad_contiguous = contiguous;
+    bad_arbitrary[4] = 0;
+    bad_contiguous[4] = 0;
+    for result in [
+        decode_parameters(&params, &bad_arbitrary),
+        block.decode(&bad_contiguous),
+    ] {
+        assert!(matches!(
+            result,
+            Err(Error::InvalidResponse("non-printable ASCII parameter"))
+        ));
+    }
+    let mut trailing = contiguous.to_vec();
+    trailing.push(0);
+    assert!(matches!(
+        block.decode(&trailing),
+        Err(Error::InvalidResponse("trailing block data"))
+    ));
+    assert!(matches!(
+        block.decode(&contiguous[..17]),
+        Err(Error::InvalidResponse("truncated block"))
+    ));
+}
+
+#[test]
 fn error_response_preserves_all_codes_and_offsets_including_unknown_codes() {
     assert_eq!(
         DeviceError::decode(&[2, 9, 250, 12]).unwrap(),

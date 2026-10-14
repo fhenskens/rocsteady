@@ -91,7 +91,7 @@ impl Lifecycle for Hooks {
     type Resource = Session;
     type Error = Error;
     async fn create(&self) -> Result<Session, Error> {
-        // Fresh stream on every generation, bounded by Etherbird create timeout.
+        // Fresh stream on every generation, bounded by etherbird create timeout.
         let stream = self.connector.connect().await?;
         Session::with_events(
             stream,
@@ -305,23 +305,26 @@ impl Client {
         &self,
         operation: O,
     ) -> Result<O::Output, etherbird::Error<Error>> {
-        let (opcode, data) = operation.encode().map_err(etherbird::Error::Operation)?;
-        crate::profile::validate_profile_request(self.profile(), opcode, &data)
+        let prepared = crate::operations::custom(operation).map_err(etherbird::Error::Operation)?;
+        self.execute_prepared(prepared).await
+    }
+    async fn execute_prepared<T, D>(
+        &self,
+        operation: crate::operations::PreparedOperation<D>,
+    ) -> Result<T, etherbird::Error<Error>>
+    where
+        T: Send + 'static,
+        D: FnOnce(&[u8]) -> Result<T, Error> + Send + 'static,
+    {
+        operation
+            .validate(self.profile())
             .map_err(etherbird::Error::Operation)?;
-        self.map_lifecycle_error(self.pool.execute_with_timeout(
-            self.call_timeout,
-            move |session| async move {
-                let mut context = session.managed().await;
-                let result = context
-                    .session
-                    .exchange_decoded(opcode, data, |bytes| {
-                        operation.decode(bytes).map_err(Error::from)
-                    })
-                    .await;
-                context.complete = true;
-                result
-            },
-        ))
+        self.map_lifecycle_error(
+            self.pool
+                .execute_with_timeout(self.call_timeout, move |session| async move {
+                    session.request_operation(operation).await
+                }),
+        )
         .await
     }
     /// call_timeout covers admission and the entire workflow; response_timeout bounds each exchange.
@@ -359,35 +362,21 @@ impl Client {
         opcode: u8,
         data: Vec<u8>,
     ) -> Result<Vec<u8>, etherbird::Error<Error>> {
-        crate::profile::validate_profile_request(self.profile(), opcode, &data)
-            .map_err(etherbird::Error::Operation)?;
-        self.map_lifecycle_error(
-            self.pool
-                .execute_with_timeout(self.call_timeout, move |session| async move {
-                    session.request(opcode, data).await
-                }),
-        )
-        .await
+        self.execute_prepared(crate::operations::raw(opcode, data))
+            .await
     }
     pub async fn read_configuration(&self) -> Result<SystemConfiguration, etherbird::Error<Error>> {
-        crate::profile::validate_profile_request(self.profile(), 6, &[])
-            .map_err(etherbird::Error::Operation)?;
-        self.map_lifecycle_error(
-            self.pool
-                .execute_with_timeout(self.call_timeout, |session| async move {
-                    session.read_configuration().await
-                }),
-        )
-        .await
+        self.execute_prepared(crate::operations::configuration(self.profile.clone()))
+            .await
     }
     pub async fn read_point_types(
         &self,
         request: crate::PointTypeRequest,
     ) -> Result<crate::PointTypePage, etherbird::Error<Error>> {
-        self.operation(crate::discovery::ProfilePointTypeOperation {
+        self.execute_prepared(crate::operations::point_types(
             request,
-            profile: self.profile.clone(),
-        })
+            self.profile.clone(),
+        ))
         .await
     }
     /// Returns complete pages from one exclusive generation, or fails without resuming/replay.
@@ -404,11 +393,8 @@ impl Client {
         &self,
         request: crate::IoPointRequest,
     ) -> Result<crate::IoPointReply, etherbird::Error<Error>> {
-        self.operation(crate::discovery::ProfileIoOperation {
-            request,
-            profile: self.profile.clone(),
-        })
-        .await
+        self.execute_prepared(crate::operations::io(request, self.profile.clone()))
+            .await
     }
     pub async fn discover_io(
         &self,
@@ -436,47 +422,22 @@ impl Client {
         self.workflow(crate::IoDiscovery { firmware, layout }).await
     }
     pub async fn read_clock(&self) -> Result<Clock, etherbird::Error<Error>> {
-        crate::profile::validate_profile_request(self.profile(), 7, &[])
-            .map_err(etherbird::Error::Operation)?;
-        self.map_lifecycle_error(
-            self.pool
-                .execute_with_timeout(self.call_timeout, |session| async move {
-                    session.read_clock().await
-                }),
-        )
-        .await
+        self.execute_prepared(crate::operations::clock(self.profile.clone()))
+            .await
     }
     pub async fn read_parameters(
         &self,
         parameters: &[Parameter],
     ) -> Result<Vec<Value>, etherbird::Error<Error>> {
-        crate::profile::validate_parameter_read(self.profile(), parameters)
-            .map_err(etherbird::Error::Operation)?;
-        let parameters = parameters.to_vec();
-        self.map_lifecycle_error(
-            self.pool
-                .execute_with_timeout(self.call_timeout, move |session| async move {
-                    session.read_parameters(&parameters).await
-                }),
-        )
-        .await
+        let prepared =
+            crate::operations::parameters(parameters).map_err(etherbird::Error::Operation)?;
+        self.execute_prepared(prepared).await
     }
     pub async fn read_parameter_block(
         &self,
         block: &ParameterBlock,
     ) -> Result<Vec<Value>, etherbird::Error<Error>> {
-        crate::profile::validate_profile_request(self.profile(), 167, &block.payload())
-            .map_err(etherbird::Error::Operation)?;
-        crate::profile::validate_expected_response(self.profile(), 167, block.response_size())
-            .map_err(etherbird::Error::Operation)?;
-        let block = block.clone();
-        self.map_lifecycle_error(
-            self.pool
-                .execute_with_timeout(self.call_timeout, move |session| async move {
-                    session.read_parameter_block(&block).await
-                }),
-        )
-        .await
+        self.execute_prepared(crate::operations::block(block)).await
     }
     /// Lookup and plan all parameters before admission. Each attempt holds one generation.
     pub async fn read_schema(

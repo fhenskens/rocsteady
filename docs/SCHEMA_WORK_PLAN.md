@@ -8,7 +8,7 @@ See [roadmap](OUTSTANDING_WORK.md) and [service plan](SPEC_WORK_PLAN.md).
 
 The provider boundary is an early deliverable in [EXT-3](EXTENSIBILITY.md).
 The provider API and bounded schema-aware opcode-180 reads are implemented.
-An initial 30-parameter built-in ROC800 slice covers selected PT-91/101/103/109
+The 50-parameter built-in ROC800 slice covers PT-91/101/103/109/136
 entries; see [the source/applicability manifest](CATALOG.md). Full catalog rows
 and schema-aware writes remain separate work.
 Provider extensibility and a particular built-in PT row have separate completion
@@ -47,8 +47,8 @@ For each row:
 4. Exercise representative reads and applicable writes over TCP; cross-check all catalog metadata against the source.
 5. Record physical evidence separately, with model/firmware; catalogue completion does not establish hardware compatibility.
 
-Status: four rows have an explicitly **partial** built-in slice; all other rows
-are open. No complete PT table is claimed. Every one of the 30 delivered parameters
+Status: five rows have an explicitly **partial** built-in slice; all other rows
+are open. No complete PT conformance is claimed. Every one of the 50 delivered parameters
 has an independent literal and TCP read fixture; [CATALOG.md](CATALOG.md) lists
 the exact metadata and remaining omissions.
 “Hardware: none” applies to every row. Introduce separate implementation/test/hardware
@@ -102,7 +102,7 @@ statuses as work lands; never replace them with one ambiguous “supported” fl
 | PT-133 | 133 | History segment 8 points | 3.4.44 | Open |
 | PT-134 | 134 | History segment 9 points | 3.4.45 | Open |
 | PT-135 | 135 | History segment 10 points | 3.4.46 | Open |
-| PT-136 | 136 | Clock | 3.4.47 | Open |
+| PT-136 | 136 | Clock | 3.4.47 | Partial: read metadata/fixtures for 0-19; DST week constraint, richer metadata and writes open |
 | PT-137 | 137 | Internet configuration | 3.4.48 | Open |
 | PT-138 | 138 | User C++ host | 3.4.49 | Open |
 | PT-139 | 139 | Smart I/O modules | 3.4.50 | Open |

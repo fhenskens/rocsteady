@@ -1,22 +1,27 @@
 # Managed extension contracts (setup, profiles, schemas and workflows)
 
-Implemented against the published Etherbird 0.4.1 registry source, with the `pool`
-feature, Rust 1.88 minimum, and Tokio 1. No fork or private dependency APIs.
+Implemented against published etherbird 0.4.2 from crates.io with the `pool`
+feature, current stable Rust and Tokio 1. All dependency interfaces are public.
+Registry source/commit and package validation are recorded in RELEASE.md.
 `Cargo.lock` identifies the tested dependency versions. Public traits are early
 0.1 APIs: breaking signature changes require a minor version change while below
 1.0; compatible additions may ship in patch releases. Re-run the extension and
 lifecycle suites on every dependency upgrade.
 
 Requested upstream improvements and their eventual adoption are tracked in
-[the Etherbird upgrade work package](OUTSTANDING_WORK.md#adopt-upstream-etherbird-lifecycle-improvements).
-Etherbird 0.4.1 supplies terminal lifecycle failures, operation retain/recover
+[the etherbird upgrade work package](OUTSTANDING_WORK.md#adopt-upstream-etherbird-lifecycle-improvements).
+etherbird 0.4.1 supplies terminal lifecycle failures, operation retain/recover
 classification, checked configuration, post-stop cache release, bounded FIFO and
 single-attempt call/readiness timeouts. Rocsteady retains
 stricter positive hook deadlines and explicit stream/generation-state cleanup.
+Version 0.4.2 adds the optional RetireOnDrop adapter helper. Rocsteady
+holds it across the complete exchange and decoder, and explicitly completes
+valid replies or healthy device rejections. Between-exchange workflow cancellation,
+generation state and protocol validation remain here.
 
 ## Audit and ownership
 
-Etherbird `BoundedFifoQueue` and `Pool::execute_with_timeout` supply bounded
+etherbird `BoundedFifoQueue` and `Pool::execute_with_timeout` supply bounded
 admission, an exclusive lease and the overall call deadline;
 `Lifecycle::setup` runs before resource publication under `Config::setup_timeout`.
 Pool timeout/cancellation signals the tracked job to drop its operation future;
@@ -48,8 +53,8 @@ Workflow validation happens at each `context.operation` or `context.exchange`,
 before wire use; this slice has no separate workflow preflight trait.
 `call_timeout` includes queueing, recovery/readiness, ownership acquisition and the
 whole operation/workflow. Each exchange uses `response_timeout` from inner stream
-acquisition through write, read and decode. Setup additionally has Etherbird's
-setup deadline. Dropping queued calls sends cancellation to Etherbird; they do not
+acquisition through write, read and decode. Setup additionally has etherbird's
+setup deadline. Dropping queued calls sends cancellation to etherbird; they do not
 run after admission. No remote completion claim follows from a timeout.
 Cancellation pruning reclaims queue space asynchronously. Rocsteady requires
 positive queue capacity and call/hook deadlines, although upstream permits zero
@@ -70,7 +75,7 @@ validation error. Raw exchanges leave typed interpretation to
 callers; use `Operation` to decode under the retirement guard. A workflow may handle
 healthy rejections deliberately. It cannot convert a retired generation into
 successful completion. Errors returned by workflow code outside an exchange still
-request Etherbird recovery except for the healthy/local classes above.
+request etherbird recovery except for the healthy/local classes above.
 
 ## Setup, state and registration
 
@@ -96,7 +101,7 @@ Failed or cancelled setup is never published ready, even if extension code handl
 a transport error. Transport setup failures retain the retry policy. Explicit
 `Authentication(Rejected/Unsupported)` latches across Client clones, wakes waiting
 calls and prevents further connector/setup invocation. Legacy login maps a valid
-opcode-255 rejection to terminal Rejected. Etherbird publishes `ResourceState::Failed`
+opcode-255 rejection to terminal Rejected. etherbird publishes `ResourceState::Failed`
 and performs bounded teardown. `authentication_failure()` reads the framework cause;
 Client maps authentication lifecycle errors to the existing public
 Operation(Authentication) result. Stop takes precedence over the latch.
@@ -109,7 +114,7 @@ enhanced procedures and applicability metadata remain outstanding EXT-1 tasks.
 
 Run `cargo run --example managed_extensions`. The consumer example implements
 custom setup, a typed operation and a two-exchange workflow using only public APIs
-and the published Etherbird async-trait re-export. Its independent in-memory peer
+and the published etherbird async-trait re-export. Its independent in-memory peer
 checks literal requests and computes reply CRC separately from production codecs.
 The setup procedure is a clock fixture, not enhanced authentication.
 
@@ -186,7 +191,7 @@ applicability. ParameterSchema supplies DataType (and therefore width), Access,
 optional logical bounds and optional numeric bounds. Missing metadata is never guessed.
 ReadOnly/ReadWrite are readable; WriteOnly and unresolved Conditional fail locally.
 Logical bounds are enforced; numeric bounds are write metadata, not a read-value filter.
-The initial built-in Roc800Catalog covers 30 selected parameters; schema-aware
+The built-in Roc800Catalog covers 50 parameters, including PT-136 clock fields; schema-aware
 writes and complete PT tables remain unavailable. See [CATALOG.md](CATALOG.md).
 
 `SchemaChain` searches providers in order: place caller overrides first, catalogs
@@ -205,13 +210,13 @@ of one generation for the entire attempt, including all batch decodes. No batch 
 after reconnection; competing clones/heartbeats cannot interleave.
 
 On success the result is ordered Vec<Value>. SchemaReadError preserves the original
-Etherbird error and ReadProgress with fully decoded values and completed_batches.
+etherbird error and ReadProgress with fully decoded values and completed_batches.
 A failed batch contributes no values; progress is the confirmed snapshot at failure,
 including overall call timeout. Malformed replies retire the stream; valid device
 rejections remain healthy. Caller cancellation has no returned progress. To resume,
 explicitly choose new work after reestablishing identity and considering consistency:
 even exclusive ownership does not freeze the controller's values across batches.
-Overall call expiry signals asynchronous job cancellation in Etherbird; an immediately
+Overall call expiry signals asynchronous job cancellation in etherbird; an immediately
 submitted call can still observe Disconnected while retirement reaches the supervisor.
 Observe replacement/readiness before an explicit subsequent attempt. This is separate
 from automatic operation replay, which is never used.

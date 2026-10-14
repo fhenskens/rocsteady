@@ -361,43 +361,6 @@ impl Workflow for IoDiscovery {
     }
 }
 
-pub(crate) struct ProfileIoOperation {
-    pub request: IoPointRequest,
-    pub profile: std::sync::Arc<dyn crate::ProtocolProfile>,
-}
-impl Operation for ProfileIoOperation {
-    type Output = IoPointReply;
-    fn encode(&self) -> Result<(u8, Vec<u8>), Error> {
-        crate::profile::validate_expected_response(
-            self.profile.as_ref(),
-            50,
-            self.request.layout.len(),
-        )?;
-        Ok((50, self.request.payload()))
-    }
-    fn decode(&self, payload: &[u8]) -> Result<IoPointReply, DecodeError> {
-        self.profile.decode_io_points(&self.request, payload)
-    }
-}
-pub(crate) struct ProfilePointTypeOperation {
-    pub request: PointTypeRequest,
-    pub profile: std::sync::Arc<dyn crate::ProtocolProfile>,
-}
-impl Operation for ProfilePointTypeOperation {
-    type Output = PointTypePage;
-    fn encode(&self) -> Result<(u8, Vec<u8>), Error> {
-        crate::profile::validate_expected_response(
-            self.profile.as_ref(),
-            100,
-            self.request.response_size(),
-        )?;
-        Ok((100, self.request.payload()))
-    }
-    fn decode(&self, payload: &[u8]) -> Result<PointTypePage, DecodeError> {
-        self.profile.decode_point_types(&self.request, payload)
-    }
-}
-
 pub(crate) struct PointTypeScan {
     pub requests: Vec<PointTypeRequest>,
 }

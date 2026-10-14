@@ -1,4 +1,4 @@
-// External consumer example: public rocsteady and published Etherbird APIs only.
+// External consumer example: public rocsteady and published etherbird APIs only.
 // This clock-based fixture is NOT an enhanced-security algorithm.
 include!("support/managed_fixture.rs");
 

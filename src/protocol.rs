@@ -1,5 +1,7 @@
 //! Wire codec and typed read operations, independently usable without networking.
 use crate::Error;
+mod reader;
+use reader::PayloadReader;
 
 pub const HEADER_LEN: usize = 6;
 pub const OVERHEAD: usize = 8;
@@ -259,7 +261,7 @@ impl DataType {
             Self::Ascii(n) => n,
         }
     }
-    fn checked_width(self) -> Result<usize, Error> {
+    pub(crate) fn checked_width(self) -> Result<usize, Error> {
         let n = self.width();
         if n == 0 || n > MAX_PARAMETER_RESPONSE {
             return Err(Error::InvalidRequest("invalid parameter width"));
@@ -362,50 +364,82 @@ impl Parameter {
         Self { tlp, data_type }
     }
 }
-pub fn parameter_request(parameters: &[Parameter]) -> Result<Vec<u8>, Error> {
+/// Allocation-free wire costs, shared by encoding, profile validation and batching.
+#[derive(Clone, Copy)]
+pub(crate) struct ParameterBudget {
+    pub request: usize,
+    pub response: usize,
+}
+impl ParameterBudget {
+    pub const EMPTY: Self = Self {
+        request: 1,
+        response: 1,
+    };
+    pub fn with_parameter(self, kind: DataType) -> Result<Self, Error> {
+        Ok(Self {
+            request: self.request + 3,
+            response: self.response + 3 + kind.checked_width()?,
+        })
+    }
+    pub fn fits(self, request: usize, response: usize) -> bool {
+        self.request <= request && self.response <= response
+    }
+}
+pub(crate) fn parameter_budget(parameters: &[Parameter]) -> Result<ParameterBudget, Error> {
     let count =
         u8::try_from(parameters.len()).map_err(|_| Error::InvalidRequest("too many parameters"))?;
     if count == 0 {
         return Err(Error::InvalidRequest("empty parameter request"));
     }
-    let mut response_size = 1_usize;
+    let mut budget = ParameterBudget::EMPTY;
     for p in parameters {
-        response_size += 3 + p.data_type.checked_width()?;
+        budget = budget.with_parameter(p.data_type)?;
     }
-    if response_size > MAX_PARAMETER_RESPONSE {
+    if budget.response > MAX_PARAMETER_RESPONSE {
         return Err(Error::InvalidRequest(
             "parameter response would exceed 240 bytes",
         ));
     }
-    let mut bytes = vec![count];
+    Ok(budget)
+}
+pub fn parameter_request(parameters: &[Parameter]) -> Result<Vec<u8>, Error> {
+    prepare_parameter_request(parameters).map(|(payload, _)| payload)
+}
+pub(crate) fn prepare_parameter_request(
+    parameters: &[Parameter],
+) -> Result<(Vec<u8>, ParameterBudget), Error> {
+    let budget = parameter_budget(parameters)?;
+    let count = parameters.len() as u8;
+    let mut bytes = Vec::with_capacity(budget.request);
+    bytes.push(count);
     for p in parameters {
         bytes.extend(p.tlp.bytes());
     }
-    Ok(bytes)
+    Ok((bytes, budget))
 }
 pub fn decode_parameters(parameters: &[Parameter], bytes: &[u8]) -> Result<Vec<Value>, Error> {
-    parameter_request(parameters)?;
-    if bytes.first().copied() != Some(parameters.len() as u8) {
-        return Err(Error::InvalidResponse("parameter count mismatch"));
-    }
-    let mut cursor = 1;
+    parameter_budget(parameters)?;
+    let mut reader = PayloadReader::new(bytes);
+    reader.expect(&[parameters.len() as u8], "parameter count mismatch")?;
     let mut values = Vec::with_capacity(parameters.len());
     for p in parameters {
-        if bytes.get(cursor..cursor + 3) != Some(p.tlp.bytes().as_slice()) {
-            return Err(Error::InvalidResponse("TLP echo mismatch"));
-        }
-        cursor += 3;
-        let end = cursor + p.data_type.width();
-        let value = bytes
-            .get(cursor..end)
-            .ok_or(Error::InvalidResponse("truncated parameter"))?;
-        values.push(Value::decode(p.data_type, value)?);
-        cursor = end;
+        reader.expect(&p.tlp.bytes(), "TLP echo mismatch")?;
+        values.push(reader.value(p.data_type, "truncated parameter")?);
     }
-    if cursor != bytes.len() {
-        return Err(Error::InvalidResponse("trailing parameter data"));
-    }
+    reader.finish("trailing parameter data")?;
     Ok(values)
+}
+
+pub(crate) fn validate_request(opcode: u8, size: usize) -> Result<(), Error> {
+    if matches!(opcode, 24 | 224 | 255) {
+        return Err(Error::InvalidRequest(
+            "opcode is routed or device-originated; unsupported by unicast request API",
+        ));
+    }
+    if size > u8::MAX as usize {
+        return Err(Error::InvalidRequest("payload exceeds 255 bytes"));
+    }
+    Ok(())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -453,24 +487,21 @@ impl ParameterBlock {
         ]
     }
     pub fn decode(&self, bytes: &[u8]) -> Result<Vec<Value>, Error> {
-        if bytes.get(..4) != Some(self.payload().as_slice()) {
-            return Err(Error::InvalidResponse("block header mismatch"));
-        }
-        let mut cursor = 4;
+        let mut reader = PayloadReader::new(bytes);
+        reader.expect(
+            &[
+                self.point_type,
+                self.logical,
+                self.types.len() as u8,
+                self.start,
+            ],
+            "block header mismatch",
+        )?;
         let mut values = Vec::with_capacity(self.types.len());
         for &kind in &self.types {
-            let end = cursor + kind.width();
-            values.push(Value::decode(
-                kind,
-                bytes
-                    .get(cursor..end)
-                    .ok_or(Error::InvalidResponse("truncated block"))?,
-            )?);
-            cursor = end;
+            values.push(reader.value(kind, "truncated block")?);
         }
-        if cursor != bytes.len() {
-            return Err(Error::InvalidResponse("trailing block data"));
-        }
+        reader.finish("trailing block data")?;
         Ok(values)
     }
 }

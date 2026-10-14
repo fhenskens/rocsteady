@@ -30,7 +30,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .read_schema(
                 &catalog,
                 &catalog.context(),
-                &[Tlp::new(91, 0, 3), ai, di, battery],
+                &[
+                    Tlp::new(91, 0, 3),
+                    Tlp::new(136, 0, 5),
+                    Tlp::new(136, 0, 7),
+                    ai,
+                    di,
+                    battery,
+                ],
             )
             .await?;
         Ok::<_, Box<dyn std::error::Error>>(values)

@@ -504,6 +504,17 @@ impl rocsteady::SetupStrategy for Probe {
 }
 #[tokio::test]
 async fn missing_setup_capability_is_actionable_and_does_not_retry() {
+    struct CountedConnector {
+        tcp: rocsteady::transport::TcpConnector,
+        attempts: AtomicUsize,
+    }
+    #[etherbird::async_trait]
+    impl rocsteady::transport::Connector for CountedConnector {
+        async fn connect(&self) -> Result<rocsteady::transport::Stream, Error> {
+            self.attempts.fetch_add(1, Ordering::SeqCst);
+            self.tcp.connect().await
+        }
+    }
     let fixture = ProfileFixture::start().await;
     let config = ClientConfig {
         profile: Arc::new(NoClock),
@@ -514,16 +525,17 @@ async fn missing_setup_capability_is_actionable_and_does_not_retry() {
         Client::tcp(&fixture.endpoint, config.clone()),
         Err(Error::CapabilityUnavailable(_))
     ));
-    let client = Client::with_setup(
-        Arc::new(rocsteady::transport::TcpConnector::new(&fixture.endpoint)),
-        config,
-        Arc::new(Probe),
-    )
-    .unwrap();
+    let connector = Arc::new(CountedConnector {
+        tcp: rocsteady::transport::TcpConnector::new(&fixture.endpoint),
+        attempts: AtomicUsize::new(0),
+    });
+    let client = Client::with_setup(connector.clone(), config, Arc::new(Probe)).unwrap();
     assert!(
         matches!(client.connected().await, Err(etherbird::Error::Lifecycle(cause)) if matches!(cause.as_ref(), Error::CapabilityUnavailable(_)))
     );
     assert!(client.connected().await.is_err());
-    assert_eq!(fixture.peer.connections.load(Ordering::SeqCst), 1);
+    // Setup can fail locally before the peer's accept task is scheduled.
+    // Count connector attempts directly to prove the terminal failure never retries.
+    assert_eq!(connector.attempts.load(Ordering::SeqCst), 1);
     client.stop().await;
 }

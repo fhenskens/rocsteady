@@ -74,6 +74,20 @@ pub fn catalog_literal(point_type: u8, parameter: u8) -> Option<Vec<u8>> {
         (109, 7) => vec![0x78, 0x56],
         (109, 12) => vec![0, 0, 0x40, 0x41], // FLOAT: 12.0; different parameter from PT-103.
         (109, 23) => vec![0x81],
+        // Table 3-48: independent widths and boundary/raw values.
+        (136, 0 | 1) => vec![59],
+        (136, 2 | 10 | 15) => vec![23],
+        (136, 3) => vec![31],
+        (136, 4 | 13 | 18) => vec![12],
+        (136, 5) => vec![0x38, 0x08], // UINT16: 2104.
+        (136, 6 | 11 | 16) => vec![7],
+        (136, 7) => vec![0xff, 0xff, 0xff, 0xff], // Raw TIME, no timezone inference.
+        (136, 8) => vec![1],
+        (136, 9) => vec![0x3f, 0x42, 0x0f, 0x00], // UINT32: 999999.
+        (136, 12) => vec![6],
+        (136, 14) => vec![0x78, 0x56, 0x34, 0x12],
+        (136, 17) => vec![56], // Preserve the disputed source value.
+        (136, 19) => vec![0, 0, 0, 0],
         _ => return None,
     })
 }
@@ -127,6 +141,7 @@ impl DiscoveryFixture {
                                 bytes[60] = 1;
                                 bytes[62] = 1;
                                 bytes[68] = 5; // PT-101/103/109 counts.
+                                bytes[95] = 1; // PT-136 is a singleton, outside the I/O map.
                                 if stats.change_config_at.load(Ordering::SeqCst) == query {
                                     bytes[6] = 1;
                                 }
@@ -173,7 +188,7 @@ impl DiscoveryFixture {
                                         0..=7 => point_type as u8,
                                         60 => 253,
                                         61 => 42,
-                                        91 | 101 | 103 | 109 => 254,
+                                        91 | 101 | 103 | 109 | 136 => 254,
                                         _ => 255,
                                     });
                                 }
@@ -185,7 +200,7 @@ impl DiscoveryFixture {
                                 let mut bytes = vec![payload[0]];
                                 for tlp in payload[1..].as_chunks::<3>().0 {
                                     let valid_location = match tlp[0] {
-                                        91 => tlp[1] == 0,
+                                        91 | 136 => tlp[1] == 0,
                                         101 => usize::from(tlp[1]) == 2 * stride,
                                         103 => usize::from(tlp[1]) == stride,
                                         109 => tlp[1] < 5,

@@ -27,42 +27,33 @@ pub struct ManagedContext<'a> {
 }
 impl ManagedContext<'_> {
     pub async fn read_configuration(&mut self) -> Result<crate::SystemConfiguration, Error> {
-        self.session
-            .exchange_decoded(6, vec![], |bytes| {
-                self.profile()
-                    .decode_configuration(bytes)
-                    .map_err(Error::from)
-            })
-            .await
+        self.exchange_operation(crate::operations::configuration(
+            self.session.profile.clone(),
+        ))
+        .await
     }
     pub async fn read_io_points(
         &mut self,
         request: crate::IoPointRequest,
     ) -> Result<crate::IoPointReply, Error> {
-        self.operation(crate::discovery::ProfileIoOperation {
-            request,
-            profile: self.session.profile.clone(),
-        })
-        .await
+        self.exchange_operation(crate::operations::io(request, self.session.profile.clone()))
+            .await
     }
     pub async fn read_point_types(
         &mut self,
         request: crate::PointTypeRequest,
     ) -> Result<crate::PointTypePage, Error> {
-        self.operation(crate::discovery::ProfilePointTypeOperation {
+        self.exchange_operation(crate::operations::point_types(
             request,
-            profile: self.session.profile.clone(),
-        })
+            self.session.profile.clone(),
+        ))
         .await
     }
     pub fn profile(&self) -> &dyn crate::ProtocolProfile {
         self.session.profile.as_ref()
     }
     pub async fn read_clock(&mut self) -> Result<crate::Clock, Error> {
-        self.session
-            .exchange_decoded(7, vec![], |bytes| {
-                self.profile().decode_clock(bytes).map_err(Error::from)
-            })
+        self.exchange_operation(crate::operations::clock(self.session.profile.clone()))
             .await
     }
     pub fn generation(&self) -> u64 {
@@ -84,17 +75,21 @@ impl ManagedContext<'_> {
         }
     }
     pub async fn exchange(&mut self, opcode: u8, data: Vec<u8>) -> Result<Vec<u8>, Error> {
-        self.session
-            .exchange_decoded(opcode, data, |bytes| Ok(bytes.to_vec()))
+        self.exchange_operation(crate::operations::raw(opcode, data))
             .await
     }
     pub async fn operation<O: Operation>(&mut self, operation: O) -> Result<O::Output, Error> {
-        let (opcode, data) = operation.encode()?;
-        self.session
-            .exchange_decoded(opcode, data, |bytes| {
-                operation.decode(bytes).map_err(Error::from)
-            })
+        self.exchange_operation(crate::operations::custom(operation)?)
             .await
+    }
+    pub(crate) async fn exchange_operation<T, D>(
+        &mut self,
+        operation: crate::operations::PreparedOperation<D>,
+    ) -> Result<T, Error>
+    where
+        D: FnOnce(&[u8]) -> Result<T, Error>,
+    {
+        self.session.exchange_operation(operation).await
     }
 }
 /// One exclusive attempt. Never replayed across replacement.
@@ -118,7 +113,7 @@ impl SetupStrategy for LegacySetup {
     async fn setup(&self, context: &mut ManagedContext<'_>) -> Result<SessionState, Error> {
         if let Some(login) = &self.login {
             context
-                .operation(LegacyLogin(login.clone()))
+                .exchange_operation(crate::operations::login(login))
                 .await
                 .map_err(|error| match error {
                     Error::Device(_) => {
@@ -129,21 +124,6 @@ impl SetupStrategy for LegacySetup {
         }
         context.read_clock().await?;
         Ok(Box::new(()))
-    }
-}
-
-struct LegacyLogin(crate::Login);
-impl Operation for LegacyLogin {
-    type Output = ();
-    fn encode(&self) -> Result<(u8, Vec<u8>), Error> {
-        Ok((17, self.0.payload()))
-    }
-    fn decode(&self, bytes: &[u8]) -> Result<(), DecodeError> {
-        if bytes.is_empty() {
-            Ok(())
-        } else {
-            Err(DecodeError("login acknowledgement must be empty"))
-        }
     }
 }
 

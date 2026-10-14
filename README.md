@@ -6,7 +6,7 @@ rocsteady is an async Rust client for Emerson ROC Plus devices. Read configurati
 clocks and parameters through the same client while failed connections are replaced.
 Configured login and protocol readiness are restored before application calls resume.
 
-[Etherbird](https://crates.io/crates/etherbird) supplies lifecycle supervision,
+[etherbird](https://crates.io/crates/etherbird) supplies lifecycle supervision,
 bounded admission and exclusive channel access. rocsteady supplies the ROC Plus
 framing, typed reads and session rules. TCP, optional serial connections and
 application-provided byte streams use the same protocol implementation.
@@ -29,7 +29,7 @@ application-provided byte streams use the same protocol implementation.
 - **State and shutdown:** optional heartbeats detect idle failure, state notifications
   report changes, and awaited shutdown cancels/drains work and closes the channel.
 
-Rust 1.88 or later is required. The first experimental version is `0.1.0-alpha.1`:
+Use the current stable Rust toolchain. The first experimental version is `0.1.0-alpha.1`:
 
 ```toml
 [dependencies]
@@ -49,14 +49,14 @@ The built-in alpha scope is read-only: configuration discovery, clock and parame
 reads, legacy login and device errors. The working tree adds explicit profiles,
 contextual reply codecs, discovery services and schema providers with bounded reads; see the
 [extension contracts](docs/MANAGED_EXTENSIONS.md). These additions are unreleased.
-The [initial catalog](docs/CATALOG.md) contains 30 selected ROC800 parameters.
+The [catalog](docs/CATALOG.md) contains 50 ROC800 parameters, including clock fields.
 Remaining catalog tables, enhanced login and typed writes, history, alarms, files
 and routing remain unavailable. Raw/custom
 operations can perform side effects; they are not automatically replayed.
 
-Windows, Linux and macOS checks cover Rust 1.88, independent wire fixtures, loopback TCP,
+Windows, Linux and macOS checks use stable Rust and cover independent wire fixtures, loopback TCP,
 in-memory streams, recovery and shutdown. The publication package is verified
-and exercised by an external consumer. All six hosted stable/MSRV jobs passed for
+and exercised by an external consumer. All six historical toolchain/platform jobs passed for
 the alpha candidate. Physical ROC hardware has not been validated. The simulator
 is a deterministic fault-injection fixture, not a full ROC800 emulator.
 
@@ -208,7 +208,7 @@ Use `Client::request` only when raw payload interpretation belongs to your calle
 
 A workflow holds one generation across all its exchanges. Competing clones and
 heartbeats cannot consume its responses. This builds on the `ClockYear` operation
-above; add Etherbird 0.4.1 as a dependency for its async-trait re-export.
+above; use the same etherbird version as rocsteady for its async-trait re-export.
 
 ```rust,no_run
 use rocsteady::{Client, Error, ManagedContext, Workflow};

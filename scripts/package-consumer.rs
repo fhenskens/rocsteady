@@ -67,6 +67,14 @@ async fn main() {
         rocsteady::Value::Float(12.5),
     );
     model.parameters.insert(
+        rocsteady::Tlp::new(136, 0, 5),
+        rocsteady::Value::UInt16(2026),
+    );
+    model.parameters.insert(
+        rocsteady::Tlp::new(136, 0, 7),
+        rocsteady::Value::Time(0x12345678),
+    );
+    model.parameters.insert(
         rocsteady::Tlp::new(200, 0, 1),
         rocsteady::Value::UInt16(123),
     );
@@ -145,10 +153,13 @@ async fn main() {
     let catalog = rocsteady::Roc800Catalog::from_discovery(io).unwrap();
     assert_eq!(
         discovery_client
-            .read_schema(&catalog, &catalog.context(), &[ai])
+            .read_schema(&catalog, &catalog.context(), &[
+                ai, rocsteady::Tlp::new(136, 0, 5), rocsteady::Tlp::new(136, 0, 7)
+            ])
             .await
             .unwrap(),
-        [rocsteady::Value::Float(12.5)]
+        [rocsteady::Value::Float(12.5), rocsteady::Value::UInt16(2026),
+         rocsteady::Value::Time(0x12345678)]
     );
     discovery_client.stop().await;
     server.stop().await.unwrap();

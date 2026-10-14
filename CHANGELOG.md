@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+- Share checked payload consumption between arbitrary and contiguous parameter
+  reads, preserving operation-specific errors and independently tested literals.
+- Generate shell/PowerShell package consumers from one manifest template; handle
+  both Cargo package-ID forms and inherit the extracted crate's lockfile.
+
+- Support the current stable Rust toolchain; remove the fixed Rust 1.88 minimum
+  and its CI jobs while retaining Linux/macOS/Windows coverage.
+
+- Share built-in request preparation, reply budgets and decoding across Client,
+  Session and managed workflows. Encoding validates before admission; decoding
+  remains inside the exchange retirement guard.
+- Adopt published etherbird 0.4.2 and reuse its RetireOnDrop helper. Preserve
+  healthy device rejections and no replay; no sibling path dependency is required.
+- Share allocation-free parameter budgets across codecs, profiles and planning;
+  separate catalog facts from lookup policy and move unicast validation to protocol.
+
+- Extend the ROC800 catalog from 30 to 50 parameters with all PT-136 clock read
+  widths, singleton addressing and explicit 1.20/3.40 introduction gates.
+  Preserve TIME as raw values and leave the disputed DST end-week range unspecified.
+- Add independent clock literals/TCP reads, firmware-boundary and retirement tests,
+  simulator coverage and clock reads in the example and packaged consumer.
+- Remove a setup test's peer-accept scheduling race by counting connector attempts
+  directly when proving that missing setup capabilities do not retry.
+
 - Implement opcode-100 command-11 classification with exact echoes, counts 0-245,
   preserved unknown codes and bounded generation-exclusive range paging.
 - Implement both opcode-50 selectors and explicit 160/240/224-entry layouts through
@@ -26,7 +50,7 @@
 - Adding ClientConfig.profile changes exhaustive struct literals; use ..Default::default()
   or supply an explicit profile. These experimental API changes require release review.
 
-- Adopt published Etherbird 0.4.1: terminal lifecycle authentication failures,
+- Adopt published etherbird 0.4.1: terminal lifecycle authentication failures,
   healthy operation error retention, checked configuration and shutdown cache release.
 - Remove local authentication latch/gate and nested healthy-error results while
   preserving authentication error compatibility, positive deadlines, no replay,
@@ -38,7 +62,7 @@
 
 - Configuration discovery, clock/parameter reads, legacy login, frame/CRC validation
   and preserved device errors over TCP and optional serial streams.
-- Etherbird 0.3.1 supervision with bounded admission, replacement setup, exclusive
+- etherbird 0.3.1 supervision with bounded admission, replacement setup, exclusive
   ownership, call/wire deadlines, cancellation retirement and awaited shutdown.
 - Public SetupStrategy, Operation and Workflow with scoped ManagedContext.
 - Typed DecodeError, application ErrorKind, terminal authentication failure,

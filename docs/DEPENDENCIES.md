@@ -5,9 +5,14 @@ registry source manifests for the tracked Cargo.lock, including target-specific
 dependencies. This is a license inventory and package review, not a security
 advisory audit. No dependency source is vendored in the rocsteady package.
 
-Direct dependencies: Etherbird 0.4.1 (Apache-2.0), Tokio 1.53.2 (MIT),
+Current registry dependency: etherbird 0.4.2 (Apache-2.0), adopted 2026-10-14.
+Its published VCS commit matches the reviewed release. Cargo.lock records the
+registry checksum; transitive versions/licenses remain unchanged. Local patched
+checks before publication are separate from registry package/consumer evidence.
+
+Previously verified registry dependencies: etherbird 0.4.1 (Apache-2.0), Tokio 1.53.2 (MIT),
 thiserror 2.0.21 (MIT OR Apache-2.0), optional tokio-serial 5.5.0 (MIT).
-The 0.4.1 migration changes only Etherbird's locked version/checksum; transitive
+The 0.4.1 migration changes only etherbird's locked version/checksum; transitive
 dependencies remain unchanged. Windows stable/MSRV and package-consumer checks
 pass; Linux/macOS migration validation remains pending in CI.
 Serial adds serialport 4.10.1 (MPL-2.0); retain its original source/license
@@ -18,7 +23,7 @@ Actual license files for serialport, unescaper and unicode-ident were inspected.
 The optional serial feature is therefore not accurately described as entirely MIT/Apache.
 
 No missing declared license was found. Dependency upgrades must refresh this
-inventory and repeat lifecycle, MSRV, platform and package consumer checks.
+inventory and repeat lifecycle, stable-toolchain, platform and package consumer checks.
 
 | Dependency | Locked version | Declared license |
 | --- | --- | --- |
@@ -30,7 +35,7 @@ inventory and repeat lifecycle, MSRV, platform and package consumer checks.
 | cfg-if | 1.0.5 | MIT OR Apache-2.0 |
 | core-foundation | 0.10.1 | MIT OR Apache-2.0 |
 | core-foundation-sys | 0.8.7 | MIT OR Apache-2.0 |
-| etherbird | 0.4.1 | Apache-2.0 |
+| etherbird | 0.4.2 | Apache-2.0 |
 | futures-core | 0.3.34 | MIT OR Apache-2.0 |
 | futures-sink | 0.3.34 | MIT OR Apache-2.0 |
 | io-kit-sys | 0.4.1 | MIT / Apache-2.0 |
@@ -83,4 +88,4 @@ commit and its dirty status; final publication requires a reviewed clean commit.
 
 The README and usage include_str paths are present in the package. Verification
 builds the extracted crate, and scripts compile/run an external consumer against
-that extracted path with only public APIs. No sibling Etherbird checkout is used.
+that extracted path with only public APIs. No sibling etherbird checkout is used.

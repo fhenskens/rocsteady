@@ -44,7 +44,7 @@ trying again without changing setup cannot succeed.
 
 ## Errors and recovery
 
-Client methods return `etherbird::Error<rocsteady::Error>`. Use a direct Etherbird
+Client methods return `etherbird::Error<rocsteady::Error>`. Use a direct etherbird
 0.4.1 dependency if naming that type in your application; the pool feature matches
 rocsteady. Matching ErrorKind avoids tying application policy to each new variant.
 
@@ -78,7 +78,7 @@ queued or after send, so the error alone does not establish remote completion.
 ownership and the whole workflow. A cancelled scope retires its generation.
 
 Setup Authentication errors latch across clones. `authentication_failure()` reports
-the reason, and pending/subsequent calls fail promptly. Etherbird publishes Failed
+the reason, and pending/subsequent calls fail promptly. etherbird publishes Failed
 and suspends further connector/setup attempts while bounded teardown completes.
 Client maps the typed lifecycle authentication cause to the existing
 `Error::Operation(Error::Authentication(_))` result for compatibility.
