@@ -68,6 +68,20 @@ pub trait ProtocolProfile: Send + Sync + 'static {
     ) -> Result<crate::PointTypePage, DecodeError> {
         crate::PointTypeCodec.decode(request, payload)
     }
+    fn decode_alarms(
+        &self,
+        request: &crate::LogRequest,
+        payload: &[u8],
+    ) -> Result<crate::AlarmPage, DecodeError> {
+        crate::AlarmCodec.decode(request, payload)
+    }
+    fn decode_events(
+        &self,
+        request: &crate::LogRequest,
+        payload: &[u8],
+    ) -> Result<crate::EventPage, DecodeError> {
+        crate::EventCodec.decode(request, payload)
+    }
     /// Section 3.2 sequential physical positions. Override explicitly for a known alternative.
     fn io_location(&self, layout: crate::IoLayout, response_index: usize) -> Result<u8, Error> {
         if response_index >= layout.len() {
@@ -117,12 +131,12 @@ impl ProtocolProfile for DefaultProfile {
             name: "roc-plus-read-only",
             applicability: "ordinary unicast; firmware applicability is not automatically discovered",
             assumptions: "explicit addresses and caller-supplied parameter types; no routed framing",
-            evidence: "tests/protocol.rs, tests/configuration.rs, tests/integration.rs, tests/discovery.rs; no hardware evidence",
+            evidence: "tests/protocol.rs, tests/configuration.rs, tests/integration.rs, tests/discovery.rs, tests/logs.rs; no hardware evidence",
         }
     }
     fn capability(&self, opcode: u8) -> Capability {
         match opcode {
-            6 | 7 | 17 | 50 | 100 | 167 | 180 => Capability::Verified,
+            6 | 7 | 17 | 50 | 100 | 118 | 119 | 167 | 180 | 225 => Capability::Verified,
             24 | 224 | 255 => Capability::Unavailable,
             _ => Capability::UserSupplied,
         }

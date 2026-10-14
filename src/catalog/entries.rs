@@ -12,6 +12,7 @@ macro_rules! entry {
             numeric_range: $range,
             introduced: $version,
             source: $source,
+            metadata: metadata::for_parameter($pt, $p),
         }
     };
 }
@@ -138,6 +139,366 @@ pub(super) const ENTRIES: &[CatalogEntry] = &[
         "3.4.4/Table 3-5, p.3-38; Series 2 introduced 3.00"
     ),
     entry!(
+        91,
+        10,
+        "pid_capacity",
+        DataType::UInt8,
+        ReadOnly,
+        Some((0.0, 16.0)),
+        (1, 0),
+        "3.4.4/Table 3-5, p.3-34"
+    ),
+    entry!(
+        91,
+        11,
+        "meter_capacity",
+        DataType::UInt8,
+        ReadOnly,
+        Some((2.0, 12.0)),
+        (1, 0),
+        "3.4.4/Table 3-5, p.3-35"
+    ),
+    entry!(
+        91,
+        12,
+        "fst_capacity",
+        DataType::UInt8,
+        ReadOnly,
+        Some((6.0, 6.0)),
+        (1, 0),
+        "3.4.4/Table 3-5, p.3-35"
+    ),
+    entry!(
+        91,
+        13,
+        "event_index",
+        DataType::UInt16,
+        ReadOnly,
+        Some((0.0, 449.0)),
+        (1, 0),
+        "3.4.4/Table 3-5, p.3-35"
+    ),
+    entry!(
+        91,
+        14,
+        "alarm_index",
+        DataType::UInt16,
+        ReadOnly,
+        Some((0.0, 449.0)),
+        (1, 0),
+        "3.4.4/Table 3-5, p.3-35"
+    ),
+    entry!(
+        91,
+        22,
+        "configuration_write_complete",
+        DataType::UInt8,
+        ReadOnly,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.4/Table 3-5, p.3-35"
+    ),
+    entry!(
+        91,
+        23,
+        "cpu_loading",
+        DataType::Float,
+        ReadOnly,
+        Some((0.0, 100.0)),
+        (1, 0),
+        "3.4.4/Table 3-5, p.3-35"
+    ),
+    entry!(
+        91,
+        37,
+        "boot_identification",
+        DataType::Ascii(20),
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.4/Table 3-5, p.3-37"
+    ),
+    entry!(
+        91,
+        38,
+        "boot_build_time",
+        DataType::Ascii(20),
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.4/Table 3-5, p.3-37"
+    ),
+    entry!(
+        91,
+        43,
+        "initialization_count",
+        DataType::UInt16,
+        ReadWrite,
+        Some((0.0, 65535.0)),
+        (1, 20),
+        "3.4.4/Table 3-5, p.3-37"
+    ),
+    entry!(
+        91,
+        44,
+        "warm_start_count",
+        DataType::UInt16,
+        ReadWrite,
+        Some((0.0, 65535.0)),
+        (1, 20),
+        "3.4.4/Table 3-5, p.3-37"
+    ),
+    entry!(
+        91,
+        45,
+        "cold_start_count",
+        DataType::UInt16,
+        ReadWrite,
+        Some((0.0, 65535.0)),
+        (1, 20),
+        "3.4.4/Table 3-5, p.3-37"
+    ),
+    entry!(
+        91,
+        46,
+        "power_cycle_count",
+        DataType::UInt16,
+        ReadWrite,
+        Some((0.0, 65535.0)),
+        (1, 20),
+        "3.4.4/Table 3-5, p.3-37"
+    ),
+    entry!(
+        91,
+        47,
+        "last_power_down",
+        DataType::Time,
+        ReadOnly,
+        None,
+        (1, 30),
+        "3.4.4/Table 3-5, p.3-37"
+    ),
+    entry!(
+        91,
+        48,
+        "last_power_up",
+        DataType::Time,
+        ReadOnly,
+        None,
+        (1, 30),
+        "3.4.4/Table 3-5, p.3-37"
+    ),
+    entry!(
+        95,
+        0,
+        "port_tag",
+        DataType::Ascii(10),
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.6/Table 3-7, p.3-44"
+    ),
+    entry!(
+        95,
+        1,
+        "port_baud_generator",
+        DataType::UInt16,
+        ReadWrite,
+        Some((0.0, 3.0)),
+        (1, 0),
+        "3.4.6/Table 3-7, p.3-44"
+    ),
+    entry!(
+        95,
+        2,
+        "port_stop_bits",
+        DataType::UInt8,
+        ReadWrite,
+        Some((1.0, 2.0)),
+        (1, 0),
+        "3.4.6/Table 3-7, p.3-44"
+    ),
+    entry!(
+        95,
+        3,
+        "port_data_bits",
+        DataType::UInt8,
+        ReadWrite,
+        Some((7.0, 8.0)),
+        (1, 0),
+        "3.4.6/Table 3-7, p.3-44"
+    ),
+    entry!(
+        95,
+        4,
+        "port_parity",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 2.0)),
+        (1, 0),
+        "3.4.6/Table 3-7, p.3-44"
+    ),
+    entry!(
+        95,
+        5,
+        "port_module_type",
+        DataType::UInt8,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.6/Table 3-7, p.3-45"
+    ),
+    entry!(
+        95,
+        6,
+        "port_store_forward",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.6/Table 3-7, p.3-45"
+    ),
+    entry!(
+        95,
+        7,
+        "port_key_on_delay",
+        DataType::Float,
+        ReadWrite,
+        Some((0.0, f32::MAX as f64)),
+        (1, 0),
+        "3.4.6/Table 3-7, p.3-45"
+    ),
+    entry!(
+        95,
+        8,
+        "port_key_off_delay",
+        DataType::Float,
+        ReadWrite,
+        Some((0.0, f32::MAX as f64)),
+        (1, 0),
+        "3.4.6/Table 3-7, p.3-45"
+    ),
+    entry!(
+        95,
+        9,
+        "port_modem_status",
+        DataType::UInt8,
+        ReadOnly,
+        Some((0.0, 255.0)),
+        (1, 0),
+        "3.4.6/Table 3-7, p.3-45"
+    ),
+    entry!(
+        95,
+        36,
+        "port_receive_count",
+        DataType::UInt16,
+        ReadWrite,
+        Some((0.0, 65535.0)),
+        (1, 0),
+        "3.4.6/Table 3-7, p.3-47"
+    ),
+    entry!(
+        95,
+        37,
+        "port_last_message",
+        DataType::Time,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.6/Table 3-7, p.3-47"
+    ),
+    entry!(
+        95,
+        42,
+        "port_transmit_count",
+        DataType::UInt16,
+        ReadWrite,
+        Some((0.0, 65535.0)),
+        (1, 0),
+        "3.4.6/Table 3-7, p.3-47"
+    ),
+    entry!(
+        95,
+        44,
+        "port_security_status",
+        DataType::UInt8,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.6/Table 3-7, p.3-48"
+    ),
+    entry!(
+        139,
+        0,
+        "module_type",
+        DataType::UInt8,
+        ReadOnly,
+        None,
+        (2, 2),
+        "3.4.50/Table 3-51, p.3-210"
+    ),
+    entry!(
+        139,
+        1,
+        "module_mode",
+        DataType::UInt8,
+        ReadOnly,
+        None,
+        (2, 2),
+        "3.4.50/Table 3-51, p.3-210"
+    ),
+    entry!(
+        139,
+        2,
+        "module_health",
+        DataType::UInt8,
+        ReadOnly,
+        Some((0.0, 2.0)),
+        (2, 2),
+        "3.4.50/Table 3-51, p.3-210"
+    ),
+    entry!(
+        139,
+        3,
+        "module_boot_version",
+        DataType::Ascii(10),
+        ReadOnly,
+        None,
+        (2, 2),
+        "3.4.50/Table 3-51, p.3-210"
+    ),
+    entry!(
+        139,
+        4,
+        "module_boot_part",
+        DataType::Ascii(20),
+        ReadOnly,
+        None,
+        (2, 2),
+        "3.4.50/Table 3-51, p.3-210"
+    ),
+    entry!(
+        139,
+        8,
+        "module_flash_build",
+        DataType::Ascii(20),
+        ReadOnly,
+        None,
+        (2, 2),
+        "3.4.50/Table 3-51, p.3-211"
+    ),
+    entry!(
+        139,
+        9,
+        "module_specific_data",
+        DataType::Ascii(20),
+        ReadOnly,
+        None,
+        (2, 2),
+        "3.4.50/Table 3-51, p.3-211"
+    ),
+    entry!(
         101,
         0,
         "di_tag",
@@ -256,6 +617,446 @@ pub(super) const ENTRIES: &[CatalogEntry] = &[
         None,
         (1, 0),
         "3.4.14/Table 3-15, p.3-68"
+    ),
+    entry!(
+        101,
+        2,
+        "di_filter",
+        DataType::Float,
+        ReadWrite,
+        Some((0.0, 43200.0)),
+        (1, 0),
+        "3.4.12/Table 3-13, p.3-61"
+    ),
+    entry!(
+        101,
+        4,
+        "di_invert",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.12/Table 3-13, p.3-61"
+    ),
+    entry!(
+        101,
+        5,
+        "di_latch",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.12/Table 3-13, p.3-61"
+    ),
+    entry!(
+        101,
+        7,
+        "di_on_time",
+        DataType::Float,
+        ReadWrite,
+        Some((0.0, 1000000.0)),
+        (1, 0),
+        "3.4.12/Table 3-13, p.3-61"
+    ),
+    entry!(
+        101,
+        8,
+        "di_off_time",
+        DataType::Float,
+        ReadWrite,
+        Some((0.0, 1000000.0)),
+        (1, 0),
+        "3.4.12/Table 3-13, p.3-61"
+    ),
+    entry!(
+        101,
+        9,
+        "di_alarming",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.12/Table 3-13, p.3-61"
+    ),
+    entry!(
+        101,
+        10,
+        "di_srbx_clear",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.12/Table 3-13, p.3-62"
+    ),
+    entry!(
+        101,
+        11,
+        "di_srbx_set",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.12/Table 3-13, p.3-62"
+    ),
+    entry!(
+        101,
+        12,
+        "di_alarm_bits",
+        DataType::Binary,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.12/Table 3-13, p.3-62"
+    ),
+    entry!(
+        101,
+        13,
+        "di_scan_period",
+        DataType::Float,
+        ReadWrite,
+        Some((0.004, 43200.0)),
+        (1, 0),
+        "3.4.12/Table 3-13, p.3-62"
+    ),
+    entry!(
+        101,
+        14,
+        "di_scan_time",
+        DataType::Float,
+        ReadOnly,
+        Some((0.0, 43200.0)),
+        (1, 0),
+        "3.4.12/Table 3-13, p.3-62"
+    ),
+    entry!(
+        101,
+        15,
+        "di_physical_state",
+        DataType::UInt8,
+        ReadOnly,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.12/Table 3-13, p.3-62"
+    ),
+    entry!(
+        103,
+        5,
+        "ai_filter",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 99.0)),
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-66"
+    ),
+    entry!(
+        103,
+        6,
+        "ai_averaging",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-66"
+    ),
+    entry!(
+        103,
+        8,
+        "ai_zero_raw",
+        DataType::UInt16,
+        ReadWrite,
+        Some((0.0, 65535.0)),
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-66"
+    ),
+    entry!(
+        103,
+        9,
+        "ai_midpoint_1_raw",
+        DataType::UInt16,
+        ReadWrite,
+        Some((0.0, 65535.0)),
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-66"
+    ),
+    entry!(
+        103,
+        10,
+        "ai_midpoint_2_raw",
+        DataType::UInt16,
+        ReadWrite,
+        Some((0.0, 65535.0)),
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-67"
+    ),
+    entry!(
+        103,
+        11,
+        "ai_midpoint_3_raw",
+        DataType::UInt16,
+        ReadWrite,
+        Some((0.0, 65535.0)),
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-67"
+    ),
+    entry!(
+        103,
+        12,
+        "ai_span_raw",
+        DataType::UInt16,
+        ReadWrite,
+        Some((0.0, 65535.0)),
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-67"
+    ),
+    entry!(
+        103,
+        13,
+        "ai_zero_eu",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-67"
+    ),
+    entry!(
+        103,
+        14,
+        "ai_midpoint_1_eu",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-67"
+    ),
+    entry!(
+        103,
+        15,
+        "ai_midpoint_2_eu",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-67"
+    ),
+    entry!(
+        103,
+        16,
+        "ai_midpoint_3_eu",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-67"
+    ),
+    entry!(
+        103,
+        17,
+        "ai_span_eu",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-67"
+    ),
+    entry!(
+        103,
+        18,
+        "ai_offset",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-67"
+    ),
+    entry!(
+        103,
+        19,
+        "ai_calibration_set",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-67"
+    ),
+    entry!(
+        103,
+        20,
+        "ai_calibration_value",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-67"
+    ),
+    entry!(
+        103,
+        23,
+        "ai_low_low_limit",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-67"
+    ),
+    entry!(
+        103,
+        24,
+        "ai_low_limit",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-67"
+    ),
+    entry!(
+        103,
+        25,
+        "ai_high_limit",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-67"
+    ),
+    entry!(
+        103,
+        26,
+        "ai_high_high_limit",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-67"
+    ),
+    entry!(
+        103,
+        27,
+        "ai_rate_limit",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-68"
+    ),
+    entry!(
+        103,
+        28,
+        "ai_deadband",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-68"
+    ),
+    entry!(
+        103,
+        22,
+        "ai_clipping",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-67"
+    ),
+    entry!(
+        103,
+        29,
+        "ai_alarming",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-68"
+    ),
+    entry!(
+        103,
+        30,
+        "ai_srbx_clear",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-68"
+    ),
+    entry!(
+        103,
+        31,
+        "ai_srbx_set",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-68"
+    ),
+    entry!(
+        103,
+        33,
+        "ai_calibration_timer",
+        DataType::Float,
+        ReadOnly,
+        Some((0.0, 3600.0)),
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-69"
+    ),
+    entry!(
+        103,
+        34,
+        "ai_calibration_mode",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 4.0)),
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-69"
+    ),
+    entry!(
+        103,
+        35,
+        "ai_calibration_type",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 6.0)),
+        (1, 0),
+        "3.4.14/Table 3-15, p.3-69"
+    ),
+    entry!(
+        103,
+        36,
+        "ai_failsafe_mode",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (3, 0),
+        "3.4.14/Table 3-15, p.3-69"
+    ),
+    entry!(
+        103,
+        37,
+        "ai_failsafe_value",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (3, 0),
+        "3.4.14/Table 3-15, p.3-69"
+    ),
+    entry!(
+        103,
+        38,
+        "ai_module_type",
+        DataType::UInt8,
+        ReadOnly,
+        Some((0.0, 1.0)),
+        (3, 0),
+        "3.4.14/Table 3-15, p.3-69"
+    ),
+    entry!(
+        103,
+        39,
+        "ai_milliamps",
+        DataType::Float,
+        ReadOnly,
+        Some((4.0, 20.0)),
+        (3, 10),
+        "3.4.14/Table 3-15, p.3-69"
     ),
     entry!(
         109,

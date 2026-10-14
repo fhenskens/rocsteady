@@ -8,7 +8,7 @@ See [roadmap](OUTSTANDING_WORK.md) and [service plan](SPEC_WORK_PLAN.md).
 
 The provider boundary is an early deliverable in [EXT-3](EXTENSIBILITY.md).
 The provider API and bounded schema-aware opcode-180 reads are implemented.
-The 50-parameter built-in ROC800 slice covers PT-91/101/103/109/136
+The 130-parameter built-in ROC800 slice covers PT-91/95/101/103/109/136/139
 entries; see [the source/applicability manifest](CATALOG.md). Full catalog rows
 and schema-aware writes remain separate work.
 Provider extensibility and a particular built-in PT row have separate completion
@@ -21,6 +21,8 @@ layout and enhanced-security fields. These leads do not close catalog rows.
 
 - [x] Define a schema identity including device family, firmware applicability, point type and parameter number; caller identity is explicit and discovery-derived providers are generation-bound.
 - [ ] Model width/type, name, units where documented, access (including conditional access), ranges, defaults, update ownership, enumerations, bit fields and reserved fields.
+  PT-101/103 now have every read width, source access/ranges, fixed units and enum/bit
+  annotations. Defaults, update ownership and verified write conditions remain open.
 - [ ] Represent version-introduced/changed/deprecated parameters without selecting a firmware version from opcode 6 revision alone.
 - [ ] Separate known metadata from unspecified metadata; do not invent ranges, defaults or units.
 - [ ] Model logical versus physical location rules from sections 3.1-3.2; validate against opcode 50 discovery.
@@ -29,7 +31,7 @@ layout and enhanced-security fields. These leads do not close catalog rows.
 - [ ] Build schema-aware reads and writes over 167/180 and 166/181; preserve raw access.
 - [x] Define read batch splitting by request AND response budgets; expose partial progress and avoid claiming atomicity across exchanges. Write batch planning remains open.
 - [ ] Generate or maintain catalog artifacts reproducibly; review redistribution/licensing before copying vendor text.
-- [ ] Add catalog consistency checks for duplicate keys, invalid widths, overlapping applicability and missing source references.
+- [x] Add consistency checks for duplicate keys/names, invalid widths, numeric bounds, introduction versions, enum/bit consistency and missing source references. The current catalog has one variant per key; overlapping future applicability still needs checks.
 
 ## Completion contract for EACH row
 
@@ -47,8 +49,8 @@ For each row:
 4. Exercise representative reads and applicable writes over TCP; cross-check all catalog metadata against the source.
 5. Record physical evidence separately, with model/firmware; catalogue completion does not establish hardware compatibility.
 
-Status: five rows have an explicitly **partial** built-in slice; all other rows
-are open. No complete PT conformance is claimed. Every one of the 50 delivered parameters
+Status: seven rows have an explicitly **partial** built-in slice; all other rows
+are open. No complete PT conformance is claimed. Every one of the 130 delivered parameters
 has an independent literal and TCP read fixture; [CATALOG.md](CATALOG.md) lists
 the exact metadata and remaining omissions.
 “Hardware: none” applies to every row. Introduce separate implementation/test/hardware
@@ -59,17 +61,17 @@ statuses as work lands; never replace them with one ambiguous “supported” fl
 | PT-82 | 82 | Virtual discrete outputs | 3.4.1 | Open |
 | PT-84 | 84 | Extended HART | 3.4.2 | Open |
 | PT-85 | 85 | HART | 3.4.3 | Open |
-| PT-91 | 91 | System variables | 3.4.4 | Partial: 0-6, 8-9, 41-42, 50 |
+| PT-91 | 91 | System variables | 3.4.4 | Partial: 0-6, 8-14, 22-23, 37-38, 41-48, 50 |
 | PT-92 | 92 | Logon | 3.4.5 | Open |
-| PT-95 | 95 | Communication ports | 3.4.6 | Open |
+| PT-95 | 95 | Communication ports | 3.4.6 | Partial: 0-9, 36-37, 42, 44; explicit Ethernet restrictions |
 | PT-96 | 96 | FST | 3.4.7 | Open |
 | PT-97 | 97 | FST register tags | 3.4.8 | Open |
 | PT-98 | 98 | Soft points | 3.4.9 | Open |
 | PT-99 | 99 | Configurable opcode tables | 3.4.10 | Open |
 | PT-100 | 100 | Power control | 3.4.11 | Open |
-| PT-101 | 101 | Discrete inputs | 3.4.12 | Partial: 0, 1, 3, 6 |
+| PT-101 | 101 | Discrete inputs | 3.4.12 | Partial: all 0-15 read widths, access/ranges, enums and alarm bits; writes/defaults/ownership remain open |
 | PT-102 | 102 | Discrete outputs | 3.4.13 | Open |
-| PT-103 | 103 | Analog inputs | 3.4.14 | Partial: 0-4, 7, 21, 32 |
+| PT-103 | 103 | Analog inputs | 3.4.14 | Partial: all 0-39 read widths, access/ranges, version gates, enums and alarm bits; calibration write notes unresolved |
 | PT-104 | 104 | Analog outputs | 3.4.15 | Open |
 | PT-105 | 105 | Pulse inputs | 3.4.16 | Open |
 | PT-106 | 106 | RTD | 3.4.17 | Open |
@@ -105,7 +107,7 @@ statuses as work lands; never replace them with one ambiguous “supported” fl
 | PT-136 | 136 | Clock | 3.4.47 | Partial: read metadata/fixtures for 0-19; DST week constraint, richer metadata and writes open |
 | PT-137 | 137 | Internet configuration | 3.4.48 | Open |
 | PT-138 | 138 | User C++ host | 3.4.49 | Open |
-| PT-139 | 139 | Smart I/O modules | 3.4.50 | Open |
+| PT-139 | 139 | Smart I/O modules | 3.4.50 | Partial: boot-safe read fields 0-4, 8-9; explicit module ordinals |
 | PT-140 | 140 | AC I/O | 3.4.51 | Open |
 | PT-141 | 141 | Advanced pulse module | 3.4.52 | Open |
 | PT-142 | 142 | History segment 11 points | 3.4.53 | Open |

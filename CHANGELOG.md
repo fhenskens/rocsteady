@@ -1,62 +1,43 @@
 # Changelog
 
-## Unreleased
+## 0.1.0 — Unreleased
 
-- Share checked payload consumption between arbitrary and contiguous parameter
-  reads, preserving operation-specific errors and independently tested literals.
-- Generate shell/PowerShell package consumers from one manifest template; handle
-  both Cargo package-ID forms and inherit the extracted crate's lockfile.
+- Add explicit protocol profiles, contextual reply codecs and replaceable
+  configuration/clock/log decoding, with capability and payload-budget validation.
+- Add schema providers/chains and bounded generation-exclusive read plans with
+  confirmed partial progress on failure.
+- Add opcode-100 point-type classification and both opcode-50 I/O selectors,
+  explicit 160/240/224-entry layouts, observed consistency checks and physical
+  location mapping. Discovery does not infer firmware or authentication policy.
+- Add 130 source-audited ROC800 catalog parameters across PT-91/95/101/103/109/136/139,
+  including all PT-101/103/136 read widths, firmware/location gates and optional
+  enum, bit and fixed-unit metadata. Preserve raw unknown values and conflicting
+  source constraints; complete point-table conformance and typed writes remain open.
+- Add typed opcode-118/119 alarm/event pages and all enumerated records/tags,
+  preserving raw records, overlapping old/new storage and incomplete large values.
+  Add bounded ring windows and caller-consumed checkpoints with observed anchor
+  checks; matching anchors do not establish durable gap-free continuity.
+- Add opt-in caller-driven idle SRBX polling with bounded notifications, lag
+  reporting, shutdown-aware intervals and normal call/exchange deadlines.
+- Add explicit opcode-225 acknowledgement of consumed alarm checkpoints, raw-anchor
+  verification and NotAttempted/Rejected/Unconfirmed/Confirmed outcomes. Close the
+  send gate on cancellation/deadline and never replay. Confirmed receipt does not
+  prove pending status cleared when newer alarms exist.
+- Adopt published etherbird 0.4.2 and its shared lifecycle helpers, bounded FIFO,
+  terminal authentication handling and call deadlines. Consolidate operation
+  preparation/decoding and parameter budgets within rocsteady; remove the sibling
+  path dependency and duplicated lifecycle wrappers.
+- Support current stable Rust with Linux/macOS/Windows CI; remove the fixed Rust
+  1.88 requirement. Share the shell/PowerShell packaged-consumer manifest template.
+- Add independent wire/TCP and simulator fixtures, discovery and log/SRBX examples,
+  public-API package-consumer coverage and updated scope/release documentation.
 
-- Support the current stable Rust toolchain; remove the fixed Rust 1.88 minimum
-  and its CI jobs while retaining Linux/macOS/Windows coverage.
-
-- Share built-in request preparation, reply budgets and decoding across Client,
-  Session and managed workflows. Encoding validates before admission; decoding
-  remains inside the exchange retirement guard.
-- Adopt published etherbird 0.4.2 and reuse its RetireOnDrop helper. Preserve
-  healthy device rejections and no replay; no sibling path dependency is required.
-- Share allocation-free parameter budgets across codecs, profiles and planning;
-  separate catalog facts from lookup policy and move unicast validation to protocol.
-
-- Extend the ROC800 catalog from 30 to 50 parameters with all PT-136 clock read
-  widths, singleton addressing and explicit 1.20/3.40 introduction gates.
-  Preserve TIME as raw values and leave the disputed DST end-week range unspecified.
-- Add independent clock literals/TCP reads, firmware-boundary and retirement tests,
-  simulator coverage and clock reads in the example and packaged consumer.
-- Remove a setup test's peer-accept scheduling race by counting connector attempts
-  directly when proving that missing setup capabilities do not retry.
-
-- Implement opcode-100 command-11 classification with exact echoes, counts 0-245,
-  preserved unknown codes and bounded generation-exclusive range paging.
-- Implement both opcode-50 selectors and explicit 160/240/224-entry layouts through
-  replaceable profile codecs/mapping policies; detect observed configuration/selector
-  changes, preserving physical locations separately from logical ordinals.
-- Add 30 source-audited ROC800 system/DI/AI/diagnostic catalog entries, explicit
-  firmware/installed-point validation, and generation-bound schema providers/plans.
-- Add independent specification-derived TCP fixtures for every initial catalog entry,
-  simulator support, a discovery/catalog example and a packaged consumer check.
-- Add DiscoveryChanged error classification for healthy but inconsistent discovery;
-  retain explicit DEC-3 and hardware limitations in the catalog manifest/work plans.
-
-- Add immutable ProtocolProfile selection, capability/applicability metadata,
-  source correlation and tighter payload budgets; clock/configuration decoding
-  uses the selected profile during setup, reads and heartbeats.
-- Add ReplyCodec/DecodedOperation with original request context, using the managed
-  retirement guard; predefined ClockCodec and ConfigurationCodec are replaceable.
-- Add SchemaProvider/SchemaChain, explicit identity and access/location metadata,
-  bounded ReadPlan and generation-exclusive schema reads with confirmed failure progress.
-- Add an external profile/schema TCP example and independent fixtures proving
-  malformed-response retirement, healthy rejection and no replay after a committed effect.
-- Adding ClientConfig.profile changes exhaustive struct literals; use ..Default::default()
-  or supply an explicit profile. These experimental API changes require release review.
-
-- Adopt published etherbird 0.4.1: terminal lifecycle authentication failures,
-  healthy operation error retention, checked configuration and shutdown cache release.
-- Remove local authentication latch/gate and nested healthy-error results while
-  preserving authentication error compatibility, positive deadlines, no replay,
-  cancellation retirement and explicit Session teardown.
-- Use upstream BoundedFifoQueue and single-attempt readiness/call timeouts;
-  remove the local FIFO and timeout/shutdown race wrapper.
+Migration: `ClientConfig.profile` changes exhaustive struct literals. Supply a
+profile or use `..Default::default()`. Releases now use ordinary `0.x.y` versions;
+all releases below 1.0 remain experimental. Breaking API changes use a new minor
+version; compatible additions and fixes use patch releases. See
+[RELEASE.md](docs/RELEASE.md).
+These features are not part of published 0.1.0-alpha.1.
 
 ## 0.1.0-alpha.1 — 2026-10-09
 

@@ -3,7 +3,7 @@
 ## Research records
 
 - [Current decision register](DECISIONS.md): start here for current conclusions,
-  delivery dispositions, affected work and closure evidence for all 48 subquestions.
+  delivery dispositions, affected work and closure evidence for all 50 subquestions.
   The records below preserve research history and source provenance.
 - [Systematic search record](SEARCH_RECORD.md): exact executed queries, batch
   results, per-ambiguity assessments, failed retrievals and remaining public leads.

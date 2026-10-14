@@ -70,8 +70,11 @@ peer integration fixture neither encodes nor decodes through rocsteady, limiting
 shared-client/simulator false positives.
 
 The event receiver is stable across generations and bounded. SRBX signals are
-processed during active exchanges/heartbeats. No automatic alarm acknowledgement
-is emitted because it requires knowledge of the alarm log entries actually consumed.
+processed during active exchanges, heartbeats or explicit idle polls.
+No automatic alarm acknowledgement is emitted. Explicit acknowledgement verifies
+a caller-consumed anchor and reports receipt/outcome uncertainty; callers establish
+ingestion completeness and identity. A caller-driven index poller receives idle
+signals through the serialized exchange reader and reuses etherbird stopped watches.
 
 The first EXT-1/4/5 slice now uses the [managed extension contracts](MANAGED_EXTENSIONS.md).
 A Session ownership mutex spans entire setup/workflow scopes and is shared by
@@ -79,3 +82,11 @@ ordinary requests and heartbeats; the inner stream guard still retires incomplet
 exchanges. Cancelled scopes between exchanges signal retirement before releasing
 ownership. Setup state is installed once per generation and accessed by borrowing
 the scoped context. Registration is immutable; setup is repeated on replacement.
+
+Alarm/event records retain fixed raw bytes alongside typed interpretation. Their
+shared page/range machinery owns budgets and confirmed progress; profile codecs
+remain inside the exchange guard. One workflow owns a bounded slot window.
+Checkpoints are caller-confirmed consumed anchors, not durable sequence numbers.
+Explicit resume checks them before and after paging; observed LogChanged errors
+preserve healthy sessions. Neither modulo indices nor matching bytes can prove
+continuity, device identity or permission to acknowledge alarms. See LOGS.md.

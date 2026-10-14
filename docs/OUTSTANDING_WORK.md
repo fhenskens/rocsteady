@@ -1,6 +1,6 @@
 # Comprehensive implementation roadmap
 
-Status: open; refreshed 2026-10-14 for the PT-136 clock catalog slice.
+Status: open; refreshed 2026-10-14 for the explicit SRBX polling/acknowledgement slice.
 This is the implementation backlog; [COVERAGE.md](COVERAGE.md) records current
 protocol support and [HARDWARE.md](HARDWARE.md) records channel validation.
 
@@ -54,19 +54,18 @@ blocked requirements visible rather than treating them as complete.
 
 Published **0.1.0-alpha.1** on 2026-10-09 after successful stable/MSRV hosted CI
 on Windows, Linux and macOS; see [release evidence](RELEASE.md). That release used
-etherbird 0.3.1. The later migration adopted published etherbird 0.4.1; the current
-architecture slice adopts published 0.4.2 and adds
-explicit protocol profiles, contextual reply codecs, schema providers and bounded
-schema-backed reads. These changes have not been published; their hosted validation
-remains pending. Local macOS Rust 1.99 evidence for the clock slice is recorded in
-[RELEASE.md](RELEASE.md); hosted stable-platform checks remain pending.
+etherbird 0.3.1. The current unreleased update uses registry etherbird 0.4.2 and
+adds profiles/codecs, schema-backed reads, discovery, a 130-parameter catalog,
+alarm/event retrieval and explicit SRBX polling/acknowledgement. Current local
+software and package evidence is recorded in [RELEASE.md](RELEASE.md); hosted
+stable-platform checks for the complete candidate remain pending.
 Current development supports stable Rust; the historical 1.88 validation is not
 an ongoing compatibility requirement.
 The independent TCP fixture includes a
 committed-effect counter proving lost acknowledgements do not trigger replay.
 
-Current all-feature software suite: **78 tests**, including 12 profile/schema
-cases and 20 discovery/catalog cases. No physical
+Current all-feature software suite: **122 tests**, including 12 profile/schema
+cases, 29 discovery/catalog cases, 16 alarm/event cases and 19 SRBX cases. No physical
 controller or actual serial fixture has been tested. The loopback simulator and
 external extension examples are runnable; serial remains compilation-only.
 
@@ -86,6 +85,17 @@ external extension examples are runnable; serial remains compilation-only.
 - [x] Add all 20 PT-136 clock read widths, singleton addressing and source-based
   firmware gates, with independent literals/TCP, simulator and consumer evidence.
   Rich metadata/writes and the disputed end-week constraint remain open.
+- [x] Add 36 PT-91/95/139 foundation read fields, explicit port/module ordinals,
+  Ethernet restrictions, firmware gates and catalog consistency checks.
+- [x] Add all PT-101/103 read widths, firmware gates, enum/alarm-bit/fixed-unit
+  annotations and explicit calibration write caveats; independent TCP and simulator
+  fixtures cover every input field and all three layouts.
+- [x] Implement OP-118/119 fixed log records, bounded windows, caller-confirmed
+  checkpoints and explicit anchor-checked resume; retain raw/incomplete values
+  and documented continuity limits. See [log evidence](LOGS.md).
+- [x] Add explicit consumed-alarm acknowledgement with staged outcomes and opt-in
+  bounded idle SRBX polling. Verify equality-based pending state, notification lag,
+  lost replies and no replay; keep caller ingestion/identity contracts explicit.
 - [ ] Expand catalog parameters/tables and independently verified device/firmware
   applicability and discovery/bootstrap policies (remaining M0/M1).
 - [ ] Implement schema-aware write planning alongside the typed write/outcome work (M4).
@@ -270,11 +280,12 @@ version handling and response-size boundaries.
 
 ### Alarm and event logs
 
-- [ ] Implement typed opcodes 118 and 119.
-- [ ] Represent record fields, indices and device errors without dropping unknown data.
-- [ ] Define bounded pagination, rollover and checkpoint behavior.
-- [ ] Model empty logs, wraparound, unavailable indices and partial pages.
-- [ ] Test resumption after channel failure and duplicate/repeated records.
+- [x] Implement typed opcode-118/119 pages and fixed record variants.
+- [x] Represent log fields/indices and device errors without dropping unknown/raw data.
+- [x] Define bounded slot windows, explicit ring splitting and consumed-anchor checkpoints; document undetectable rollover limits.
+- [x] Model empty markers, bounded overwrites, unavailable/changed anchors and short/partial pages.
+- [x] Test explicit anchor-checked resume after failure and byte-wise comparisons, including NaN records.
+- [ ] Establish stronger durable continuity/deduplication with applicable device evidence; matching anchors alone cannot establish it.
 
 Completion: applications can consume logs with explicit checkpoints and know when
 continuity cannot be established.
@@ -308,12 +319,11 @@ Reconnect must never imply that a write did not occur.
 
 ### Complete spontaneous-report workflow
 
-- [ ] Implement typed acknowledgement (225) and connect it to alarm-log consumption.
-- [ ] Decide whether full SRBX support needs a dedicated continuous reader; the
-  baseline only reads signals during requests/heartbeats.
-- [ ] Preserve reply routing with interleaved and repeated unsolicited signals.
-- [ ] Define receiver lag, overflow and reconnect behavior without silent loss claims.
-- [ ] Test signals while otherwise idle and acknowledgements after log rollover.
+- [x] Implement typed consumed-checkpoint acknowledgement with raw-anchor validation and staged outcomes.
+- [x] Choose explicit bounded index polling for idle reception, preserving one serialized reader.
+- [x] Preserve routing with interleaved/repeated SRBX and a fixed wire deadline.
+- [x] Report bounded notification batches/lag and preserve the receiver across replacement; no durable-delivery claim.
+- [x] Test true idle signals and consumed-index acknowledgement across rollover.
 
 Completion: acknowledgement advances only to the last log entry actually consumed.
 Stable receiver identity does not imply durable event delivery.
@@ -423,8 +433,8 @@ matrix. Hardware-dependent tests should be explicitly opt-in; no-hardware CI rem
 - [x] Document how applications should react to transport, protocol, authentication,
   queue and unknown-outcome errors.
 - [ ] Add complete examples for credentials, serial, log/history pagination and state/events.
-  Credentials, serial and state/events examples are delivered; log/history
-  pagination examples remain blocked on their unimplemented typed services.
+  Credentials, serial, state/events and log pagination examples are delivered;
+  history pagination remains blocked on its unimplemented typed services.
 - [x] Compile README and usage examples as library doctests, including context lifetime checks.
 - [x] Verify the historical Rust 1.88 minimum with default/all-feature/target/doctest
   checks on Windows and Linux; see [release evidence](RELEASE.md).
@@ -436,8 +446,8 @@ matrix. Hardware-dependent tests should be explicitly opt-in; no-hardware CI rem
   met and publication is authorized: 0.1.0-alpha.1; see [release record](RELEASE.md).
 - [ ] Provide runnable recovery examples for reads, authenticated setup, logs/history,
   files and routing; show state changes and explicit interrupted-operation outcomes.
-  Read/authenticated-setup recovery is delivered; logs/history, files and routing
-  remain future services. See [current examples](../README.md#concrete-examples).
+  Read/authenticated-setup recovery and explicit log resume are delivered; history,
+  files and routing remain future services. See [current examples](../README.md#concrete-examples).
 - [x] Establish dependency upgrade regression checks for the published etherbird
   crate, without requiring a sibling checkout for users or CI.
 - [ ] Document ownership and cancellation for pagers, file handles, subscriptions,
@@ -491,9 +501,15 @@ here. Framework completion does not close outstanding protocol/extension work.
 
 Profiles, schema providers, OP-50/100 discovery and the initial catalog are
 implemented (see [contracts](MANAGED_EXTENSIONS.md)); PT-136 now has all 20 read
-widths. Continue M0/M1 with a bounded source-audited PT-91/95/139 foundation slice
-and explicit location/applicability policies. Rich schema metadata and catalog
-consistency checks remain open; PT-136/17 needs evidence before selecting a range.
+widths; the foundation slice adds 36 PT-91/95/139 fields and catalog consistency
+checks. PT-101/103 now have all read widths and enum/bit/unit annotations.
+OP-118/119 now have typed records, bounded pages and explicit checkpoints.
+Explicit OP-225 acknowledgement and bounded idle polling are implemented.
+Review the declared monitoring release scope and hosted matrix next, alongside real
+serial exchange fixtures. Then continue basic I/O/output catalog and history services.
+Durable continuity and physical compatibility remain separate evidence tracks. Remaining output/input
+catalog fields and richer schema metadata can follow alongside that service slice.
+PT-136/17 and other contradictory constraints need evidence before selecting ranges.
 
 Alongside catalog work, complete remaining M0-E authentication applicability/logout,
 identity/cache and lifecycle acceptance, and validate the next release on the
@@ -502,7 +518,7 @@ remain open. Serial exchange fixtures and physical controller evidence can proce
 independently. Do not wait for unresolved enhanced-security procedures to expand
 well-specified read-only services.
 
-A useful read-only release can precede complete protocol coverage if its advertised
+A useful experimental monitoring release can precede complete protocol coverage if its advertised
 scope is explicit. Completing that release does not close the broader backlog.
 
 ## Completion of the comprehensive objective

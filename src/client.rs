@@ -168,6 +168,7 @@ impl Lifecycle for Hooks {
                 | Error::Disconnected
                 | Error::Device(_)
                 | Error::DiscoveryChanged(_)
+                | Error::LogChanged(_)
         )
     }
 }
@@ -231,7 +232,7 @@ impl Client {
         if config.recovery.create_timeout.is_none() {
             config.recovery.create_timeout = Some(config.recovery.connect_timeout);
         }
-        let (events, _) = broadcast::channel(32);
+        let (events, _) = broadcast::channel(crate::SRBX_BUFFER_CAPACITY);
         let hooks = Hooks {
             connector,
             config: config.clone(),
@@ -269,6 +270,11 @@ impl Client {
     /// This receiver survives transport replacements. Lag is reported by Tokio.
     pub fn subscribe_events(&self) -> broadcast::Receiver<Frame> {
         self.events.subscribe()
+    }
+    /// Receive queued SRBX while otherwise idle through bounded index-only polls.
+    /// Drive poll() repeatedly; dropping the poller stops polling, and Client::stop wakes its timer.
+    pub fn srbx_poller(&self, interval: Duration) -> Result<crate::SrbxPoller, Error> {
+        crate::SrbxPoller::new(self.clone(), self.pool.stopped(), interval)
     }
     pub async fn connected(&self) -> Result<(), etherbird::Error<Error>> {
         self.map_lifecycle_error(self.pool.connected_with_timeout(self.call_timeout))
@@ -420,6 +426,26 @@ impl Client {
         crate::profile::validate_expected_response(self.profile(), 50, layout.len())
             .map_err(etherbird::Error::Operation)?;
         self.workflow(crate::IoDiscovery { firmware, layout }).await
+    }
+    pub async fn read_alarms(
+        &self,
+        request: crate::LogRequest,
+    ) -> Result<crate::AlarmPage, etherbird::Error<Error>> {
+        self.execute_prepared(crate::operations::logs::<crate::AlarmRecord>(
+            request,
+            self.profile.clone(),
+        ))
+        .await
+    }
+    pub async fn read_events(
+        &self,
+        request: crate::LogRequest,
+    ) -> Result<crate::EventPage, etherbird::Error<Error>> {
+        self.execute_prepared(crate::operations::logs::<crate::EventRecord>(
+            request,
+            self.profile.clone(),
+        ))
+        .await
     }
     pub async fn read_clock(&self) -> Result<Clock, etherbird::Error<Error>> {
         self.execute_prepared(crate::operations::clock(self.profile.clone()))

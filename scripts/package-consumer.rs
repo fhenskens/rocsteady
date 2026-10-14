@@ -78,6 +78,15 @@ async fn main() {
         rocsteady::Tlp::new(200, 0, 1),
         rocsteady::Value::UInt16(123),
     );
+    model.parameters.insert(rocsteady::Tlp::new(95, 1, 36), rocsteady::Value::UInt16(42));
+    model.parameters.insert(rocsteady::Tlp::new(139, 26, 3), rocsteady::Value::Ascii("2.02      ".into()));
+    model.parameters.insert(rocsteady::Tlp::new(103, 16, 32), rocsteady::Value::Binary(0xff));
+    model.parameters.insert(rocsteady::Tlp::new(103, 16, 39), rocsteady::Value::Float(20.0));
+    // Literal Table 2-16 parameter alarm and Table 2-17 clock-set event.
+    model.alarm_log.insert(0, [0xc1,1,2,3,4,0,103,16,21,
+        b'A',b'L',b'A',b'R',b'M',b' ',b' ',b' ',b' ',b' ',0,0,0x48,0x41]);
+    model.alarm_index = 0;
+    model.event_log.insert(0, [6,1,2,3,4,0x78,0x56,0x34,0x12,0,0,0,0,0,0,0,0,0,0,0,0,0]);
     let server = Simulator::bind("127.0.0.1:0".parse().unwrap(), model)
         .await
         .unwrap();
@@ -145,7 +154,7 @@ async fn main() {
         2
     );
     let io = discovery_client
-        .discover_io(rocsteady::FirmwareVersion::new(3, 0).unwrap())
+        .discover_io(rocsteady::FirmwareVersion::new(3, 10).unwrap())
         .await
         .unwrap();
     let ai = io.by_logical(103, 0).unwrap().tlp(21).unwrap();
@@ -154,13 +163,35 @@ async fn main() {
     assert_eq!(
         discovery_client
             .read_schema(&catalog, &catalog.context(), &[
-                ai, rocsteady::Tlp::new(136, 0, 5), rocsteady::Tlp::new(136, 0, 7)
+                ai, rocsteady::Tlp::new(136, 0, 5), rocsteady::Tlp::new(136, 0, 7),
+                rocsteady::Tlp::new(95, 1, 36), rocsteady::Tlp::new(139, 26, 3),
+                rocsteady::Tlp::new(103, 16, 32), rocsteady::Tlp::new(103, 16, 39)
             ])
             .await
             .unwrap(),
         [rocsteady::Value::Float(12.5), rocsteady::Value::UInt16(2026),
-         rocsteady::Value::Time(0x12345678)]
+         rocsteady::Value::Time(0x12345678), rocsteady::Value::UInt16(42),
+         rocsteady::Value::Ascii("2.02      ".into()), rocsteady::Value::Binary(0xff),
+         rocsteady::Value::Float(20.0)]
     );
+    let alarms = rocsteady::Roc800Catalog::entry(103, 32).unwrap().metadata;
+    assert_eq!(alarms.active_bits(255).count(), 7);
+    assert_eq!(alarms.uninterpreted_bits(255), 0x20);
+    let cal = rocsteady::Roc800Catalog::entry(103, 34).unwrap().metadata;
+    assert_eq!(cal.enum_meaning(4).unwrap().key, "stop");
+    assert!(cal.enum_meaning(255).is_none());
+    assert!(cal.write_caveat.is_some());
+    let alarms = discovery_client.read_alarm_range(0, 1).await.unwrap();
+    assert_eq!(alarms.records().count(), 1);
+    let checkpoint = alarms.checkpoint(1).unwrap();
+    assert!(discovery_client.resume_alarms(checkpoint.clone(), 0).await.unwrap().anchor_verified);
+    server.raise_srbx(0).unwrap();
+    let mut poller = discovery_client.srbx_poller(std::time::Duration::from_millis(1)).unwrap();
+    assert_eq!(poller.poll().await.unwrap().current_alarm_index, 0);
+    assert_eq!(discovery_client.acknowledge_alarms(&checkpoint).await.unwrap().index, 0);
+    assert!(!server.srbx_status().pending);
+    let events = discovery_client.read_events(rocsteady::LogRequest::new(0, 1).unwrap()).await.unwrap();
+    assert!(matches!(events.records()[0].data(), rocsteady::EventData::ClockSet { time: 0x12345678 }));
     discovery_client.stop().await;
     server.stop().await.unwrap();
     println!("packaged external consumer passed");

@@ -14,6 +14,9 @@ checks. Search publication/crawl labels were not treated as document revisions.
 - Publisher: Emerson; D301180X012; document cover October 2022.
 - [Original PDF](https://www.documentation.emersonprocess.com/groups/public/documents/instruction_manuals/d301180x012.pdf).
 - Locations reviewed: sections 1.2-1.3, 2.2-2.3, 2.9, 2.11, 2.24-2.26, 2.29; PT-91 parameters 35/50/81; Chapter 7 and index.
+- Input catalog audit (2026-10-14): Tables 3-13/3-15, printed pp.3-61–62 and 3-66–69; all read widths, ranges, access columns and enum/bit definitions inspected. Calibration access notes on pp.3-67/69 visually inspected; DEC-10.06 remains unresolved.
+- Log audit (2026-10-14): sections 2.13–2.14, Tables 2-16/17 and all record diagrams, printed pp.2-24–31; count/header budgets, packed flags, text/value boundaries, event-specific tags and old/new storage overlap inspected. Fixed record storage and modulo-index continuity limits are explicit in LOGS.md.
+- SRBX audit (2026-10-14): Table 2-31, p.2-44 and Chapter 6 p.6-1 visually inspected; consumed-index request, empty reply, equality-based pending clearing and published index-7 CRC vector verified. Source does not make delivery durable or confirm pending clearing in the empty reply.
 - Role: normative baseline and origin of the contradictions; see existing reference section/table map.
 - Used for DEC-1 through DEC-10; a revised page date does not establish a different cover revision.
 

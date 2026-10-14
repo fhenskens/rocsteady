@@ -278,6 +278,17 @@ was established by this pass.
 **Next evidence:** independently sized PT-177/0 values and firmware identity, then
 the same per-parameter audit for every remaining catalog row.
 
+### Input catalog follow-up: DEC-10.06 (2026-10-14)
+
+Table 3-15 labels PT-103/19, /34 and /35 R/W, but their notes suggest R/O
+for external ROC Plus. Visual inspection confirms both statements in the
+[baseline calibration rows](https://www.documentation.emersonprocess.com/groups/public/documents/instruction_manuals/d301180x012.pdf#page=126)
+and [mode/type rows](https://www.documentation.emersonprocess.com/groups/public/documents/instruction_manuals/d301180x012.pdf#page=128).
+Read types/widths are clear: Float/4 for /19 and UInt8/1 for /34–35, introduced
+in 1.00. The built-in read catalog preserves the access column with an explicit
+`CatalogMetadata.write_caveat`. This does not establish external write permission.
+An applicable erratum or controller/firmware evidence is needed before writes.
+
 ## Search log and follow-up order
 
 Representative queries: “ROC Plus enhanced security GETSESSIONKEY wrapped session

@@ -52,8 +52,8 @@ services must have the correct direction; raw request access is not typed covera
 | OP-100 | 2.10 | User-defined information | Implemented command 11; firmware exchanges unverified | tests/discovery.rs; tests/discovery_simulator.rs; per-variant evidence in CATALOG.md |
 | OP-105 | 2.11 | Min/max | Open | None |
 | OP-108 | 2.12 | History tags/index | Open | None |
-| OP-118 | 2.13 | Alarms | Open | None |
-| OP-119 | 2.14 | Events | Open | None |
+| OP-118 | 2.13 | Alarms | Partial: fixed records, bounded pages and explicit checkpoints; continuity/physical limits remain | tests/logs.rs; tests/logs_simulator.rs; LOGS.md |
+| OP-119 | 2.14 | Events | Partial: all enumerated forms/tags, incomplete values retained; continuity/physical limits remain | tests/logs.rs; tests/logs_simulator.rs; LOGS.md |
 | OP-135 | 2.15 | Single history point | Open | None |
 | OP-136 | 2.16 | Multiple history points | Open | None |
 | OP-137 | 2.17 | Day indices | Open | None |
@@ -66,8 +66,8 @@ services must have the correct direction; raw request access is not typed covera
 | OP-203 | 2.24 | Files | Open | None |
 | OP-205 | 2.25 | Network tunnel | Open | None |
 | OP-206 | 2.26 | Transactions | Open | None |
-| OP-224 | 2.27; Ch. 6 | SRBX signal | Partial | published_srbx_and_ack_vectors_decode_and_encode_exactly; stable receiver test |
-| OP-225 | 2.28; Ch. 6 | SRBX acknowledgement | Open | Literal frame only; no typed service |
+| OP-224 | 2.27; Ch. 6 | SRBX signal | Partial: interleaved/stable notifications and explicit bounded idle polling; durable/physical delivery not established | tests/srbx.rs; tests/srbx_simulator.rs; Chapter 6 vector; LOGS.md |
+| OP-225 | 2.28; Ch. 6 | SRBX acknowledgement | Partial: consumed-anchor verification, typed index/empty reply and staged outcomes; caller ingestion/identity and physical evidence remain | tests/srbx.rs; tests/srbx_simulator.rs; Chapter 6 vector; LOGS.md |
 | OP-255 | 2.29 | Device errors | Partial | error_response_preserves_all_codes_and_offsets_including_unknown_codes; rejection tests |
 
 ## Core work packages
@@ -180,30 +180,31 @@ the contradictory DEC-3 prose/diagrams. Full catalog rows remain in SCHEMA_WORK_
 
 ### OP-118: alarms
 
-- [ ] Implement index/count header, index-only requests, record budgets and fixed record boundaries.
-- [ ] Decode packed SRBX/set-clear/type flags while preserving unknown bits/types.
-- [ ] Support no-alarm, parameter, FST, user-text and user-value records.
-- [ ] Catalogue parameter-alarm reason codes and contextual TLP/value interpretation.
-- [ ] Preserve reserved/raw data and define timestamp/text decoding.
-- [ ] Test empty logs, all variants, count mismatches, wraparound, overwritten checkpoints and concurrent log growth.
+- [x] Implement index/count header, index-only requests, record budgets and fixed record boundaries.
+- [x] Decode packed SRBX/set-clear/type flags while preserving unknown types and all raw bits.
+- [x] Support no-alarm, parameter, FST, user-text and user-value records.
+- [ ] Complete contextual parameter-alarm reason interpretation. Source labels 0-33 and raw TLPs are available; stored values always use Float, not schema widths.
+- [x] Preserve reserved/raw data and define raw TIME/optional printable text interpretation.
+- [x] Test empty markers, all variants, count mismatches, ring-boundary paging, observed anchor changes and concurrent growth.
+- [ ] Establish durable rollover/gap detection if controller evidence supplies a stronger identity/sequence contract; modulo indices and matching bytes alone cannot establish it.
 
 ### OP-119: events
 
-- [ ] Implement index/count header, index-only requests and fixed record boundaries.
-- [ ] Support no-event, parameter-change, system, FST, user, power-lost, clock-set and calibration-verification records.
-- [ ] Implement event-specific data-type tags, old/new values, operator IDs, system reasons and unknown variants.
-- [ ] Reconcile prose claiming five formats with the enumerated event kinds; do not omit kinds based on that prose.
-- [ ] Test every variant, malformed tagged values, ring rollover and gaps during recovery.
+- [x] Implement index/count header, index-only requests and fixed record boundaries.
+- [x] Support no-event, parameter-change, system, FST, user, power-lost, clock-set and calibration-verification records.
+- [x] Implement event-specific tags, old/new overlap rules, raw operator IDs, system reasons and unknown variants. Values larger than the ten-byte storage remain explicitly incomplete.
+- [x] Follow all enumerated event kinds despite the five-format prose.
+- [x] Test every variant/tag, malformed values, ring-boundary paging, changed anchors and partial progress through explicit recovery. Undetectable complete rollovers remain a documented limit.
 
 ### OP-224 and OP-225: complete SRBX workflow — Chapter 6
 
 - [x] Route interleaved signals through a receiver stable across replacement.
-- [ ] Establish reception while idle: continuous reader or an explicitly bounded polling contract.
-- [ ] OP-225 implement alarm-index acknowledgement and validate its empty reply.
-- [ ] Link acknowledgement to consumed alarm checkpoints; never acknowledge unseen records.
-- [ ] Model device pending status and its index comparison, including alarms arriving during retrieval.
-- [ ] Test repeated signals, missed/lagged signals, rollover, lost acknowledgement, recovery and published workflow fixtures.
-- [ ] Document that stable subscriptions do not guarantee durable event delivery.
+- [x] Provide opt-in caller-driven index polling with interval plus call-deadline bounds; no permanent competing reader.
+- [x] OP-225 implement consumed-index acknowledgement and validate its empty reply.
+- [x] Link acknowledgement to caller-consumed checkpoints, verify their raw anchor, and never substitute the unread current index. Caller ingestion completeness/identity remain explicit contracts.
+- [x] Model pending status and equality-based index comparison, including newer alarms before acknowledgement and rollover.
+- [x] Test repeated/missed/lagged/idle signals, rollover, lost replies, explicit recovery, cancellation/deadlines and Chapter 6 fixtures.
+- [x] Document advisory subscriptions, bounded polling, lag and undetectable continuity limits.
 
 ## Historical and transactional data
 

@@ -66,15 +66,7 @@ pub(crate) fn clock(
 pub(crate) fn login(
     login: &Login,
 ) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<(), Error> + Send + use<>> {
-    PreparedOperation::new(17, login.payload(), Some(0), |bytes: &[u8]| {
-        if bytes.is_empty() {
-            Ok(())
-        } else {
-            Err(Error::InvalidResponse(
-                "login acknowledgement must be empty",
-            ))
-        }
-    })
+    empty_ack(17, login.payload(), "login acknowledgement must be empty")
 }
 pub(crate) fn parameters(
     parameters: &[Parameter],
@@ -128,4 +120,39 @@ pub(crate) fn point_types(
                 .map_err(Error::from)
         },
     )
+}
+
+pub(crate) fn logs<R: crate::LogRecord>(
+    request: crate::LogRequest,
+    profile: Arc<dyn ProtocolProfile>,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<crate::LogPage<R>, Error> + Send> {
+    PreparedOperation::new(
+        R::OPCODE,
+        request.payload(),
+        Some(5 + usize::from(request.count()) * R::WIDTH),
+        move |bytes: &[u8]| R::decode_page(profile.as_ref(), &request, bytes).map_err(Error::from),
+    )
+}
+
+pub(crate) fn alarm_ack(
+    index: u16,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<(), Error> + Send> {
+    empty_ack(
+        225,
+        index.to_le_bytes().to_vec(),
+        "alarm acknowledgement must be empty",
+    )
+}
+fn empty_ack(
+    opcode: u8,
+    payload: Vec<u8>,
+    error: &'static str,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<(), Error> + Send> {
+    PreparedOperation::new(opcode, payload, Some(0), move |bytes: &[u8]| {
+        if bytes.is_empty() {
+            Ok(())
+        } else {
+            Err(Error::InvalidResponse(error))
+        }
+    })
 }

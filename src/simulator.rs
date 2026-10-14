@@ -1,4 +1,4 @@
-//! Read-only ROC Plus fixture model and fault-injectable TCP server.
+//! ROC Plus read/SRBX-acknowledgement fixture model and fault-injectable TCP server.
 //! Uses the same byte-stream seam as client transports, not a mocked Client API.
 //! This is a bounded test fixture, not a full ROC800 emulator.
 use crate::{
@@ -18,12 +18,20 @@ use std::{
 use tokio::{
     io::AsyncWriteExt,
     net::TcpListener,
-    sync::watch,
+    sync::{broadcast, watch},
     task::{JoinHandle, JoinSet},
 };
 
 #[derive(Debug, Clone)]
 pub struct Model {
+    /// Explicit raw log slots. Missing slots return the NoAlarm/NoEvent marker.
+    pub alarm_log: BTreeMap<u16, [u8; 23]>,
+    pub event_log: BTreeMap<u16, [u8; 22]>,
+    /// Fixture convention: last appended slot. This is not an automatic client cursor policy.
+    pub alarm_index: u16,
+    pub event_index: u16,
+    pub initial_srbx_pending: bool,
+    pub srbx_host: Address,
     pub io_layout: crate::IoLayout,
     pub io_point_types: Vec<u8>,
     pub io_logical_numbers: Vec<u8>,
@@ -37,6 +45,12 @@ pub struct Model {
 impl Default for Model {
     fn default() -> Self {
         Self {
+            initial_srbx_pending: false,
+            srbx_host: Address::new(1, 0),
+            alarm_log: BTreeMap::new(),
+            event_log: BTreeMap::new(),
+            alarm_index: 449,
+            event_index: 449,
             io_layout: crate::IoLayout::Compatibility160,
             io_point_types: {
                 let mut points = vec![0; 160];
@@ -48,7 +62,7 @@ impl Default for Model {
                 points[..5].copy_from_slice(&[0, 1, 2, 3, 4]);
                 points
             },
-            point_types: [91, 101, 103, 109, 136]
+            point_types: [91, 95, 101, 103, 109, 136, 139]
                 .into_iter()
                 .map(|point_type| (point_type, crate::PointTypeClassification::Roc))
                 .collect(),
@@ -91,6 +105,13 @@ impl Model {
         self.configuration =
             SystemConfiguration::decode(&bytes).expect("existing fixture configuration");
     }
+    /// Append using the fixture's last-written cursor convention, replacing one ring slot.
+    pub fn append_alarm(&mut self, bytes: [u8; 23]) -> Result<u16, Error> {
+        append_log(&mut self.alarm_log, &mut self.alarm_index, bytes)
+    }
+    pub fn append_event(&mut self, bytes: [u8; 22]) -> Result<u16, Error> {
+        append_log(&mut self.event_log, &mut self.event_index, bytes)
+    }
     /// Model-level request dispatch also works over in-memory or serial fixture channels.
     pub fn respond(&self, request: &Frame, authenticated: &mut bool) -> Option<Frame> {
         if request.destination != self.address || request.source.unit == 0 {
@@ -116,6 +137,24 @@ impl Model {
             return Some(error(20, 4));
         }
         Some(match request.opcode {
+            225 => {
+                let [low, high] = request.data.as_slice() else {
+                    return Some(error(6, 5));
+                };
+                if u16::from_le_bytes([*low, *high]) >= crate::LOG_CAPACITY {
+                    error(25, 6)
+                } else {
+                    reply(225, vec![])
+                }
+            }
+            118 => match log_response(&request.data, self.alarm_index, &self.alarm_log) {
+                Ok(data) => reply(118, data),
+                Err(_) => error(25, 6),
+            },
+            119 => match log_response(&request.data, self.event_index, &self.event_log) {
+                Ok(data) => reply(119, data),
+                Err(_) => error(25, 6),
+            },
             50 => {
                 let selector = match request.data.as_slice() {
                     [0] => &self.io_point_types,
@@ -236,13 +275,43 @@ pub enum Fault {
     WrongAddress,
     Error(Vec<u8>),
     SrbxBeforeReply,
+    /// Keep queued until opcode 225, then drop its reply after the pending-state effect.
+    LoseAlarmAcknowledgement,
 }
-#[derive(Default)]
+/// Fixture pending state shared across TCP connection replacement.
+#[derive(Debug, Clone, Copy)]
+pub struct SrbxStatus {
+    pub current_alarm_index: u16,
+    pub pending: bool,
+    pub last_acknowledged: Option<u16>,
+    pub acknowledgements: usize,
+    pub signals_sent: usize,
+}
 struct Control {
+    srbx: Mutex<SrbxStatus>,
+    signals: broadcast::Sender<()>,
     faults: Mutex<VecDeque<Fault>>,
     connections: AtomicUsize,
     logins: AtomicUsize,
     requests: AtomicUsize,
+}
+impl Control {
+    fn new(model: &Model) -> Self {
+        Self {
+            srbx: Mutex::new(SrbxStatus {
+                current_alarm_index: model.alarm_index,
+                pending: model.initial_srbx_pending,
+                last_acknowledged: None,
+                acknowledgements: 0,
+                signals_sent: 0,
+            }),
+            signals: broadcast::channel(crate::SRBX_BUFFER_CAPACITY).0,
+            faults: Mutex::new(VecDeque::new()),
+            connections: AtomicUsize::new(0),
+            logins: AtomicUsize::new(0),
+            requests: AtomicUsize::new(0),
+        }
+    }
 }
 #[derive(Debug, Clone, Copy)]
 pub struct Stats {
@@ -263,7 +332,7 @@ impl Simulator {
         let listener = TcpListener::bind(endpoint).await?;
         let endpoint = listener.local_addr()?;
         let model = Arc::new(model);
-        let control = Arc::new(Control::default());
+        let control = Arc::new(Control::new(&model));
         let (stopping, receiver) = watch::channel(false);
         let shared_model = model.clone();
         let shared_control = control.clone();
@@ -284,6 +353,23 @@ impl Simulator {
     }
     pub fn inject(&self, fault: Fault) {
         self.control.faults.lock().unwrap().push_back(fault);
+    }
+    /// Raise/repeat a fixture SRBX and update its current alarm index, including while idle.
+    /// Populate the corresponding raw log slot before binding; this does not create a record.
+    pub fn raise_srbx(&self, index: u16) -> Result<(), Error> {
+        if index >= crate::LOG_CAPACITY {
+            return Err(Error::InvalidRequest("SRBX index outside ring"));
+        }
+        {
+            let mut state = self.control.srbx.lock().unwrap();
+            state.current_alarm_index = index;
+            state.pending = true;
+        }
+        let _ = self.control.signals.send(());
+        Ok(())
+    }
+    pub fn srbx_status(&self) -> SrbxStatus {
+        *self.control.srbx.lock().unwrap()
     }
     pub fn stats(&self) -> Stats {
         Stats {
@@ -348,7 +434,7 @@ pub async fn serve_stream<S: ByteStream + ?Sized>(
     stream: &mut S,
     model: &Model,
 ) -> Result<(), Error> {
-    serve(stream, model, &Control::default()).await
+    serve(stream, model, &Control::new(model)).await
 }
 async fn serve<S: ByteStream + ?Sized>(
     stream: &mut S,
@@ -356,12 +442,35 @@ async fn serve<S: ByteStream + ?Sized>(
     control: &Control,
 ) -> Result<(), Error> {
     let mut authenticated = false;
+    let (mut reader, mut writer) = tokio::io::split(stream);
+    let mut signals = control.signals.subscribe();
+    let signal = Frame::new(model.srbx_host, model.address, 224, vec![]);
+    if control.srbx.lock().unwrap().pending {
+        write_frame(&mut writer, &signal).await?;
+        control.srbx.lock().unwrap().signals_sent += 1;
+    }
     loop {
-        let request = match read_frame(stream, CrcMode::Required).await {
-            Err(Error::Io(error)) if error.kind() == std::io::ErrorKind::UnexpectedEof => {
-                return Ok(());
+        // Keep a partial request read alive when an idle notification is emitted.
+        let request = {
+            let read = read_frame(&mut reader, CrcMode::Required);
+            tokio::pin!(read);
+            loop {
+                tokio::select! {
+                    biased;
+                    result = &mut read => break match result {
+                        Err(Error::Io(error)) if error.kind() == std::io::ErrorKind::UnexpectedEof => return Ok(()),
+                        result => result?,
+                    },
+                    notice = signals.recv() => {
+                        if notice.is_err_and(|e| matches!(e, broadcast::error::RecvError::Closed)) { return Ok(()); }
+                        let pending = control.srbx.lock().unwrap().pending;
+                        if pending {
+                            write_frame(&mut writer, &signal).await?;
+                            control.srbx.lock().unwrap().signals_sent += 1;
+                        }
+                    }
+                }
             }
-            result => result?,
         };
         control.requests.fetch_add(1, Ordering::SeqCst);
         let Some(mut response) = model.respond(&request, &mut authenticated) else {
@@ -370,10 +479,38 @@ async fn serve<S: ByteStream + ?Sized>(
         if request.opcode == 17 && response.opcode == 17 {
             control.logins.fetch_add(1, Ordering::SeqCst);
         }
-        let fault = control.faults.lock().unwrap().pop_front();
+        let fault = {
+            let mut faults = control.faults.lock().unwrap();
+            if matches!(faults.front(), Some(Fault::LoseAlarmAcknowledgement))
+                && request.opcode != 225
+            {
+                None
+            } else {
+                faults.pop_front()
+            }
+        };
+        if response.opcode == 118 {
+            response.data[3..5].copy_from_slice(
+                &control
+                    .srbx
+                    .lock()
+                    .unwrap()
+                    .current_alarm_index
+                    .to_le_bytes(),
+            );
+        }
+        if response.opcode == 225 && !matches!(fault, Some(Fault::Error(_))) {
+            let index = u16::from_le_bytes([request.data[0], request.data[1]]);
+            let mut state = control.srbx.lock().unwrap();
+            state.acknowledgements += 1;
+            state.last_acknowledged = Some(index);
+            if index == state.current_alarm_index {
+                state.pending = false;
+            }
+        }
         match &fault {
             Some(Fault::ResponseData(data)) => response.data.clone_from(data),
-            Some(Fault::Disconnect) => return Ok(()),
+            Some(Fault::Disconnect | Fault::LoseAlarmAcknowledgement) => return Ok(()),
             Some(Fault::Stall) => return std::future::pending().await,
             Some(Fault::Delay(delay)) => tokio::time::sleep(*delay).await,
             Some(Fault::WrongOpcode) => response.opcode = 254,
@@ -384,31 +521,64 @@ async fn serve<S: ByteStream + ?Sized>(
             }
             Some(Fault::SrbxBeforeReply) => {
                 write_frame(
-                    stream,
+                    &mut writer,
                     &Frame::new(request.source, model.address, 224, vec![]),
                 )
                 .await?
             }
             _ => {}
         }
-        let mut bytes = response.encode()?;
+        let bytes = response.encode()?;
         match fault {
             Some(Fault::CorruptCrc) => {
+                let mut bytes = bytes;
                 let end = bytes.len() - 1;
                 bytes[end] ^= 0x80;
-                stream.write_all(&bytes).await?;
+                writer.write_all(&bytes).await?;
             }
             Some(Fault::PartialThenClose(n)) => {
-                stream.write_all(&bytes[..n.min(bytes.len())]).await?;
+                writer.write_all(&bytes[..n.min(bytes.len())]).await?;
                 return Ok(());
             }
             Some(Fault::Fragment(chunk)) => {
-                for chunk in bytes.chunks(chunk.max(1)) {
-                    stream.write_all(chunk).await?;
+                for bytes in bytes.chunks(chunk.max(1)) {
+                    writer.write_all(bytes).await?;
                     tokio::task::yield_now().await;
                 }
             }
-            _ => stream.write_all(&bytes).await?,
+            _ => writer.write_all(&bytes).await?,
         }
     }
+}
+
+fn append_log<const N: usize>(
+    slots: &mut BTreeMap<u16, [u8; N]>,
+    current: &mut u16,
+    bytes: [u8; N],
+) -> Result<u16, Error> {
+    if *current >= crate::LOG_CAPACITY {
+        return Err(Error::InvalidConfig("simulator log index outside ring"));
+    }
+    *current = (*current + 1) % crate::LOG_CAPACITY;
+    slots.insert(*current, bytes);
+    Ok(*current)
+}
+fn log_response<const N: usize>(
+    payload: &[u8],
+    current: u16,
+    slots: &BTreeMap<u16, [u8; N]>,
+) -> Result<Vec<u8>, Error> {
+    let [count, low, high] = payload else {
+        return Err(Error::InvalidRequest("log header length"));
+    };
+    let request = crate::LogRequest::new(u16::from_le_bytes([*low, *high]), *count)?;
+    if current >= crate::LOG_CAPACITY {
+        return Err(Error::InvalidConfig("simulator log index outside ring"));
+    }
+    let mut bytes = request.payload();
+    bytes.extend(current.to_le_bytes());
+    for index in request.start()..request.start() + u16::from(request.count()) {
+        bytes.extend(slots.get(&index).copied().unwrap_or([0; N]));
+    }
+    Ok(bytes)
 }

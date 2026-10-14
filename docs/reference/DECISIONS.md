@@ -1,7 +1,7 @@
 # Current specification decision register
 
 Updated: 2026-10-14. Initial evidence baseline: public research reviewed 2026-10-08;
-PT-136 Table 3-48 visually audited 2026-10-14 for DEC-10.05.
+PT-136 Table 3-48 and PT-103 Table 3-15 visually audited 2026-10-14 for DEC-10.05/06.
 This register introduces no physical validation. All DEC
 parents remain open. It is the current delivery index; historical findings remain
 in [first-pass research](AMBIGUITIES.md), [second-pass research](SECOND_PASS.md)
@@ -190,6 +190,7 @@ Evidence: [search assessment](SEARCH_RECORD.md#dec-10--widths-conditional-access
 | DEC-10.03 | Firmware-dependent schema differences | Broad audit remains ongoing | User extension: EXT-3 | Per-parameter manifests for all 62 catalog rows |
 | DEC-10.04 | Naming/description defects in other drivers | Indexed release-note lead only | Deferred evidence | Read original release notes before adopting corrections |
 | DEC-10.05 | PT-136/17 DST end-week range 1-56 versus /12 start-week range 1-6 | October 2022 Table 3-48 visually confirms the discrepancy; UInt8 read width/access/version are clear, constraint left unspecified | User extension: EXT-3; built-in raw read available | Applicable erratum or model/firmware evidence establishing valid week values; never substitute a guessed range |
+| DEC-10.06 | PT-103/19, /34, /35 write access | Table 3-15 columns say R/W but visually audited row notes suggest R/O for external ROC Plus; read widths are unambiguous | Built-in read metadata with explicit write caveat; writes deferred | Applicable erratum or controller/firmware evidence establishing external write access |
 
 ## Managed extension delivery evidence (2026-10-09)
 

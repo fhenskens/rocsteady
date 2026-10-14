@@ -1,11 +1,17 @@
-# Using the experimental read-only client
+# Using the experimental monitoring client
 
-The supported built-ins are configuration discovery, clock reads, legacy login,
-individual/contiguous parameter reads and device errors. Configure addresses,
-credentials and parameter types from the actual controller. Device compatibility
-and serial wiring have not been physically validated. Profiles, schema catalogs,
-enhanced authentication and typed write/history/alarm/file/routing services are
-unavailable. The extension fixture is not an enhanced-security implementation.
+This guide describes the unreleased 0.1.0 candidate. All releases below 1.0 are
+experimental. Published 0.1.0-alpha.1 has
+configuration, clock and parameter reads, legacy login and device errors. The
+unreleased update adds explicit profiles, discovery, schema-backed catalog reads,
+alarm/event retrieval and opt-in SRBX polling/acknowledgement. Use a checkout for
+those additions. Acknowledgement explicitly changes controller SRBX status.
+
+Configure addresses, credentials, firmware applicability and parameter types from
+the actual controller. Physical device/serial compatibility remains unverified.
+Enhanced authentication, typed parameter writes, history, file and routing services
+are unavailable. The extension fixture is not an enhanced-security implementation.
+See [coverage](COVERAGE.md) and [log/SRBX contracts](LOGS.md) for exact limitations.
 
 ## Credentials and TCP
 
@@ -158,18 +164,92 @@ async fn read_first_analog_input(client: &Client)
     let io = client.discover_io_with_layout(
         FirmwareVersion::new(3, 0)?, IoLayout::Compatibility160,
     ).await?;
-    let input = io.by_logical(103, 0)?.tlp(21)?;
+    let input = io.by_logical(103, 0)?;
     let catalog = Roc800Catalog::from_discovery(io)?;
-    Ok(client.read_schema(&catalog, &catalog.context(), &[input]).await?)
+    Ok(client.read_schema(&catalog, &catalog.context(), &[
+        input.tlp(3)?, input.tlp(21)?, input.tlp(32)?,
+    ]).await?)
 }
 ```
 
 The catalog supplies the parameter type and checks its discovered physical location.
-It covers 30 selected parameters; [the manifest](CATALOG.md) records source references,
+It covers 130 parameters, including every PT-101/103 read width; [the manifest](CATALOG.md) records source references,
 applicability and omissions. Snapshot-derived catalogs/plans fail with StaleGeneration
 after replacement; rediscover before starting a new attempt. The owning application
 must await client.stop(). Run `cargo run --example discovery_catalog` for a complete
 independent TCP fixture example without controller access.
+
+`Roc800Catalog::entry(point_type, parameter).metadata` supplies optional enum labels,
+alarm-bit masks, fixed units and source write caveats. `enum_meaning(raw)` returns
+None for an unknown code; `active_bits(raw)` and `uninterpreted_bits(raw)` retain the
+entire alarm byte between them. Keep the raw Value alongside any interpretation.
+These annotations do not select firmware or establish write permission. Separate
+fields and batches are not an atomic device snapshot.
+
+## Alarm and event logs
+
+`read_alarms(LogRequest)` and `read_events(LogRequest)` return typed pages; count
+zero returns just the log indices. Range reads split a caller-chosen window by
+record budgets and ring end. They hold one generation/deadline and return confirmed
+pages in `LogReadError.progress` on failure. Raw records, unknown types and
+incomplete large event values remain available.
+
+```rust,no_run
+use rocsteady::{AlarmRecord, Client, LogCheckpoint, LogReadError, LogReadProgress};
+
+// The application created/persisted this anchor only after consuming its record.
+async fn next_alarm_window(client: &Client, consumed: LogCheckpoint<AlarmRecord>)
+    -> Result<LogReadProgress<AlarmRecord>, LogReadError<AlarmRecord>>
+{
+    client.resume_alarms(consumed, 10).await
+}
+```
+
+Create checkpoints with `page.checkpoint(consumed)` or
+`progress.checkpoint(consumed)` after successful application processing. Explicit
+resume compares the complete consumed record before and after paging. A changed
+anchor returns healthy `Error::LogChanged`; choose a new window deliberately.
+Modulo indices and matching bytes cannot prove absence of rollover/replacement
+or duplicate records. Controller identity and durable ingestion remain caller policy.
+No implicit replay or alarm acknowledgement occurs. See [log contracts](LOGS.md)
+and run `cargo run --locked --example log_retrieval` without hardware.
+
+## SRBX polling and consumed-alarm acknowledgement
+
+Use `Client::srbx_poller(interval)` for opt-in reception while otherwise idle.
+Drive `poll()` repeatedly; it makes an index-only alarm request, routes queued SRBX,
+and reports the current index plus bounded notifications and any broadcast lag.
+It spawns no background task and never acknowledges or replays an operation.
+The first poll is immediate; later polls wait interval after completion. Each exchange
+has normal call/admission/wire deadlines. Stop wakes a waiting poller.
+
+```rust,no_run
+use rocsteady::{AlarmRecord, Client, LogCheckpoint};
+use std::time::Duration;
+
+async fn acknowledge_consumed(client: &Client, consumed: &LogCheckpoint<AlarmRecord>)
+    -> Result<(), Box<dyn std::error::Error>>
+{
+    // Caller has already processed ALL outstanding alarms through this checkpoint.
+    let mut poller = client.srbx_poller(Duration::from_secs(1))?;
+    let poll = poller.poll().await?;
+    println!("reported index: {}, notification lag: {}",
+        poll.current_alarm_index, poll.notifications.lagged);
+    let receipt = client.acknowledge_alarms(consumed).await?;
+    println!("accepted consumed index: {}", receipt.index);
+    Ok(())
+}
+```
+
+Acknowledgement verifies the consumed record in one exclusive attempt, then sends
+that checkpoint's index in opcode 225. It never substitutes an unseen current index.
+The caller must have processed all outstanding alarms through that checkpoint and
+established controller identity; matching bytes cannot prove either condition.
+The empty reply confirms receipt, not that SRBX cleared: a newer alarm can keep it
+pending. Failure reports NotAttempted, Rejected, Unconfirmed or an already-observed
+Confirmed receipt even when the overall call loses a deadline/stop race. Unconfirmed
+may have applied; reconnect never resends. Reconcile deliberately before another
+explicit attempt. See [full log/SRBX contracts](LOGS.md).
 
 ## Serial and notifications
 

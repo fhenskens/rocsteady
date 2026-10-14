@@ -10,11 +10,10 @@ Its published VCS commit matches the reviewed release. Cargo.lock records the
 registry checksum; transitive versions/licenses remain unchanged. Local patched
 checks before publication are separate from registry package/consumer evidence.
 
-Previously verified registry dependencies: etherbird 0.4.1 (Apache-2.0), Tokio 1.53.2 (MIT),
-thiserror 2.0.21 (MIT OR Apache-2.0), optional tokio-serial 5.5.0 (MIT).
-The 0.4.1 migration changes only etherbird's locked version/checksum; transitive
-dependencies remain unchanged. Windows stable/MSRV and package-consumer checks
-pass; Linux/macOS migration validation remains pending in CI.
+Other direct dependencies: Tokio 1.53.2 (MIT), thiserror 2.0.21
+(MIT OR Apache-2.0), optional tokio-serial 5.5.0 (MIT). Current macOS/stable tests
+and registry-package consumer checks pass; hosted candidate checks are tracked in
+[RELEASE.md](RELEASE.md). Earlier stable/MSRV results are historical evidence.
 Serial adds serialport 4.10.1 (MPL-2.0); retain its original source/license
 notices if redistributing that dependency. unescaper permits MIT as an alternative
 to GPL-3.0-only; the MIT branch is selected for this release inventory.
@@ -81,9 +80,8 @@ inventory and repeat lifecycle, stable-toolchain, platform and package consumer 
 
 Publication contents were inspected using `cargo package --list --locked --allow-dirty`.
 The payload includes source, lockfile/manifests, tests, examples and fixture support,
-README, Apache license, changelog and the selected user-facing guides/audit.
-It excludes target output, local environment files, git internals, roadmaps, vendor
-research, CI and developer scripts. Cargo-generated VCS metadata records the source
+README, Apache license, changelog and all repository Markdown documentation.
+It excludes target output, local environment files, git internals, vendor manuals, CI and developer scripts. Cargo-generated VCS metadata records the source
 commit and its dirty status; final publication requires a reviewed clean commit.
 
 The README and usage include_str paths are present in the package. Verification

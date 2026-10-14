@@ -191,8 +191,10 @@ applicability. ParameterSchema supplies DataType (and therefore width), Access,
 optional logical bounds and optional numeric bounds. Missing metadata is never guessed.
 ReadOnly/ReadWrite are readable; WriteOnly and unresolved Conditional fail locally.
 Logical bounds are enforced; numeric bounds are write metadata, not a read-value filter.
-The built-in Roc800Catalog covers 50 parameters, including PT-136 clock fields; schema-aware
-writes and complete PT tables remain unavailable. See [CATALOG.md](CATALOG.md).
+The built-in Roc800Catalog covers 130 parameters, including clock, port and module fields; schema-aware
+writes and complete PT conformance remain unavailable. PT-101/103 have all read
+widths plus optional CatalogMetadata enum/bit/unit annotations. Unknown values
+remain raw; source write caveats do not alter read planning or establish write access. See [CATALOG.md](CATALOG.md).
 
 `SchemaChain` searches providers in order: place caller overrides first, catalogs
 after them. First Some wins; an error stops lookup, so unsupported identity cannot
@@ -264,3 +266,23 @@ catalog-backed reads through an independent TCP peer. Tests in `tests/discovery.
 and `tests/discovery_simulator.rs` distinguish source-derived byte oracles from the
 shared-codec simulator. Individual malformed replies retire the stream; valid device
 errors, unsupported local metadata and observed discovery changes retain it.
+
+## Bounded alarm/event reads
+
+The shared PreparedOperation path exposes read_alarms/read_events on Client,
+Session and ManagedContext, with contextual profile codecs and decoder retirement.
+Range reads use one exclusive Workflow, fixed record/profile budgets and one overall
+deadline. They return only decoded-page progress on failure and never resume or
+replay implicitly. Consumed checkpoints use raw record anchors, including NaNs;
+resume checks before and after paging. LogChanged is a healthy continuity error.
+Matching bytes do not prove gap-free delivery or controller identity. See
+[log contracts, source variants and evidence](LOGS.md).
+
+Explicit acknowledge_alarms accepts only an alarm checkpoint, verifies its raw
+anchor and sends the consumed index inside the same exclusive context. Client
+failure retains NotAttempted/Rejected/Unconfirmed/Confirmed outcome evidence;
+Session/ManagedContext use the same core and an Error-typed failure. A caller-driven
+SrbxPoller reuses existing pool stopped watches and serialized opcode-118 reads,
+with no extra task/lifecycle latch. It reports bounded notifications and lag without
+automatic ingestion/acknowledgement. Caller identity/complete consumption remain
+required; an empty acknowledgement does not prove SRBX cleared. See LOGS.md.

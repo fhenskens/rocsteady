@@ -181,3 +181,169 @@ async fn simulator_rejects_invalid_selector_command_and_ranges_as_healthy_device
     client.stop().await;
     server.stop().await.unwrap();
 }
+
+#[tokio::test]
+async fn simulator_reads_foundation_fields_with_port_and_module_ordinals() {
+    let tlps = [
+        Tlp::new(91, 0, 23),
+        Tlp::new(95, 0, 1),
+        Tlp::new(95, 1, 36),
+        Tlp::new(95, 5, 9),
+        Tlp::new(139, 0, 0),
+        Tlp::new(139, 26, 3),
+    ];
+    let values = [
+        Value::Float(37.5),
+        Value::UInt16(3),
+        Value::UInt16(65535),
+        Value::UInt8(255),
+        Value::UInt8(36),
+        Value::Ascii("2.02      ".into()),
+    ];
+    let mut model = Model::default();
+    model
+        .parameters
+        .extend(tlps.iter().copied().zip(values.iter().cloned()));
+    let server = Simulator::bind("127.0.0.1:0".parse().unwrap(), model)
+        .await
+        .unwrap();
+    let client = Client::tcp(
+        server.endpoint().to_string(),
+        ClientConfig {
+            heartbeat_interval: None,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let catalog = Roc800Catalog::new(FirmwareVersion::new(2, 2).unwrap()).unwrap();
+    assert_eq!(
+        client
+            .read_schema(&catalog, &catalog.context(), &tlps)
+            .await
+            .unwrap(),
+        values
+    );
+    for pt in [95, 139] {
+        assert_eq!(
+            client
+                .read_point_types(PointTypeRequest::new(pt, 1).unwrap())
+                .await
+                .unwrap()
+                .classifications(),
+            [PointTypeClassification::Roc]
+        );
+    }
+    client.stop().await;
+    server.stop().await.unwrap();
+}
+
+#[tokio::test]
+async fn simulator_reads_all_input_fields_using_explicit_source_typed_values() {
+    // Tables 3-13/3-15: fixture types are literal and independent of the catalog.
+    let di = [
+        Value::Ascii("DI SAMPLE ".into()),
+        Value::UInt8(1),
+        Value::Float(0.3),
+        Value::UInt8(1),
+        Value::UInt8(0),
+        Value::UInt8(0),
+        Value::UInt32(16000000),
+        Value::Float(1000000.0),
+        Value::Float(0.0),
+        Value::UInt8(1),
+        Value::UInt8(0),
+        Value::UInt8(1),
+        Value::Binary(0xff),
+        Value::Float(0.05),
+        Value::Float(0.05),
+        Value::UInt8(1),
+    ];
+    let ai = [
+        Value::Ascii("AI SAMPLE ".into()),
+        Value::Ascii("kPa       ".into()),
+        Value::UInt8(1),
+        Value::Float(1.0),
+        Value::Float(1.0),
+        Value::UInt8(3),
+        Value::UInt8(0),
+        Value::UInt16(819),
+        Value::UInt16(819),
+        Value::UInt16(4095),
+        Value::UInt16(4095),
+        Value::UInt16(4095),
+        Value::UInt16(4095),
+        Value::Float(0.0),
+        Value::Float(100.0),
+        Value::Float(100.0),
+        Value::Float(100.0),
+        Value::Float(100.0),
+        Value::Float(-1.0),
+        Value::Float(0.0),
+        Value::Float(12.5),
+        Value::Float(12.5),
+        Value::UInt8(1),
+        Value::Float(-20.0),
+        Value::Float(-10.0),
+        Value::Float(110.0),
+        Value::Float(120.0),
+        Value::Float(5.0),
+        Value::Float(2.0),
+        Value::UInt8(1),
+        Value::UInt8(1),
+        Value::UInt8(1),
+        Value::Binary(0xff),
+        Value::Float(3600.0),
+        Value::UInt8(0),
+        Value::UInt8(0),
+        Value::UInt8(1),
+        Value::Float(-10.0),
+        Value::UInt8(0),
+        Value::Float(4.0),
+    ];
+    for (layout, stride) in [
+        (IoLayout::Compatibility160, 16),
+        (IoLayout::Compatibility240, 16),
+        (IoLayout::Expanded224, 8),
+    ] {
+        let mut model = Model::default();
+        model.set_io_layout(layout);
+        model.io_point_types[stride as usize] = 103;
+        model.io_point_types[2 * stride as usize] = 101;
+        let tlps: Vec<_> = (0..16)
+            .map(|p| Tlp::new(101, 2 * stride, p))
+            .chain((0..40).map(|p| Tlp::new(103, stride, p)))
+            .collect();
+        let expected: Vec<_> = di.iter().chain(&ai).cloned().collect();
+        model
+            .parameters
+            .extend(tlps.iter().copied().zip(expected.iter().cloned()));
+        let server = Simulator::bind("127.0.0.1:0".parse().unwrap(), model)
+            .await
+            .unwrap();
+        let client = Client::tcp(
+            server.endpoint().to_string(),
+            ClientConfig {
+                profile: Arc::new(Roc800Profile { layout }),
+                heartbeat_interval: None,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let catalog = Roc800Catalog::from_discovery(
+            client
+                .discover_io(FirmwareVersion::new(3, 10).unwrap())
+                .await
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            client
+                .read_schema(&catalog, &catalog.context(), &tlps)
+                .await
+                .unwrap(),
+            expected
+        );
+        client.stop().await;
+        server.stop().await.unwrap();
+    }
+}

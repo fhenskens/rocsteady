@@ -2,8 +2,8 @@
 
 **An async ROC Plus client with automatic connection recovery.**
 
-rocsteady is an async Rust client for Emerson ROC Plus devices. Read configuration,
-clocks and parameters through the same client while failed connections are replaced.
+rocsteady is an async Rust client for Emerson ROC Plus devices. Discover points and read configuration,
+clocks, parameters and alarm/event logs through the same client while failed connections are replaced.
 Configured login and protocol readiness are restored before application calls resume.
 
 [etherbird](https://crates.io/crates/etherbird) supplies lifecycle supervision,
@@ -13,10 +13,14 @@ application-provided byte streams use the same protocol implementation.
 
 ## Useful features
 
-- **A stable async client:** clones share one managed channel; subsequent calls wait
+- **A shared managed client:** clones share one managed channel; subsequent calls wait
   for replacement setup after a transport failure.
 - **Typed reads:** discover configuration, read the clock, and read individual or
   contiguous parameters using types supplied from your device's schema.
+- **Discovery and catalog:** explicit I/O layouts and 130 source-audited ROC800
+  parameters, with firmware/location checks and optional enum/bit/unit metadata.
+- **Alarm/event monitoring:** typed pages, bounded ring windows and caller-consumed
+  checkpoints, plus opt-in idle SRBX polling and explicit alarm acknowledgement.
 - **Restored setup:** legacy login and a clock readiness probe run on every new
   connection. Custom setup strategies can obtain application credentials and
   establish generation-local state.
@@ -29,35 +33,42 @@ application-provided byte streams use the same protocol implementation.
 - **State and shutdown:** optional heartbeats detect idle failure, state notifications
   report changes, and awaited shutdown cancels/drains work and closes the channel.
 
-Use the current stable Rust toolchain. The first experimental version is `0.1.0-alpha.1`:
+Use the current stable Rust toolchain. The next release is `0.1.0`; it is not yet
+published. Use a checkout until publication. All releases below 1.0 are experimental
+and may have incomplete protocol coverage; see the scope below.
 
 ```toml
 [dependencies]
-rocsteady = "0.1.0-alpha.1"
+rocsteady = "0.1.0"
 # From a checkout: rocsteady = { path = "../rocsteady" }
 # Add features = ["serial"] for SerialConnector.
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "time"] }
 ```
 
-The API is experimental. See the [usage guide](docs/USAGE.md) for credentials,
+Below 1.0, breaking API changes use a new minor version; compatible additions and
+fixes use patch releases. See the [usage guide](docs/USAGE.md) for credentials,
 errors and serial configuration, and the [managed extension contracts](docs/MANAGED_EXTENSIONS.md)
 for ownership, cancellation and generation lifetimes.
 
 ## Scope and validation
 
-The built-in alpha scope is read-only: configuration discovery, clock and parameter
-reads, legacy login and device errors. The working tree adds explicit profiles,
+The published alpha scope is read-only: configuration discovery, clock and parameter
+reads, legacy login and device errors. The working tree also includes typed alarm/event
+retrieval with bounded pages and explicit checkpoints, plus opt-in idle SRBX polling
+and explicit consumed-alarm acknowledgements. Acknowledgement changes controller
+SRBX status; it is never automatic. The working tree adds explicit profiles,
 contextual reply codecs, discovery services and schema providers with bounded reads; see the
 [extension contracts](docs/MANAGED_EXTENSIONS.md). These additions are unreleased.
-The [catalog](docs/CATALOG.md) contains 50 ROC800 parameters, including clock fields.
-Remaining catalog tables, enhanced login and typed writes, history, alarms, files
+The [catalog](docs/CATALOG.md) contains 130 ROC800 parameters, including every discrete-input and analog-input read width, plus clock, port and module fields.
+Remaining catalog tables, enhanced login and typed writes, history, automatic durable alarm delivery, files
 and routing remain unavailable. Raw/custom
 operations can perform side effects; they are not automatically replayed.
 
-Windows, Linux and macOS checks use stable Rust and cover independent wire fixtures, loopback TCP,
-in-memory streams, recovery and shutdown. The publication package is verified
-and exercised by an external consumer. All six historical toolchain/platform jobs passed for
-the alpha candidate. Physical ROC hardware has not been validated. The simulator
+Local macOS/stable validation passes 122 all-feature tests, 14 doctests, strict
+Clippy, fixture examples, package verification and an extracted-package consumer.
+Stable Windows/Linux/macOS CI is configured; hosted validation of the new release
+commit remains pending. Published alpha.1 passed its historical six-job matrix.
+Physical ROC hardware and actual serial exchanges have not been validated. The simulator
 is a deterministic fault-injection fixture, not a full ROC800 emulator.
 
 Read the [coverage matrix](https://github.com/fhenskens/rocsteady/blob/main/docs/COVERAGE.md)
@@ -74,6 +85,7 @@ firmware applicability; unknown fields are retained rather than guessed.
 | [Managed extensions](examples/managed_extensions.rs) | Custom setup, a typed operation and a two-exchange workflow against an independent in-memory peer. |
 | [Profiles and schemas](examples/schema_profiles.rs) | Explicit profile/applicability and a user-defined mixed-width schema read in bounded batches over an independent TCP peer. |
 | [Discovery and built-in catalog](examples/discovery_catalog.rs) | Point classifications and I/O discovery, then system/I/O reads using source-audited metadata and physical locations. |
+| [Alarm/event retrieval](examples/log_retrieval.rs) | Independent record fixtures, bounded log pages, caller-confirmed consumption, checkpoint resume, idle polling and explicit acknowledgement. |
 | [Configured TCP device](examples/read_device.rs) | Configuration and clock reads using an explicit endpoint and optional legacy credentials from the environment. |
 | [Serial clock read](examples/serial_read.rs) | A serial connector with an explicit port and baud rate; other line settings must match your channel. |
 
@@ -92,8 +104,11 @@ cargo run --locked --example managed_extensions
 # Explicit profiles and schema-backed batches (working tree):
 cargo run --locked --example schema_profiles
 
-# Discovery and the initial built-in catalog (working tree):
+# Discovery and the built-in catalog (working tree):
 cargo run --locked --example discovery_catalog
+
+# Alarm/event windows, checkpoint resume and explicit SRBX handling:
+cargo run --locked --example log_retrieval
 ```
 
 For hardware examples, set `ROC_ENDPOINT` and optionally both `ROC_OPERATOR` and
@@ -254,7 +269,8 @@ See the [error guide](docs/USAGE.md#errors-and-recovery) before deciding to try 
 State watchers can await `subscribe_state().changed()` and inspect `client.state()`.
 `subscribe_events()` survives replacements and delivers bounded SRBX signals found
 during requests/heartbeats. Handle receiver lag; there is no continuous idle reader
-or automatic alarm-log acknowledgement. Outgoing CRC is generated and incoming CRC
+or automatic alarm-log acknowledgement. For idle observation, drive the opt-in
+`srbx_poller`; see [log/SRBX contracts](docs/LOGS.md). Outgoing CRC is generated and incoming CRC
 is checked by default; ignoring incoming CRC is an explicit compatibility option.
 
 ## Development

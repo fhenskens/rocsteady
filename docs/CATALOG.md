@@ -3,7 +3,12 @@
 Source: [Emerson D301180X012, October 2022](https://www.documentation.emersonprocess.com/groups/public/documents/instruction_manuals/d301180x012.pdf).
 Initial slice reviewed 2026-10-10; PT-136 audited 2026-10-14 against printed
 pp.3-200–201 (PDF pages 259–260), including visual inspection of the disputed row.
-This document records 50 entries as technical metadata, not vendor descriptions.
+This document records 130 entries as technical metadata, not vendor descriptions.
+The foundation slice was audited on 2026-10-14 against printed pp.3-34–37,
+3-44–48 and 3-210–211.
+Input Tables 3-13/3-15 audited on 2026-10-14 against printed pp.3-61–62 and
+3-66–69 (PDF pages 120–121 and 125–128), including visual inspection of
+calibration access notes and alarm-bit definitions.
 No PT row meets the full schema completion contract.
 
 ## Discovery contracts
@@ -79,8 +84,9 @@ literal fixture `catalog_literal` in `examples/support/discovery_fixture.rs`;
 independent TCP evidence `every_catalog_row_reads_independent_literal_values_over_tcp`
 in `tests/discovery.rs`; actual serial evidence **none**; hardware evidence **none**.
 Access is source metadata; this release only reads. Numeric constraints are metadata
-for later writes and never filter observed read values. Units/defaults and textual
-descriptions are not guessed; dynamic units tags remain strings and bit fields raw bytes.
+for later writes and never filter observed read values. Fixed input units and enum/bit meanings are optional `CatalogEntry.metadata`
+annotations. Defaults and unspecified units are not guessed; dynamic units tags
+remain strings and bit fields remain raw bytes.
 
 | PT | Parameters | Types / widths | Access | Introduced | Source |
 | --- | --- | --- | --- | --- | --- |
@@ -151,6 +157,129 @@ bit/enumeration/default/unit metadata, typed write semantics and firmware/hardwa
 interoperability. In particular PT-109's measurement is parameter 12, not PT-103's
 parameter 21; PT-109/7 is R/W while PT-103/7 is R/O. These distinctions are fixtures.
 
+## Foundation slice: system diagnostics, ports and modules
+
+The additional 36 fields use these independently transcribed source facts:
+
+| PT | Parameters | Types / widths | Access | Introduced | Source |
+| --- | --- | --- | --- | --- | --- |
+| 91 | 10-12, 22 | UInt8 / 1 | R/O | 1.00 | Table 3-5, pp.3-34–35 |
+| 91 | 13-14 | UInt16 / 2 | R/O | 1.00 | Table 3-5, p.3-35 |
+| 91 | 23 | Float / 4 | R/O | 1.00 | Table 3-5, p.3-35 |
+| 91 | 37-38 | ASCII / 20 | R/O | 1.00 | Table 3-5, p.3-37 |
+| 91 | 43-46 | UInt16 / 2 | R/W | 1.20 | Table 3-5, p.3-37 |
+| 91 | 47-48 | Time / 4 | R/O | 1.30 | Table 3-5, p.3-37 |
+| 95 | 0 | ASCII / 10 | R/W | 1.00 | Table 3-7, p.3-44 |
+| 95 | 1 | UInt16 / 2 | R/W | 1.00 | Table 3-7, p.3-44 |
+| 95 | 2-4, 6, 44 | UInt8 / 1 | R/W | 1.00 | Table 3-7, pp.3-44–45, 3-48 |
+| 95 | 5, 9 | UInt8 / 1 | R/O | 1.00 | Table 3-7, p.3-45 |
+| 95 | 7-8 | Float / 4 | R/W | 1.00 | Table 3-7, p.3-45 |
+| 95 | 36, 42 | UInt16 / 2 | R/W | 1.00 | Table 3-7, p.3-47 |
+| 95 | 37 | Time / 4 | R/O | 1.00 | Table 3-7, p.3-47 |
+| 139 | 0-2 | UInt8 / 1 | R/O | 2.02 | Table 3-51, p.3-210 |
+| 139 | 3 | ASCII / 10 | R/O | 2.02 | Table 3-51, p.3-210 |
+| 139 | 4, 8-9 | ASCII / 20 | R/O | 2.02 | Table 3-51, pp.3-210–211 |
+
+PT-95 uses communication-port ordinals 0-5, independently of the opcode-50 map.
+Logical 1 is Ethernet: only /36, /37, /42 and /44 from this slice are valid there.
+Other fields on that port fail locally before admission. The introductory restriction
+and later /40–41 zero-value statements require further review before those fields
+are included. PT-139 uses module ordinals 0-26, rather than physical I/O channel
+positions. The selected fields are all documented as valid in boot mode; other
+module fields remain omitted. Neither static range establishes installation, module
+mode, read authorization or an atomic snapshot. Device rejection remains possible.
+A discovery-bound provider retains its generation requirement for these fields too.
+
+Contradictory enum ranges remain unspecified: PT-95/5 describes Ethernet code 19
+outside its printed range; PT-139/0 describes code 36 outside its range, and /1
+includes failure code 2 outside 0-1. PT-95/44 exists at 1.00, but security value 2
+is documented from 1.21. Reads preserve every raw byte; no security selection,
+value-level write constraint or login procedure is inferred. PT-91/11 can return
+values outside its licensed capacity range; numeric metadata never filters reads.
+
+Every new row joins the independent literal/TCP sweep. Additional tests cover
+port/module boundaries, firmware thresholds, rejection before any parameter exchange,
+unknown/raw codes, static reads without I/O discovery and explicit simulator values.
+Catalog checks reject duplicate keys/names, invalid widths/bounds and missing sources.
+There is one variant per key today; future overlapping applicability needs new checks.
+The example and packaged consumer read port counters and module boot identity.
+Serial and hardware evidence remain **none**; all seven PT tables remain partial.
+
+## Complete input read widths and interpretation metadata
+
+The input slice adds 44 entries: all 16 PT-101 and all 40 PT-103 parameters now
+have read metadata and independent literal/TCP evidence. There are no reserved
+parameter rows in these two tables. Sub-bits below are annotations of their byte,
+not additional TLP parameters. The full schema contract remains open because
+writes, defaults, update ownership and complete conditional semantics are outstanding.
+
+| PT | Parameters | Type / width | Table access | Introduced | Source |
+| --- | --- | --- | --- | --- | --- |
+| 101 | 0 | ASCII / 10 | R/W | 1.00 | Table 3-13, p.3-61 |
+| 101 | 1, 3-5, 9-11 | UInt8 / 1 | R/W | 1.00 | Table 3-13, pp.3-61–62 |
+| 101 | 2, 7-8, 13 | Float / 4 | R/W | 1.00 | Table 3-13, pp.3-61–62 |
+| 101 | 6 | UInt32 / 4 | R/W | 1.00 | Table 3-13, p.3-61 |
+| 101 | 12 | Binary / 1 | R/O | 1.00 | Table 3-13, p.3-62 |
+| 101 | 14 | Float / 4 | R/O | 1.00 | Table 3-13, p.3-62 |
+| 101 | 15 | UInt8 / 1 | R/O | 1.00 | Table 3-13, p.3-62 |
+| 103 | 0-1 | ASCII / 10 | R/W | 1.00 | Table 3-15, p.3-66 |
+| 103 | 2, 5-6, 22, 29-31, 34-35 | UInt8 / 1 | R/W* | 1.00 | Table 3-15, pp.3-66–69 |
+| 103 | 3, 13-19, 23-28 | Float / 4 | R/W* | 1.00 | Table 3-15, pp.3-66–68 |
+| 103 | 4, 20-21, 33 | Float / 4 | R/O | 1.00 | Table 3-15, pp.3-66–69 |
+| 103 | 7 | UInt16 / 2 | R/O | 1.00 | Table 3-15, p.3-66 |
+| 103 | 8-12 | UInt16 / 2 | R/W | 1.00 | Table 3-15, pp.3-66–67 |
+| 103 | 32 | Binary / 1 | R/O | 1.00 | Table 3-15, pp.3-68–69 |
+| 103 | 36 | UInt8 / 1 | R/W | 3.00 | Table 3-15, p.3-69 |
+| 103 | 37 | Float / 4 | R/W | 3.00 | Table 3-15, p.3-69 |
+| 103 | 38 | UInt8 / 1 | R/O | 3.00 | Table 3-15, p.3-69 |
+| 103 | 39 | Float / 4 | R/O | 3.10 | Table 3-15, p.3-69 |
+
+* PT-103/19, /34 and /35 have R/W table columns but notes suggesting R/O
+for external ROC Plus. Reads are unambiguous. `access` preserves the table column;
+`metadata.write_caveat` records the unresolved note (DEC-10.06). It is not a verified
+write permission. No calibration commands or configuration writes are implemented.
+Numeric ranges in `entries.rs` are source write metadata and never filter replies.
+PT-101/13's minimum is 0.004 seconds, unlike PT-103/3's 0.05 seconds.
+PT-103/5 is a byte percentage 0-99; calibrated raw values /8-12 are UInt16.
+Engineering values and limits have no invented finite range or fixed units.
+
+Optional `CatalogMetadata` lives alongside static entries, separate from
+`ParameterSchema` and provider read planning. This keeps caller schemas unchanged.
+`EnumMeaning` supplies byte codes/keys and `BitMeaning` supplies masks/keys.
+Use `enum_meaning(raw)` or `active_bits(raw)` for interpretation, while retaining
+raw `Value::UInt8`/`Value::Binary`. `uninterpreted_bits(raw)` returns every set bit
+with no supplied meaning, including documented unused bits. An empty collection
+means unspecified metadata. Metadata lookup alone does not establish firmware or
+location applicability; obtain readable schemas through the provider first.
+
+| Parameters | Enum code meanings |
+| --- | --- |
+| PT-101/1,4,5,9,10,11; PT-103/2,6,22,29,30,31,36 | 0 disabled; 1 enabled |
+| PT-101/3,15 | 0 off; 1 on |
+| PT-103/34 | 0 current; 1 start; 2 calibrate; 3 restore_previous; 4 stop |
+| PT-103/35 | 0 none; 1 zero; 2 span; 3 midpoint_1; 4 midpoint_2; 5 midpoint_3; 6 offset |
+| PT-103/38 | 0 12_bit; 1 16_bit |
+
+| Parameter | Bit masks and meanings | Unused mask |
+| --- | --- | --- |
+| PT-101/12 | 0x20 status_on; 0x80 scanning_disabled | 0x5f |
+| PT-103/32 | 0x01 low; 0x02 low_low; 0x04 high; 0x08 high_high; 0x10 rate; 0x40 point_fail; 0x80 scanning_disabled | 0x20 |
+
+Fixed units are seconds for PT-101/2,7,8,13,14 and PT-103/3,4,33; percent for
+PT-103/5; milliamps for PT-103/39. Device engineering-unit tags remain caller-readable
+strings. PT-101 counters/time totals retain raw values; no rollover accounting,
+input filtering, calibration or alarm calculation is simulated.
+
+Tests read every input field over all three explicit layouts, reject whole batches
+locally at the 3.00/3.10 gates, and cover all 256 bytes for enum/alarm interpretation.
+The independent peer also supplies unknown codes, unused bits, a NaN payload,
+infinity and negative zero; raw bits survive and the connection stays healthy.
+The simulator supplies all 56 input fields explicitly. Catalog consistency tests
+check enum/bit uniqueness, masks, unused-bit separation and value bounds.
+The example reads input configuration/value/alarms together and displays metadata;
+the extracted-package consumer exercises new fields and the public helpers.
+No atomic snapshot, serial or physical-controller interoperability is claimed.
+
 ## Service evidence
 
 | Variant | Source | Limits | Codec/API | Simulator | Independent fixtures/TCP | Serial/hardware | Disposition |
@@ -164,5 +293,5 @@ replay. Tests also cover call cancellation, disconnection, healthy device errors
 malformed replies, budget failures, overrides and stale catalog rejection.
 
 Run `cargo run --locked --example discovery_catalog` to discover both services and
-read firmware identification, clock year/raw time, an analog input, a discrete input and battery value
+read firmware identification, clock year/raw time, CPU load, a port counter, module boot identity, an analog input, a discrete input and battery value
 through the built-in provider, without manually supplying widths.

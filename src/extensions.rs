@@ -52,6 +52,26 @@ impl ManagedContext<'_> {
     pub fn profile(&self) -> &dyn crate::ProtocolProfile {
         self.session.profile.as_ref()
     }
+    pub async fn read_alarms(
+        &mut self,
+        request: crate::LogRequest,
+    ) -> Result<crate::AlarmPage, Error> {
+        self.exchange_operation(crate::operations::logs::<crate::AlarmRecord>(
+            request,
+            self.session.profile.clone(),
+        ))
+        .await
+    }
+    pub async fn read_events(
+        &mut self,
+        request: crate::LogRequest,
+    ) -> Result<crate::EventPage, Error> {
+        self.exchange_operation(crate::operations::logs::<crate::EventRecord>(
+            request,
+            self.session.profile.clone(),
+        ))
+        .await
+    }
     pub async fn read_clock(&mut self) -> Result<crate::Clock, Error> {
         self.exchange_operation(crate::operations::clock(self.session.profile.clone()))
             .await

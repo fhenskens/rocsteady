@@ -24,9 +24,10 @@ the sections used by the implementation and fixtures.
 | 17 | Legacy operator ID/numeric password and optional access level | Fixed request tests, rejected/accepted simulator login, setup recovery |
 | 50 | Both I/O selectors; explicit 160/240/224-entry layouts; repeated consistency checks; physical/per-type logical positions kept distinct | Independent Table 2-12 TCP fixtures in tests/discovery.rs and simulator tests; DEC-3/hardware applicability remains unresolved |
 | 100 | Command 11 point-type classification, echoed headers, counts 0-245, bounded range paging, unknown codes preserved | Independent Table 2-13 fixtures/TCP and tests/discovery_simulator.rs |
+| 118 / 119 | Typed alarm/event pages, all enumerated records/tags, bounded windows and observed anchor checks | Independent literals/TCP, simulator, package consumer and [log contracts](LOGS.md); durable gap-free delivery not claimed |
 | 167 | Typed contiguous parameter reads | Echo/range/width checks and TCP integration |
 | 180 | Typed arbitrary TLP reads | Echo/count/width/response-budget checks and TCP integration |
-| 224 | Route interleaved signals to stable receiver | Published vector and recovery integration |
+| 224 / 225 | Stable SRBX notifications, opt-in bounded idle polling, explicit consumed-index acknowledgement and staged outcomes | Chapter 6 literals, independent TCP/lifecycle cases, simulator pending comparisons and [contracts](LOGS.md) |
 | 255 | Preserve multiple and unknown error entries | Fixed error fixtures; healthy connection preserved |
 | Parameter types | Binary, fixed ASCII, signed/unsigned integers, float/double, TLP, time | Literal byte-order/width tests |
 | TCP | Fresh connection seam and simulator transport | Real loopback sockets |
@@ -34,7 +35,7 @@ the sections used by the implementation and fixtures.
 | Supervision | Login/readiness restoration, queue bound, deadlines, heartbeat, cancellation/shutdown | etherbird-backed integration suite |
 | Managed extensions | Immutable setup strategies, typed operations, exclusive workflows, terminal auth, owned generation state and checked handles | External fixtures, packaged consumer, README/usage doctests and [release evidence](RELEASE.md) |
 | Protocol profiles | Explicit applicability/capabilities, replaceable clock/configuration codecs, contextual operations, tighter budgets and source correlation | Independent TCP cases in tests/profiles_schema.rs; no disputed firmware preset or hardware evidence |
-| Schema providers/catalog | Caller identity, ordered overrides, access/location bounds, generation-bound discovery, bounded opcode-180 batches and confirmed progress; 50 PT-91/101/103/109/136 entries | Independent TCP fixture for every catalog entry, discovery_catalog example and [manifest](CATALOG.md); no complete PT conformance or typed writes |
+| Schema providers/catalog | Caller identity, ordered overrides, access/location bounds, generation-bound discovery, bounded opcode-180 batches and confirmed progress; 130 PT-91/95/101/103/109/136/139 entries | Independent TCP fixture for every catalog entry, discovery_catalog example and [manifest](CATALOG.md); no complete PT conformance or typed writes |
 
 Table 2-3 is used for the clock year representation instead of the older illustration
 in Figure 1-2. Error offsets are retained as raw bytes; their meaning depends on the
@@ -43,7 +44,7 @@ operation. TLP parameter widths come from caller-provided schemas.
 ## Typed validation and configuration applicability
 
 Typed replies are decoded under the Session exchange guard: malformed
-configuration, clock, login acknowledgement and parameter replies retire the
+configuration, clock, login acknowledgement, log and parameter replies retire the
 generation before another caller can use it. This applies to standalone Session
 and managed Client; ordinary valid device rejections and local validation remain
 healthy. Legacy login rejection during managed setup is the deliberate exception:
@@ -68,11 +69,11 @@ This does not resolve DEC-3 mappings or DEC-8 firmware discovery.
 | Enhanced login/session key and logout | Additional forms of 17 | Not implemented |
 | Store and forward / broadcast | 24 / no-reply operations | Unsupported by request API |
 | History | 105, 108, 135, 136, 137, 138, 139, 206 | Raw unicast exchange only; typed paging/record models outstanding |
-| Alarms/events | 118, 119 | Raw unicast exchange only; typed log retrieval outstanding |
+| Alarms/events | 118, 119 | Fixed records and bounded retrieval implemented; checkpoint continuity limits explicit; physical evidence outstanding |
 | File transfers | 203 | Raw unicast exchange only; file lifecycle/chunking outstanding |
 | Peer network tunnel | 205 | Raw unicast exchange only; typed tunneled exchange outstanding |
-| SRBX full workflow | 224 / 225 | Signal routing implemented; log-consumption and acknowledgement workflow outstanding |
-| Parameter schema catalog | Device/firmware point dictionaries | 50-entry built-in slice, including all PT-136 read widths; remaining metadata/parameters/rows outstanding |
+| SRBX workflow | 224 / 225 | Explicit consumed-checkpoint acknowledgement and bounded idle polling implemented; ingestion completeness/identity are caller contracts; durable delivery/physical evidence remain open |
+| Parameter schema catalog | Device/firmware point dictionaries | 130-entry built-in slice, including all PT-136 read widths; remaining metadata/parameters/rows outstanding |
 | Physical interoperability | Ethernet / serial controller | No hardware tests performed |
 
 A raw request capability is not a complete service implementation. The current
@@ -90,7 +91,8 @@ completion criteria, including transport regressions, hardware evidence and rele
    [release evidence](RELEASE.md) for pending hosted CI and hardware gates.
 2. Expand the initial [catalog slice](CATALOG.md), establish remaining firmware/layout
    applicability and supported discovery/setup policies without guessing identity.
-3. Expand schema-backed parameter models and read-only alarm/history services,
+3. Expand schema-backed parameter models and read-only history services; establish
+   durable alarm-ingestion and controller-identity policies beyond the explicit SRBX APIs,
    each starting with independently specified wire fixtures.
 4. Implement built-in enhanced authentication only after its procedure is established;
    known device procedures may be user-supplied through the authentication seam.

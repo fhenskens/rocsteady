@@ -10,15 +10,25 @@ pub struct CatalogEntry {
     pub parameter: u8,
     pub key: &'static str,
     pub data_type: DataType,
+    /// Access column in the source table; metadata may record unresolved write notes.
     pub access: Access,
     pub numeric_range: Option<(f64, f64)>,
     pub introduced: (u8, u8),
+    /// Optional interpretation; lookup still determines firmware/location applicability.
+    pub metadata: CatalogMetadata,
     pub source: &'static str,
 }
+mod metadata;
+pub use metadata::{BitMeaning, CatalogMetadata, EnumMeaning};
 mod entries;
 use entries::ENTRIES;
 
 /// Explicit ROC800 firmware identity; I/O existence comes from a generation-bound snapshot.
+///
+/// PT-91/136 use logical zero, PT-95 uses port ordinals 0-5 (Ethernet is 1),
+/// and PT-139 uses module ordinals 0-26. Static port/module metadata establishes
+/// addressing and read widths, not installation, module mode or authorization.
+/// The controller can reject a read. PT-101/103/109 require discovered physical positions.
 pub struct Roc800Catalog {
     firmware: FirmwareVersion,
     io: Option<IoSnapshot>,
@@ -85,6 +95,25 @@ impl SchemaProvider for Roc800Catalog {
                 ));
             }
             Some((0, 0))
+        } else if tlp.point_type == 95 {
+            // Table 3-7: six port ordinals; logical 1 is Ethernet.
+            if tlp.logical > 5 {
+                return Err(Error::InvalidRequest(
+                    "communication port requires logical 0-5",
+                ));
+            }
+            if tlp.logical == 1 && !matches!(tlp.parameter, 36 | 37 | 42 | 44) {
+                return Err(Error::CapabilityUnavailable(
+                    "parameter not valid for Ethernet port",
+                ));
+            }
+            Some((0, 5))
+        } else if tlp.point_type == 139 {
+            // Table 3-51 uses module ordinals, not opcode-50 physical positions.
+            if tlp.logical > 26 {
+                return Err(Error::InvalidRequest("smart module requires logical 0-26"));
+            }
+            Some((0, 26))
         } else {
             let io = self.io.as_ref().ok_or(Error::CapabilityUnavailable(
                 "catalog requires I/O discovery",

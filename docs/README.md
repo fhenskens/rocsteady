@@ -28,7 +28,8 @@ same contracts, so callers can replace them with their own implementations.
 | [Extensibility](EXTENSIBILITY.md) | Delivered/planned extension boundaries and external-consumer acceptance |
 | [Service plan](SPEC_WORK_PLAN.md) | Baseline opcode/core inventory and closure criteria |
 | [Schema plan](SCHEMA_WORK_PLAN.md) | Point-type inventory and per-parameter closure criteria |
-| [Initial catalog](CATALOG.md) | Selected source-audited parameter metadata, discovery policies, per-variant fixtures and explicit firmware/hardware limitations |
+| [Catalog](CATALOG.md) | Selected source-audited parameter metadata, discovery policies, per-variant fixtures and explicit firmware/hardware limitations |
+| [Logs and SRBX](LOGS.md) | Typed records, bounded paging/checkpoints, explicit acknowledgement outcomes and idle polling |
 | [Architecture](ARCHITECTURE.md) | Existing ownership, recovery and stream behavior |
 | [Hardware](HARDWARE.md) | Channel prerequisites and physical-validation requirements |
 | [Reference index](reference/README.md) | Normative source identity and research navigation |
@@ -37,10 +38,11 @@ same contracts, so callers can replace them with their own implementations.
 Work plans do not replace the vendor wire specification. The research records
 explain evidence and its limitations; they do not establish hardware compatibility.
 
-For the current alpha candidate, see [usage and errors](USAGE.md),
+For the current monitoring candidate, see [usage and errors](USAGE.md),
 [managed API contracts](MANAGED_EXTENSIONS.md), [release evidence](RELEASE.md)
 and the [dependency/license inventory](DEPENDENCIES.md). Hosted Windows/Linux/macOS
-CI has passed for the alpha candidate; physical controller evidence remains pending.
+CI passed for published alpha.1; the new monitoring candidate has local software
+evidence and awaits its own hosted run. Physical controller evidence remains pending.
 
 ## Working on a slice
 

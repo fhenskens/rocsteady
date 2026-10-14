@@ -37,7 +37,7 @@ impl Session {
         response_timeout: Duration,
         crc_mode: CrcMode,
     ) -> Result<Self, Error> {
-        let (events, _) = broadcast::channel(32);
+        let (events, _) = broadcast::channel(crate::SRBX_BUFFER_CAPACITY);
         Self::with_events(
             stream,
             host,
@@ -187,6 +187,20 @@ impl Session {
     pub async fn read_configuration(&self) -> Result<SystemConfiguration, Error> {
         self.request_operation(crate::operations::configuration(self.profile.clone()))
             .await
+    }
+    pub async fn read_alarms(&self, request: crate::LogRequest) -> Result<crate::AlarmPage, Error> {
+        self.request_operation(crate::operations::logs::<crate::AlarmRecord>(
+            request,
+            self.profile.clone(),
+        ))
+        .await
+    }
+    pub async fn read_events(&self, request: crate::LogRequest) -> Result<crate::EventPage, Error> {
+        self.request_operation(crate::operations::logs::<crate::EventRecord>(
+            request,
+            self.profile.clone(),
+        ))
+        .await
     }
     pub async fn read_clock(&self) -> Result<Clock, Error> {
         self.request_operation(crate::operations::clock(self.profile.clone()))
