@@ -88,8 +88,9 @@ completion criteria, including transport regressions, hardware evidence and rele
 1. Complete the remaining [extension acceptance tasks](EXTENSIBILITY.md):
    authentication applicability/logout and outstanding lifecycle cases. The first
    managed slice, API review and alpha onboarding are implemented; see
-   [release evidence](RELEASE.md) for pending hosted CI and hardware gates.
-2. Expand the initial [catalog slice](CATALOG.md), establish remaining firmware/layout
+   [release evidence](RELEASE.md) for completed release checks and outstanding
+   physical-validation limits.
+2. Expand the [catalog](CATALOG.md), starting with PT-102/104 read fields; establish remaining firmware/layout
    applicability and supported discovery/setup policies without guessing identity.
 3. Expand schema-backed parameter models and read-only history services; establish
    durable alarm-ingestion and controller-identity policies beyond the explicit SRBX APIs,

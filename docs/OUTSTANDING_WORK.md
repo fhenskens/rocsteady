@@ -1,8 +1,34 @@
 # Comprehensive implementation roadmap
 
-Status: open; refreshed 2026-10-14 for the explicit SRBX polling/acknowledgement slice.
+Status: open; reconciled 2026-10-15 after publication of 0.1.0.
 This is the implementation backlog; [COVERAGE.md](COVERAGE.md) records current
 protocol support and [HARDWARE.md](HARDWARE.md) records channel validation.
+
+## Current handoff — 2026-10-15
+
+- **Shipped:** 0.1.0 is on crates.io and tagged. It includes managed recovery,
+  extension contracts, explicit profiles/codecs, schema-backed reads, OP-50/100
+  discovery, the 130-parameter catalog, OP-118/119 alarm/event retrieval and
+  explicit SRBX polling/consumed-alarm acknowledgement. See [coverage](COVERAGE.md).
+- **Evidence:** 122 all-feature tests, 14 doctests, strict Clippy, fixture examples,
+  package verification and an extracted-package consumer passed locally. The user
+  confirmed the release's hosted Windows/Linux/macOS CI passed. Actual serial
+  exchanges and physical-controller interoperability remain unverified.
+- **No feature implementation is in progress.** PT-102/104 is the recommended next
+  slice below; its schema work-package rows remain open. This is a recommendation,
+  not a separately approved or partially implemented feature.
+- **Release follow-up:** the GitHub release page remains uncreated because API
+  authentication was unavailable; crates.io publication and the tag are complete.
+- **Development policy:** use current stable Rust and ordinary experimental 0.x.y
+  versions. Reuse etherbird lifecycle helpers and keep ROC protocol semantics here.
+  Repository Git email is fhenskens@yahoo.com. No hardware purchase is required
+  to continue independently specified software slices.
+
+The detailed unchecked items below include full-baseline requirements. Completed
+read support does not close write planning, every firmware form, an entire point
+table, automatic setup policy or physical conformance. Select work using the OP/PT
+identifiers and the current decision register rather than treating broad milestones
+as wholly unimplemented.
 
 ## Scope and working documents
 
@@ -172,8 +198,8 @@ one successful frame exchange or one supported command.
 - [ ] Provide named predefined extensions for sufficiently specified alternatives
   and prove an external consumer can replace one through the public interface.
 - [ ] Complete EXT-3 schema providers and bounded schema-aware access.
-- [ ] Complete EXT-4 typed custom operations and scoped exclusive workflows.
-- [ ] Complete EXT-5 public contracts, external examples and contribution policy.
+- [x] Complete EXT-4 typed custom operations and scoped exclusive workflows.
+- [x] Complete EXT-5 public contracts, external examples and contribution policy.
 - [ ] Assign every known DEC subquestion a delivery disposition: verified built-in,
   explicit provisional codec, user extension, or deferred framework work.
 - [ ] Verify extensions retain deadlines, bounded admission, cancellation poisoning,
@@ -186,8 +212,10 @@ See [EXTENSIBILITY.md](EXTENSIBILITY.md) for required evidence and boundaries.
 ### Typed configuration and device identification
 
 - [x] Implement opcode 6 request/response parsing with original and extended forms.
-- [ ] Represent firmware-update mode, communication port, security mode, layout
-  compatibility and device identity without assuming every field is present.
+- [x] Represent configuration mode, optional communication port, raw security,
+  layout compatibility and device identity without assuming every field is present.
+- [ ] Establish automatic supported-target/security/readiness decisions, including
+  firmware-update mode, from applicable device evidence.
 - [x] Preserve unknown extensions and reject truncated known forms.
 - [x] Expose configuration/identity through Session and the managed Client.
 - [ ] Add simulator configurations for supported response variants and setup failures.
@@ -256,13 +284,17 @@ writes, firmware variants, enums, bit fields, location rules and every parameter
 a list of point-type names alone is insufficient.
 
 - [x] Implement typed opcode 50 I/O selectors/explicit layouts and opcode 100 command-11 point classifications; source contradictions and hardware applicability remain open.
-- [ ] Add a versioned parameter-schema interface/catalog for supported point types,
-  retaining caller-defined schemas for user/vendor extensions.
-- [ ] Distinguish physical location from logical numbering and use discovery to
-  select the appropriate layout.
-- [ ] Provide convenient typed parameter access without requiring users to guess widths.
-- [ ] Expand fixtures for floating-point special values, fixed ASCII padding,
-  mixed widths, maximum response budgets and unsupported schema entries.
+- [x] Add caller-defined schema providers/chains and the version-gated built-in
+  130-parameter catalog, with local width/access/location validation.
+- [x] Distinguish physical locations from per-type logical ordinals in discovery
+  and bind derived catalogs/plans to their generation.
+- [ ] Establish automatic layout/firmware selection; current profiles are explicit.
+- [x] Provide schema-backed typed reads without manually guessing widths for
+  catalogued parameters, with bounded batches and confirmed failure progress.
+- [x] Cover floating-point special values, raw fixed text, mixed widths, payload
+  limits and unsupported schema entries for the implemented read subset.
+- [ ] Complete the remaining PT rows, source-backed constraints, conditional access
+  and firmware variants in SCHEMA_WORK_PLAN.md; add write planning with M4.
 - [ ] Interpret device error entries in operation context; preserve all raw entries.
   An error's second byte does not always represent a literal frame byte offset.
 
@@ -387,7 +419,8 @@ test. Compilation and in-memory stream tests alone do not establish serial behav
   transport.
 - [ ] Test queued cancellation without execution, overall deadline expiration while
   queued/recovering, and teardown with work still in flight.
-- [ ] Test event receiver lag and sustained unsolicited traffic under one deadline.
+- [x] Test SRBX receiver lag and sustained unsolicited traffic under one deadline
+  (tests/srbx.rs); broader lifecycle scenarios remain separate items.
 - [ ] Make simulator failure/task errors observable to tests; unexpected fixture
   failures must not be mistaken for intended connection loss.
 - [ ] Use deterministic synchronization where feasible and validate current short
@@ -493,34 +526,45 @@ asynchronous; awaited stop drains tracked jobs. Calls never replay.
 etherbird's exact release commit 7a9e63d4cbba7098d4f0a093a8a14b4f0619d60a passed
 [cross-platform CI](https://github.com/fhenskens/etherbird/actions/runs/37925614763)
 and [real MQTT broker verification](https://github.com/fhenskens/etherbird/actions/runs/37925880687)
-before publication. Those results validate etherbird, not the pending Rocsteady matrix.
+before publication. Those historical results validate etherbird separately from
+rocsteady's user-confirmed 0.1.0 hosted CI.
 
 ROC framing/codecs, authentication procedures, heartbeat/reader coordination,
 exchange/workflow cancellation poisoning and generation/remote-handle rules remain
 here. Framework completion does not close outstanding protocol/extension work.
 ## Recommended next slice
 
-Profiles, schema providers, OP-50/100 discovery and the initial catalog are
-implemented (see [contracts](MANAGED_EXTENSIONS.md)); PT-136 now has all 20 read
-widths; the foundation slice adds 36 PT-91/95/139 fields and catalog consistency
-checks. PT-101/103 now have all read widths and enum/bit/unit annotations.
-OP-118/119 now have typed records, bounded pages and explicit checkpoints.
-Explicit OP-225 acknowledgement and bounded idle polling are implemented.
-Review the declared monitoring release scope and hosted matrix next, alongside real
-serial exchange fixtures. Then continue basic I/O/output catalog and history services.
-Durable continuity and physical compatibility remain separate evidence tracks. Remaining output/input
-catalog fields and richer schema metadata can follow alongside that service slice.
-PT-136/17 and other contradictory constraints need evidence before selecting ranges.
+**Expand read-only catalog coverage to PT-102 discrete outputs and PT-104 analog
+outputs.** No implementation has started. Read their actual baseline manual tables
+and the [schema work packages](SCHEMA_WORK_PLAN.md) before choosing parameters.
 
-Alongside catalog work, complete remaining M0-E authentication applicability/logout,
-identity/cache and lifecycle acceptance, and validate the next release on the
-hosted stable-platform matrix. Automatic compatibility/security/readiness decisions
-remain open. Serial exchange fixtures and physical controller evidence can proceed
-independently. Do not wait for unresolved enhanced-security procedures to expand
-well-specified read-only services.
+1. Record widths, locations, firmware introduction gates, enums/bits/units and
+   unresolved constraints in the catalog manifest. Retain raw values and document
+   contradictions; read coverage does not imply support for output writes.
+2. Add independent literal/TCP fixtures for each selected field, including malformed
+   replies, invalid locations, firmware boundaries and generation replacement.
+3. Extend the catalog through the existing providers/profile/discovery contracts;
+   add simulator values, example and public packaged-consumer coverage.
+4. Run the documented relevant checks and update catalog/coverage/PT statuses.
+   Leave full-table conformance open wherever metadata or variants remain missing.
 
-A useful experimental monitoring release can precede complete protocol coverage if its advertised
-scope is explicit. Completing that release does not close the broader backlog.
+After that, start OP-105 min/max and OP-108 history metadata as bounded, independently
+specified read slices, then continue historical record/transaction services. Review
+DEC-4/5 and operation-specific continuity limits before committing to wire behavior.
+
+A separate useful slice is a Unix pseudo-terminal test through the actual
+SerialConnector, covering fragmentation, corruption, timeout, reopen and cancellation;
+Windows paired-port prerequisites and physical controller evidence remain separate.
+
+Remaining extension work includes protected discovery/authentication applicability,
+logout/credential changes, device-identity/cache invalidation and source-supported
+presets. Enhanced-security procedures and disputed constraints need evidence;
+they do not block unrelated, sufficiently specified read services.
+
+The broader backlog still includes configurable table reads, typed writes with
+partial/uncertain outcomes and no replay, file lifecycle, routed/peer/broadcast
+services, full schema coverage, stronger durable log continuity and physical validation.
+A scoped experimental release does not close that full-baseline objective.
 
 ## Completion of the comprehensive objective
 

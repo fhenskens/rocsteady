@@ -74,7 +74,8 @@ streams and preserve valid device-rejection semantics.
 - [x] Define lookup by point type/parameter and applicable device/firmware, including location rules.
 - [x] Support width/type, access and optional constraints without guessing missing metadata.
 - [x] Define deterministic precedence for caller overrides and built-in catalogs; preserve caller-supplied raw parameter access.
-- [ ] Integrate provider lookup with bounded read/write batch planning.
+- [ ] Integrate provider lookup with schema-aware write planning and explicit
+  partial/uncertain outcomes (M4); bounded read planning is complete below.
 - [x] Integrate provider lookup with bounded read batch planning and confirmed failure progress; write planning awaits M4 codecs/outcome semantics.
 - [x] Separate local validation from device rejection and uncertain remote outcomes.
 - [x] Add an external-provider example for a vendor/user-defined point type, with mixed widths and bounds.
@@ -116,7 +117,7 @@ completion remains an operation-specific contract; no implicit side-effect repla
 - [x] Distinguish built-in verified, built-in provisional, user-supplied and unavailable capabilities in docs/diagnostics.
 - [x] Publish guides for all four extension seams, including what knowledge/evidence an implementer must supply.
 - [x] Test external implementation ergonomics with a consumer using the published etherbird dependency; examples must not depend on crate-private access.
-- [x] Maintain framework contract tests across dependency upgrades; existing extension tests and new profile/schema tests run against published etherbird 0.4.2. Hosted platform evidence for this tree remains pending.
+- [x] Maintain framework contract tests across dependency upgrades; existing extension tests and new profile/schema tests run against published etherbird 0.4.2. The user confirmed hosted stable Windows/Linux/macOS CI passed for 0.1.0; see RELEASE.md.
 - [x] Establish a contribution path: source/evidence, independent fixtures, applicable model/firmware, review, simulator/integration tests, then promotion to built-in support.
 - [x] Keep extension compatibility claims separate from the crate's built-in conformance matrix.
 
