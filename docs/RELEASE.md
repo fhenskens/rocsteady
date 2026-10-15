@@ -1,6 +1,6 @@
 # Experimental monitoring release checklist
 
-## 0.1.3 release candidate — 2026-10-15
+## Published 0.1.3 — 2026-10-15
 
 This release combines the completed OP-136–139 history work with schema-aware
 OP-166/181 writes (12 audited fields), all PT-106/107/108 read definitions
@@ -13,9 +13,16 @@ Local registry-based checks passed 244 all-feature/all-target tests, the default
 feature gate, 22 doctests, strict Clippy, formatting, rustdoc, fixture examples,
 package verification and the extracted external consumer. Hosted CI includes the
 write/read-back example and bounded disconnect/re-discovery monitoring demo.
-The final release commit must pass stable Linux/macOS/Windows CI and the clean
-publication dry-run before publishing. Publication, pushed tag and downloaded
-registry-package checksum/VCS provenance are separate verification steps.
+Release commit `4336323ab032ed3d22861008225b9c741159dabb` passed
+[all three stable Linux/macOS/Windows jobs](https://github.com/fhenskens/rocsteady/actions/runs/38727715062)
+and the clean `cargo publish --dry-run --locked` before publication. The reviewed
+111-file package was published to [crates.io](https://crates.io/crates/rocsteady/0.1.3).
+The downloaded archive's SHA-256 is `7ea4bb606fdda07451cd4bf450fffc87f0d016f91f3438094604015b5c613c74`;
+its VCS metadata identifies that exact clean release commit. The pushed annotated
+v0.1.3 tag targets the same commit and the
+[GitHub release](https://github.com/fhenskens/rocsteady/releases/tag/v0.1.3) is published.
+An independent consumer using registry `rocsteady = "=0.1.3"` passed
+its public API checks without a source-path override.
 
 Physical-controller and actual serial exchanges remain unvalidated. Full OP/PT
 conformance, disputed source interpretations, broader write constraints and

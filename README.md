@@ -82,7 +82,7 @@ OP-137/138 add [day-oriented reads](docs/DAY_HISTORY.md), including replaceable
 interpretation and an explicit indexed alternative for oversized days.
 OP-139 adds [configured inventory and selected-point reads](docs/HISTORY_INFORMATION.md)
 with optional timestamps and bounded paging.
-The current checkout adds [schema writes](docs/WRITES.md) for station name, selected
+Version 0.1.3 includes [schema writes](docs/WRITES.md) for station name, selected
 I/O tags and discrete-input scanning/filter settings. Read access metadata alone
 never enables writes. Temperature and MVS writes remain blocked.
 The [catalog](docs/CATALOG.md) contains 332 ROC800 parameters, including every discrete/analog input and output read width and every pulse-input, RTD, thermocouple and multi-variable sensor read field, plus clock, port and module fields.
@@ -93,8 +93,9 @@ and routing remain unavailable. Raw/custom
 operations can perform side effects; they are not automatically replayed.
 
 Local validation and its version-specific scope are recorded in [release evidence](docs/RELEASE.md).
-Hosted stable Windows/Linux/macOS CI passed for the published 0.1.2
-release commit `a939ac1`, independently verified through GitHub CLI. See the release record for the evidence source.
+Hosted stable Windows/Linux/macOS CI passed for the published 0.1.3
+release commit `4336323`; see the [verified run](https://github.com/fhenskens/rocsteady/actions/runs/38727715062)
+and release record for validation/publication provenance.
 Physical ROC hardware and actual serial exchanges have not been validated. The simulator
 is a deterministic fault-injection fixture, not a full ROC800 emulator.
 

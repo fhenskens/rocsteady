@@ -6,7 +6,7 @@ Implemented behavior belongs in [coverage](COVERAGE.md), executable evidence in
 
 ## Current handoff — 2026-10-15
 
-The **0.1.3 release candidate** combines history, audited writes, temperature/MVS
+The published **0.1.3 release** combines history, audited writes, temperature/MVS
 reads and caller-driven polling. The implemented history services include:
 
 - OP-105/108 metadata and OP-135 single-point reads.
@@ -24,13 +24,14 @@ Version 0.1.3 also includes [OP-166/181 writes](WRITES.md), with a 12-field
 source-audited writable subset, explicit partial/uncertain outcomes and no replay.
 PT-106/107 temperature and PT-108 multi-variable sensor reads now extend the
 catalog to 332 entries; see [temperature scope](TEMPERATURE.md) and
-[MVS/caller-driven polling contracts](MVS.md). Current development verification passed
+[MVS/caller-driven polling contracts](MVS.md). Release verification passed
 244 all-feature/all-target tests, the default-feature gate and 22 doctests;
 [release evidence](RELEASE.md) records the checks. The dated 0.1.3 history
 evidence remains in that record.
 Strict Clippy, formatting, rustdoc, offline package verification and the extracted
-consumer also passed. Version/changelog preparation is complete; hosted CI for
-the final release commit, clean publication checks and publication remain pending.
+consumer also passed. Stable Linux/macOS/Windows release-commit CI, the clean
+publication dry-run, crates.io publication, pushed tag and registry artifact/consumer
+checks are verified in [RELEASE.md](RELEASE.md).
 Physical-controller and actual serial exchanges remain unvalidated.
 [Release evidence](RELEASE.md) owns validation/publication provenance, including the
 preceding 0.1.2 release; historical counts and commit details are retained there.
@@ -193,7 +194,7 @@ completed documentation tasks remain in the changelog and release record.
   selected catalog manifests and extension seams do not close the baseline.
 For each subsequent release, review final scope/changelog, run hosted stable
 Linux/macOS/Windows checks for the release commit, and verify the reviewed clean
-package and publication dry-run. Completed 0.1.2 evidence is in [RELEASE.md](RELEASE.md).
+package and publication dry-run. Completed 0.1.3 publication evidence is in [RELEASE.md](RELEASE.md).
 - [ ] Backfill GitHub release pages for historical 0.1.0/0.1.1 if desired; their
   crates.io publication/tag evidence is already recorded. The 0.1.2 page is complete.
 - [ ] Record physical evidence before making production compatibility claims.
@@ -207,9 +208,7 @@ in [EXTRACTION.md](EXTRACTION.md); no additional extraction is committed.
 
 ## Recommended next slice
 
-**Complete the 0.1.3 release gates** recorded in [RELEASE.md](RELEASE.md).
-
-Then **expand the audited writable catalog** beyond the delivered OP-166/181
+**Expand the audited writable catalog** beyond the delivered OP-166/181
 [12-field subset](WRITES.md). Keep access/value constraints, conservative budgets,
 explicit partial/uncertain outcomes and no automatic replay. Prioritize fields
 with unambiguous source constraints; extend schema validation before admitting
