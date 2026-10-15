@@ -3,7 +3,7 @@
 ## Research records
 
 - [Current decision register](DECISIONS.md): start here for current conclusions,
-  delivery dispositions, affected work and closure evidence for all 51 subquestions.
+  delivery dispositions, affected work and closure evidence for the tracked subquestions.
   The records below preserve research history and source provenance.
 - [Systematic search record](SEARCH_RECORD.md): exact executed queries, batch
   results, per-ambiguity assessments, failed retrievals and remaining public leads.
@@ -48,6 +48,9 @@ the implementation must not guess undocumented wire forms.
 | Clock read | Section 2.3, Table 2-3 |
 | System configuration discovery | Section 2.2, Table 2-2; offsets 6 through 220 |
 | Login and security forms | Section 2.7, Table 2-7 |
+| Configured/selected history | Section 2.19, Table 2-22, printed p.2-36; reviewed 2026-10-15 |
+| Day-oriented history | Sections 2.17–2.18, Tables 2-20–2-21, printed pp.2-34–35; reviewed 2026-10-15 |
+| Multi-point history | Section 2.16, Table 2-19, printed pp.2-32–33; reviewed 2026-10-15 |
 | Contiguous parameter read | Section 2.21, Table 2-24 |
 | Arbitrary parameter reads | Section 2.22, Table 2-25 |
 | SRBX and errors | Sections 2.27–2.29 |

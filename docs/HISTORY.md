@@ -133,4 +133,7 @@ reads, timestamp separation, configured paging and an external codec.
 Run `cargo run --locked --example history` for a hardware-free example. The
 [requirements index](REQUIREMENTS.md) and [coverage matrix](COVERAGE.md) record
 scope; software fixtures do not establish physical interoperability or close DEC-4.
-OP-136 multi-point and other history services remain separate work.
+OP-136 multi-point reads are described in [MULTI_HISTORY.md](MULTI_HISTORY.md);
+OP-137/138 day services are described in [DAY_HISTORY.md](DAY_HISTORY.md).
+OP-139 configured inventory and selected lists are described in
+[HISTORY_INFORMATION.md](HISTORY_INFORMATION.md). Transactions remain separate work.

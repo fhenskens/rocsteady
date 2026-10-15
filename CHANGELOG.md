@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.1.3
+
+- Add OP-139 configured-point inventory and selected minute/periodic/daily reads
+  with optional timestamps, preserved point order/duplicates, independent budgets
+  and explicit policy/codec/profile replacements.
+- Add bounded selected-point paging, optional inventory membership/recheck, confirmed
+  progress and cursor/configuration-change outcomes without automatic replay/resume.
+  Include independent requirement/TCP/lifecycle tests, explicit simulator values,
+  history_information example and packaged public consumer checks.
+
+- Add OP-137 day/month index lookup and OP-138 whole-day values/point-255
+  timestamps, preserving raw fields, invalid zero-count daily indices and IEEE bits.
+  Named table codecs, per-call/profile replacements and public typed operations
+  support explicit caller interpretation without guessing an archival year or extra
+  OP-137 point field.
+- Add opt-in OP-137/135 indexed day paging with explicit geometry/timestamp point,
+  exclusive generation ownership, confirmed progress and final mapping recheck.
+  Include independent requirements/TCP/lifecycle tests, simulator oversized-day
+  behavior, day_history example and extracted-package consumer checks.
+
+- Add OP-136 multi-point minute/periodic/daily reads with time-major timestamp/value
+  rows, zero-period probes, exact point/period budgets and raw FLOAT/TIME preservation.
+- Add bounded one-generation period paging, explicit short/zero replies, confirmed
+  failure progress and index-change policies without implicit replay/resume. Reuse
+  public geometry policies and expose profile/per-call reply codec replacement.
+- Add independent requirement-linked literals/TCP/lifecycle tests, explicit simulator
+  data, a runnable multi_history example and extracted-package consumer coverage.
+
+- Reconcile documentation for schema read planning, idle SRBX polling, dependency
+  adoption and decision-table formatting.
+
 ## 0.1.2 — 2026-10-15
 
 - Add all 27 PT-102 discrete-output and 17 PT-104 analog-output read fields;

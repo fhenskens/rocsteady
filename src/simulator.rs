@@ -92,7 +92,13 @@ impl Default for Model {
         }
     }
 }
-/// Optional fixture data for OP-105/108, supplied with Simulator::bind_with_history.
+/// Explicit OP-138 words; selector 255 represents raw timestamp words.
+#[derive(Debug, Clone, Default)]
+pub struct DayHistoryData {
+    pub periodic: Vec<[u8; 4]>,
+    pub daily: Vec<[u8; 4]>,
+}
+/// Optional fixture data for OP-105/108/135/136/137/138/139, supplied with Simulator::bind_with_history.
 /// Kept separate so existing public Model struct literals remain compatible.
 #[derive(Debug, Clone)]
 pub struct HistoryMetadataModel {
@@ -105,6 +111,14 @@ pub struct HistoryMetadataModel {
     pub history_max_point: u8,
     /// Explicit OP-135 words indexed by (segment, point, selector), not codec-generated values.
     pub history_samples: BTreeMap<(u8, u8, u8), Vec<[u8; 4]>>,
+    /// OP-136 raw timestamp words by (segment, selector 0–2).
+    pub multi_history_timestamps: BTreeMap<(u8, u8), Vec<[u8; 4]>>,
+    /// OP-137 bytes after the segment echo, keyed by (segment, day, month).
+    pub day_indices: BTreeMap<(u8, u8, u8), [u8; 8]>,
+    /// OP-138 explicit words keyed by (segment, point-or-255, day, month).
+    pub day_history: BTreeMap<(u8, u8, u8, u8), DayHistoryData>,
+    /// Explicit command-0 inventory by segment; not inferred from fixture sample keys.
+    pub configured_history_points: BTreeMap<u8, Vec<u8>>,
     pub history_sample_indices: BTreeMap<(u8, u8), u16>,
 }
 impl Default for HistoryMetadataModel {
@@ -117,6 +131,10 @@ impl Default for HistoryMetadataModel {
             history_max_point: 199,
             history_samples: BTreeMap::new(),
             history_sample_indices: BTreeMap::new(),
+            configured_history_points: BTreeMap::new(),
+            day_indices: BTreeMap::new(),
+            day_history: BTreeMap::new(),
+            multi_history_timestamps: BTreeMap::new(),
         }
     }
 }
@@ -228,6 +246,203 @@ impl Model {
                     bytes.extend(tag);
                 }
                 reply(108, bytes)
+            }
+            139 => match request.data.as_slice() {
+                [0, segment] => {
+                    if *segment > history.history_max_segment {
+                        return Some(error(14, 7));
+                    }
+                    let Some(points) = history.configured_history_points.get(segment) else {
+                        return Some(error(14, 7));
+                    };
+                    if points.len() > 252 {
+                        return Some(error(5, 5));
+                    }
+                    let mut bytes = vec![0, *segment, points.len() as u8];
+                    bytes.extend(points);
+                    reply(139, bytes)
+                }
+                [
+                    1,
+                    segment,
+                    lo,
+                    hi,
+                    kind,
+                    periods,
+                    timestamps,
+                    count,
+                    points @ ..,
+                ] => {
+                    let width = points.len() + usize::from(*timestamps);
+                    if *segment > history.history_max_segment
+                        || *kind > 2
+                        || *timestamps > 1
+                        || *count == 0
+                        || usize::from(*count) != points.len()
+                        || points.len() > 247
+                        || width * usize::from(*periods) > 60
+                    {
+                        return Some(error(14, 6));
+                    }
+                    let Some(configured) = history.configured_history_points.get(segment) else {
+                        return Some(error(14, 7));
+                    };
+                    if points
+                        .iter()
+                        .any(|p| !configured.contains(p) || *p > history.history_max_point)
+                    {
+                        return Some(error(14, 14));
+                    }
+                    let start = usize::from(u16::from_le_bytes([*lo, *hi]));
+                    let Some(current) = history.history_sample_indices.get(&(*segment, *kind))
+                    else {
+                        return Some(error(14, 8));
+                    };
+                    let mut available = 65536 - start;
+                    for point in points {
+                        let Some(words) = history.history_samples.get(&(*segment, *point, *kind))
+                        else {
+                            return Some(error(14, 14));
+                        };
+                        if words.len() > 65536
+                            || start >= words.len()
+                            || usize::from(*current) >= words.len()
+                        {
+                            return Some(error(14, 8));
+                        }
+                        available = available.min(words.len() - start);
+                    }
+                    let times = history.multi_history_timestamps.get(&(*segment, *kind));
+                    if *timestamps == 1 {
+                        let Some(times) = times else {
+                            return Some(error(14, 12));
+                        };
+                        if times.len() > 65536
+                            || start >= times.len()
+                            || usize::from(*current) >= times.len()
+                        {
+                            return Some(error(14, 8));
+                        }
+                        available = available.min(times.len() - start);
+                    }
+                    let periods = usize::from(*periods).min(available);
+                    let mut bytes = vec![1, *segment];
+                    bytes.extend(current.to_le_bytes());
+                    bytes.extend([periods as u8, *timestamps, *count]);
+                    for index in start..start + periods {
+                        if *timestamps == 1 {
+                            bytes.extend(times.unwrap()[index]);
+                        }
+                        for point in points {
+                            bytes
+                                .extend(history.history_samples[&(*segment, *point, *kind)][index]);
+                        }
+                    }
+                    reply(139, bytes)
+                }
+                _ => error(14, 6),
+            },
+            137 => {
+                let [segment, day, month] = request.data.as_slice() else {
+                    return Some(error(6, 5));
+                };
+                if *segment > history.history_max_segment
+                    || crate::HistoryDay::new(*day, *month).is_err()
+                {
+                    return Some(error(14, 6));
+                }
+                let Some(body) = history.day_indices.get(&(*segment, *day, *month)) else {
+                    return Some(error(14, 7));
+                };
+                let mut bytes = vec![*segment];
+                bytes.extend(body);
+                reply(137, bytes)
+            }
+            138 => {
+                let [segment, point, day, month] = request.data.as_slice() else {
+                    return Some(error(6, 5));
+                };
+                if *segment > history.history_max_segment
+                    || (*point != 255 && *point > history.history_max_point)
+                    || crate::HistoryDay::new(*day, *month).is_err()
+                {
+                    return Some(error(14, 6));
+                }
+                let Some(data) = history.day_history.get(&(*segment, *point, *day, *month)) else {
+                    return Some(error(14, 8));
+                };
+                // A whole day is not paginated by OP-138. Never silently truncate it.
+                if data.periodic.len().saturating_add(data.daily.len()) > 61 {
+                    return Some(error(5, 5));
+                }
+                let mut bytes = vec![*segment, *point, *day, *month];
+                bytes.extend((data.periodic.len() as u16).to_le_bytes());
+                bytes.extend((data.daily.len() as u16).to_le_bytes());
+                for word in data.periodic.iter().chain(&data.daily) {
+                    bytes.extend(word);
+                }
+                reply(138, bytes)
+            }
+            136 => {
+                let [segment, low, high, kind, first, points, periods] = request.data.as_slice()
+                else {
+                    return Some(error(6, 5));
+                };
+                let start = u16::from_le_bytes([*low, *high]);
+                let current = history
+                    .history_sample_indices
+                    .get(&(*segment, *kind))
+                    .copied()
+                    .unwrap_or(0);
+                let mut bytes = vec![*segment, *low, *high];
+                bytes.extend(current.to_le_bytes());
+                bytes.push(0);
+                let end = u16::from(*first) + u16::from(*points);
+                let timestamps = history.multi_history_timestamps.get(&(*segment, *kind));
+                let valid = *segment <= history.history_max_segment
+                    && *kind <= 2
+                    && end <= 256
+                    && end <= u16::from(history.history_max_point) + 1
+                    && (usize::from(*points) + 1) * usize::from(*periods) <= 60;
+                if !valid {
+                    return Some(reply(136, bytes));
+                }
+                let Some(timestamps) = timestamps else {
+                    return Some(reply(136, bytes));
+                };
+                if timestamps.len() > 65536
+                    || usize::from(start) >= timestamps.len()
+                    || usize::from(current) >= timestamps.len()
+                {
+                    return Some(reply(136, bytes));
+                }
+                let mut available = timestamps.len() - usize::from(start);
+                for point in u16::from(*first)..end {
+                    let Some(values) = history.history_samples.get(&(*segment, point as u8, *kind))
+                    else {
+                        return Some(reply(136, bytes));
+                    };
+                    if values.len() > 65536 || usize::from(start) >= values.len() {
+                        return Some(reply(136, bytes));
+                    }
+                    available = available.min(values.len() - usize::from(start));
+                }
+                let count = usize::from(*periods).min(available);
+                bytes[5] = ((usize::from(*points) + 1) * count) as u8;
+                for (index, timestamp) in timestamps
+                    .iter()
+                    .enumerate()
+                    .skip(usize::from(start))
+                    .take(count)
+                {
+                    bytes.extend(timestamp);
+                    for point in u16::from(*first)..end {
+                        bytes.extend(
+                            history.history_samples[&(*segment, point as u8, *kind)][index],
+                        );
+                    }
+                }
+                reply(136, bytes)
             }
             135 => {
                 let [segment, point, kind, low, high, count] = request.data.as_slice() else {

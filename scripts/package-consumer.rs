@@ -109,12 +109,24 @@ async fn main() {
     history.history_samples.insert((0,7,1),vec![[0,0,0x48,0x41];5]);
     history.history_samples.insert((0,7,3),vec![[0x78,0x56,0x34,0x12];5]);
     history.history_sample_indices.insert((0,1),4);
+    history.multi_history_timestamps.insert((0,1),vec![[0x78,0x56,0x34,0x12];5]);
+    history.history_samples.insert((0,8,1),vec![[0,0,0x80,0xbf];5]);
     history.history_sample_indices.insert((0,3),4);
     // Literal Table 2-16 parameter alarm and Table 2-17 clock-set event.
     model.alarm_log.insert(0, [0xc1,1,2,3,4,0,103,16,21,
         b'A',b'L',b'A',b'R',b'M',b' ',b' ',b' ',b' ',b' ',0,0,0x48,0x41]);
     model.alarm_index = 0;
     model.event_log.insert(0, [6,1,2,3,4,0x78,0x56,0x34,0x12,0,0,0,0,0,0,0,0,0,0,0,0,0]);
+    // Tables 2-20/21 explicit day fields/words; independently chosen fixture geometry.
+    history.day_indices.insert((0,15,10),[4,0,3,0,2,0,2,0]);
+    history.day_history.insert((0,7,15,10),rocsteady::simulator::DayHistoryData{periodic:vec![[0,0,0x48,0x41];3],daily:vec![[0,0,0x80,0xbf];2]});
+    history.day_history.insert((0,255,15,10),rocsteady::simulator::DayHistoryData{periodic:vec![[0x78,0x56,0x34,0x12];3],daily:vec![[1,0,0,0];2]});
+    history.history_samples.insert((0,7,2),vec![[0,0,0x80,0xbf];3]);
+    history.history_samples.insert((0,7,4),vec![[1,0,0,0];3]);
+    history.history_sample_indices.insert((0,2),2);
+    history.history_sample_indices.insert((0,4),2);
+    history.configured_history_points.insert(0,vec![7,2,8]);
+    history.history_samples.insert((0,2,1),vec![[0,0,0,0xc0];5]);
     let server = Simulator::bind_with_history("127.0.0.1:0".parse().unwrap(), model, history)
         .await
         .unwrap();
@@ -245,6 +257,69 @@ async fn main() {
     assert_eq!(discovery_client.read_min_max_with_codec(hq,rocsteady::MinMaxCodec(CustomOccurrence)).await.unwrap().today.minimum_time,1);
     let tags=discovery_client.read_history_tags(rocsteady::HistoryTagsRequest::new(0,vec![7,7]).unwrap()).await.unwrap();
     assert_eq!(tags.periodic_index,65535);assert_eq!(tags.tags[0].tag.0,*b"FLOW      ");
+    // REQ-139-PACKAGE: inventory, selected point order/duplicates, optional times,
+    // public codecs/Operation and bounded generation-exclusive inventory rechecks.
+    let inventory_request=rocsteady::ConfiguredHistoryRequest::new(0).unwrap();
+    assert_eq!(discovery_client.read_configured_history(inventory_request).await.unwrap().points,[7,2,8]);
+    let inventory_op=rocsteady::DecodedOperation{request:inventory_request,opcode:139,payload:vec![0,0],codec:rocsteady::ConfiguredHistoryCodec};
+    assert_eq!(discovery_client.operation(inventory_op).await.unwrap().points,[7,2,8]);
+    let selected=rocsteady::SelectedHistoryRequest::new(0,0,rocsteady::HistoryKind::Periodic,vec![2,7,2],2,true).unwrap();
+    let selected_page=discovery_client.read_selected_history(selected.clone()).await.unwrap();
+    assert_eq!(selected_page.periods[0].values,[-2.0,12.5,-2.0]);assert_eq!(selected_page.periods[0].timestamp,Some(0x12345678));
+    struct SelectedCount;
+    impl rocsteady::ReplyCodec<rocsteady::SelectedHistoryRequest> for SelectedCount{
+        type Output=usize;
+        fn decode(&self,q:&rocsteady::SelectedHistoryRequest,b:&[u8])->Result<usize,rocsteady::DecodeError>{Ok(rocsteady::ReplyCodec::decode(&rocsteady::SelectedHistoryCodec,q,b)?.periods.len())}
+    }
+    assert_eq!(discovery_client.read_selected_history_with_codec(selected,SelectedCount).await.unwrap(),2);
+    let selected_geometry=rocsteady::ConfiguredHistoryPolicy::new(10,200,60,5,3).unwrap();
+    let selected_window=rocsteady::SelectedHistoryRange::with_policy(0,4,rocsteady::HistoryKind::Periodic,vec![2,7,2],5,true,&selected_geometry).unwrap().with_inventory_check(true);
+    let selected_progress=discovery_client.read_selected_history_range(selected_window).await.unwrap();
+    assert!(selected_progress.complete);assert_eq!(selected_progress.pages.len(),2);assert_eq!(selected_progress.remaining,0);assert!(selected_progress.inventory_after.is_some());
+    let without_times=rocsteady::SelectedHistoryRequest::new(0,0,rocsteady::HistoryKind::Periodic,vec![7],1,false).unwrap();
+    assert_eq!(discovery_client.read_selected_history(without_times).await.unwrap().periods[0].timestamp,None);
+    // REQ-DAY-PACKAGE / POL-DAY-EXTENSION: source defaults and caller interpretation use the same public codecs.
+    let date=rocsteady::HistoryDay::new(15,10).unwrap();
+    let iq=rocsteady::DayIndicesRequest::new(0,date).unwrap();
+    let indices=discovery_client.read_day_indices(iq).await.unwrap();
+    assert_eq!((indices.periodic_start,indices.periodic_count,indices.daily_start,indices.daily_count),(4,3,Some(2),2));
+    // Request-layout replacements can use Operation/DecodedOperation; this explicit
+    // example still follows Table 2-20 instead of inventing a disputed extra point field.
+    let op=rocsteady::DecodedOperation{request:iq,opcode:137,payload:vec![0,15,10],codec:rocsteady::DayIndicesCodec};
+    assert_eq!(discovery_client.operation(op).await.unwrap().periodic_count,3);
+    let day=rocsteady::DayHistoryRequest::new(0,date,rocsteady::DayHistoryTarget::Values(7)).unwrap();
+    let reply=discovery_client.read_history_day(day).await.unwrap();
+    assert_eq!(reply.periodic,rocsteady::HistorySamples::Values(vec![12.5;3]));
+    assert_eq!(reply.daily,rocsteady::HistorySamples::Values(vec![-1.0;2]));
+    struct LabelledDay(u16);
+    impl rocsteady::ReplyCodec<rocsteady::DayHistoryRequest> for LabelledDay{
+        type Output=(u16,rocsteady::DayHistoryReply);
+        fn decode(&self,q:&rocsteady::DayHistoryRequest,b:&[u8])->Result<Self::Output,rocsteady::DecodeError>{Ok((self.0,rocsteady::ReplyCodec::decode(&rocsteady::DayHistoryCodec,q,b)?))}
+    }
+    assert_eq!(discovery_client.read_history_day_with_codec(day,LabelledDay(2026)).await.unwrap().0,2026);
+    let timestamp_day=rocsteady::DayHistoryRequest::new(0,date,rocsteady::DayHistoryTarget::Timestamps).unwrap();
+    assert_eq!(discovery_client.read_history_day(timestamp_day).await.unwrap().daily,rocsteady::HistorySamples::Timestamps(vec![1;2]));
+    let geometry=std::sync::Arc::new(rocsteady::ConfiguredHistoryPolicy::new(10,200,60,5,3).unwrap());
+    for plan in [rocsteady::IndexedDayHistoryRequest::new(day,geometry.clone()),rocsteady::IndexedDayHistoryRequest::new(timestamp_day,geometry).with_timestamp_point(7)]{
+        let progress=discovery_client.read_history_day_indexed(plan).await.unwrap();assert!(progress.complete);assert!(progress.indices_after.is_some());assert_eq!(progress.periodic_remaining,Some(0));assert_eq!(progress.daily_remaining,Some(0));
+    }
+    // REQ-136-PACKAGE: typed time-major rows, custom codec and bounded range through public API.
+    let multi=rocsteady::MultiHistoryRequest::new(0,0,rocsteady::HistoryKind::Periodic,7,2,2).unwrap();
+    let page=discovery_client.read_multi_history(multi).await.unwrap();
+    assert_eq!(page.periods.len(),2);assert_eq!(page.periods[0].timestamp,0x12345678);
+    assert_eq!(page.periods[0].values,[12.5,-1.0]);
+    struct MultiCodec;
+    impl rocsteady::ReplyCodec<rocsteady::MultiHistoryRequest> for MultiCodec {
+        type Output=usize;
+        fn decode(&self,q:&rocsteady::MultiHistoryRequest,b:&[u8])->Result<usize,rocsteady::DecodeError>{
+            Ok(rocsteady::ReplyCodec::decode(&rocsteady::MultiHistoryCodec,q,b)?.periods.len())
+        }
+    }
+    assert_eq!(discovery_client.read_multi_history_with_codec(multi,MultiCodec).await.unwrap(),2);
+    let multi_geometry=rocsteady::ConfiguredHistoryPolicy::new(10,200,60,5,3).unwrap();
+    let multi_window=rocsteady::MultiHistoryRange::with_policy(0,4,rocsteady::HistoryKind::Periodic,7,2,5,&multi_geometry).unwrap();
+    let multi_progress=discovery_client.read_multi_history_range(multi_window).await.unwrap();
+    assert!(multi_progress.complete);assert_eq!(multi_progress.pages.len(),2);assert_eq!(multi_progress.next_index,Some(4));
     // REQ-135-PACKAGE: default pages, timestamps, explicit geometry and bounded paging.
     let hp=discovery_client.read_history(rocsteady::HistoryRequest::new(0,7,rocsteady::HistoryKind::Periodic,0,2).unwrap()).await.unwrap();
     assert_eq!(hp.samples,rocsteady::HistorySamples::Values(vec![12.5;2]));

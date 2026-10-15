@@ -30,6 +30,9 @@ the sections used by the implementation and fixtures.
 | 108 | 1–20 ordered points/tags, segment/count/point echoes, raw common periodic index | Table 2-15 literal/TCP boundaries, changing indices, simulator and consumer |
 | 118 / 119 | Typed alarm/event pages, all enumerated records/tags, bounded windows and observed anchor checks | Independent literals/TCP, simulator, package consumer and [log contracts](LOGS.md); durable gap-free delivery not claimed |
 | 135 | All five single-point selectors, count-zero probes, bounded windows, partial progress and index-movement reporting; explicit replaceable minute policies | Table 2-18 literals/TCP, simulator, consumer; [history contracts](HISTORY.md); DEC-4.03/04 remain open |
+| 136 | Minute/periodic/daily time-major point blocks, zero-period probes, bounded windows and explicit partial/index-change outcomes | Table 2-19 literals/TCP, simulator, consumer; [multi-point contracts](MULTI_HISTORY.md); DEC-4.03/04 and physical evidence remain open |
+| 137 / 138 | Table-based day/month index lookup; whole-day values or point-255 timestamps; explicit OP-137/135 indexed paging, mapping recheck and confirmed progress | Tables 2-20/21 literals/TCP, simulator, consumer; [day contracts](DAY_HISTORY.md); year/point prose ambiguities and physical evidence open |
+| 139 | Command-0 configured inventory; command-1 explicit ordered nonempty points with optional timestamps, bounded period paging and opt-in before/after inventory checks | Table 2-22 independent literals/TCP, simulator, external consumer; [contracts](HISTORY_INFORMATION.md); firmware/geometry/physical limits remain open |
 | 167 | Typed contiguous parameter reads | Echo/range/width checks and TCP integration |
 | 180 | Typed arbitrary TLP reads | Echo/count/width/response-budget checks and TCP integration |
 | 224 / 225 | Stable SRBX notifications, opt-in bounded idle polling, explicit consumed-index acknowledgement and staged outcomes | Chapter 6 literals, independent TCP/lifecycle cases, simulator pending comparisons and [contracts](LOGS.md) |
@@ -49,7 +52,7 @@ operation. TLP parameter widths come from caller-provided schemas.
 ## Typed validation and configuration applicability
 
 Typed replies are decoded under the Session exchange guard: malformed
-configuration, clock, login acknowledgement, history metadata, log and parameter replies retire the
+configuration, clock, login acknowledgement, history metadata/sample, log and parameter replies retire the
 generation before another caller can use it. This applies to standalone Session
 and managed Client; ordinary valid device rejections and local validation remain
 healthy. Legacy login rejection during managed setup is the deliberate exception:
@@ -73,7 +76,7 @@ This does not resolve DEC-3 mappings or DEC-8 firmware discovery.
 | Configurable tables | 10, 11 | Raw unicast exchange only; typed codecs outstanding |
 | Enhanced login/session key and logout | Additional forms of 17 | Not implemented |
 | Store and forward / broadcast | 24 / no-reply operations | Unsupported by request API |
-| Other history samples/transactions | 136, 137, 138, 139, 206 | Raw unicast exchange only; typed sample paging/record models outstanding; OP-105/108 metadata and OP-135 single-point reads implemented above |
+| Transactions | 206 | Raw unicast exchange only; typed transaction records/continuation outstanding; OP-105/108 and OP-135–139 history services implemented within the declared scope above |
 | Alarms/events | 118, 119 | Fixed records and bounded retrieval implemented; checkpoint continuity limits explicit; physical evidence outstanding |
 | File transfers | 203 | Raw unicast exchange only; file lifecycle/chunking outstanding |
 | Peer network tunnel | 205 | Raw unicast exchange only; typed tunneled exchange outstanding |

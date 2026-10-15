@@ -11,6 +11,9 @@ cargo run --locked --example discovery_catalog
 cargo run --locked --example log_retrieval
 cargo run --locked --example history_metadata
 cargo run --locked --example history
+cargo run --locked --example multi_history
+cargo run --locked --example day_history
+cargo run --locked --example history_information
 cargo run --locked --features simulator --example authenticated_setup
 cargo run --locked --features simulator --example simulator
 cargo package --locked --allow-dirty --all-features

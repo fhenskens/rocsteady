@@ -1,14 +1,15 @@
 # Using the experimental monitoring client
 
-This guide describes published 0.1.0. All releases below 1.0 are experimental.
+This guide describes version 0.1.3. All releases below 1.0 are experimental.
 Built-ins include configuration/clock/parameter reads, legacy login, explicit
-profiles, discovery, schema-backed catalog reads, alarm/event retrieval and opt-in
-SRBX polling/acknowledgement. Acknowledgement explicitly changes controller status.
+profiles, discovery, schema-backed catalog reads, history metadata and
+indexed/day/selected history reads, alarm/event retrieval and opt-in SRBX
+polling/acknowledgement. Acknowledgement explicitly changes controller status.
 
 Configure addresses, credentials, firmware applicability and parameter types from
 the actual controller. Physical device/serial compatibility remains unverified.
-Enhanced authentication, typed parameter writes, history, file and routing services
-are unavailable. The extension fixture is not an enhanced-security implementation.
+Enhanced authentication, typed parameter writes, transactions, files and routing
+remain unavailable. The extension fixture is not an enhanced-security implementation.
 See [coverage](COVERAGE.md) and [log/SRBX contracts](LOGS.md) for exact limitations.
 
 ## Credentials and TCP
@@ -318,3 +319,104 @@ match result {
 # Ok(())
 # }
 ```
+
+## Multi-point history
+
+OP-136 returns time-major rows: one timestamp, then each contiguous point's value.
+Page limits count timestamps: `(points + 1) * periods <= 60`. Range reads split
+periods within profile budgets and known ring boundaries, retaining confirmed
+progress on failure. Empty positive replies may indicate an invalid request; they
+stop the range without inferring absent history. See [contracts](MULTI_HISTORY.md)
+and the runnable `multi_history` example.
+
+```no_run
+use rocsteady::{Client, HistoryKind, MultiHistoryRequest, MultiHistoryRange};
+# async fn multi_history(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
+let page = client.read_multi_history(
+    MultiHistoryRequest::new(0, 0, HistoryKind::Periodic, 7, 2, 3)?
+).await?;
+for period in page.periods {
+    println!("time={}, points 7/8={:?}", period.timestamp, period.values);
+}
+let window = MultiHistoryRange::new(0, 0, HistoryKind::Periodic, 7, 2, 25)?;
+match client.read_multi_history_range(window).await {
+    Ok(progress) => println!("complete={}, remaining={}", progress.complete, progress.remaining),
+    Err(error) => eprintln!("{}; confirmed pages={}, remaining={}",
+        error, error.progress.pages.len(), error.progress.remaining),
+}
+# Ok(())
+# }
+```
+
+## Day-oriented history and caller interpretation
+
+OP-137 looks up day/month indices; OP-138 reads a whole day's values or timestamps.
+The public DayIndicesCodec and DayHistoryCodec defaults follow the source tables
+without inferring a year or the OP-137 point byte mentioned only in prose.
+Use _with_codec or profile overrides for explicit caller interpretation; alternate
+request layouts use Operation/DecodedOperation. See [contracts](DAY_HISTORY.md).
+
+```no_run
+use rocsteady::{Client, ConfiguredHistoryPolicy, DayHistoryRequest, DayHistoryTarget,
+    DayIndicesRequest, HistoryDay, IndexedDayHistoryRequest};
+use std::sync::Arc;
+# async fn day_history(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
+let day = HistoryDay::new(29, 2)?; // Yearless; February 29 is allowed.
+let indices = client.read_day_indices(DayIndicesRequest::new(0, day)?).await?;
+println!("daily start={:?}, count={}", indices.daily_start, indices.daily_count);
+let request = DayHistoryRequest::new(0, day, DayHistoryTarget::Values(7))?;
+let reply = client.read_history_day(request).await?;
+println!("periodic={:?}, daily={:?}", reply.periodic, reply.daily);
+// Explicit indexed alternative for days too large for OP-138. Real callers obtain
+// ring capacities and timestamp-point applicability independently.
+let geometry = Arc::new(ConfiguredHistoryPolicy::new(10, 200, 60, 840, 35)?);
+let plan = IndexedDayHistoryRequest::new(request, geometry);
+match client.read_history_day_indexed(plan).await {
+    Ok(progress) => println!("complete={}", progress.complete),
+    Err(error) => eprintln!("{}; periodic left={:?}, daily left={:?}", error,
+        error.progress.periodic_remaining, error.progress.daily_remaining),
+}
+# Ok(())
+# }
+```
+
+Run `cargo run --locked --example day_history` for a caller-supplied year-label
+codec and explicit value/timestamp indexed plans. Caller labels are assertions,
+not a decoded device year. Timestamp indexed plans require with_timestamp_point;
+the client never silently reuses OP-138's sentinel 255 in OP-135.
+
+## Configured inventory and selected history
+
+OP-139 discovers configured history-point numbers and reads a caller-selected
+ordered list, with optional timestamps. Defaults follow Table 2-22; public codecs,
+profile replacements and explicit geometry policies remain available.
+
+```no_run
+use rocsteady::{Client, ConfiguredHistoryRequest, HistoryKind, SelectedHistoryRequest,
+    SelectedHistoryRange};
+# async fn selected_history(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
+let inventory = client.read_configured_history(ConfiguredHistoryRequest::new(0)?).await?;
+println!("configured points={:?}", inventory.points);
+let page = client.read_selected_history(SelectedHistoryRequest::new(
+    0, 0, HistoryKind::Periodic, vec![7, 2, 7], 3, true,
+)?).await?;
+for row in page.periods {
+    println!("timestamp={:?}, points 7/2/7={:?}", row.timestamp, row.values);
+}
+let range = SelectedHistoryRange::new(
+    0, 0, HistoryKind::Periodic, vec![7, 2], 25, true,
+)?.with_inventory_check(true);
+match client.read_selected_history_range(range).await {
+    Ok(progress) => println!("complete={}, remaining={}", progress.complete, progress.remaining),
+    Err(error) => eprintln!("{}; confirmed pages={}, next={:?}, remaining={}",
+        error, error.progress.pages.len(), error.progress.next_index, error.progress.remaining),
+}
+# Ok(())
+# }
+```
+
+Timestamp words count toward the 60-element page limit. Inventory checks are
+opt-in observations; equal lists/cursors do not prove an atomic snapshot or device
+identity. Short/error replies retain explicit progress, without automatic replay.
+See [contracts and evidence](HISTORY_INFORMATION.md) and the runnable
+`history_information` example for external codec selection.

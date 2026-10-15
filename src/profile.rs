@@ -89,6 +89,41 @@ pub trait ProtocolProfile: Send + Sync + 'static {
     ) -> Result<crate::HistoryPage, DecodeError> {
         crate::HistoryCodec.decode(request, payload)
     }
+    fn decode_multi_history(
+        &self,
+        request: &crate::MultiHistoryRequest,
+        payload: &[u8],
+    ) -> Result<crate::MultiHistoryPage, DecodeError> {
+        crate::MultiHistoryCodec.decode(request, payload)
+    }
+    fn decode_day_indices(
+        &self,
+        request: &crate::DayIndicesRequest,
+        payload: &[u8],
+    ) -> Result<crate::DayIndices, DecodeError> {
+        crate::DayIndicesCodec.decode(request, payload)
+    }
+    fn decode_history_day(
+        &self,
+        request: &crate::DayHistoryRequest,
+        payload: &[u8],
+    ) -> Result<crate::DayHistoryReply, DecodeError> {
+        crate::DayHistoryCodec.decode(request, payload)
+    }
+    fn decode_configured_history(
+        &self,
+        request: &crate::ConfiguredHistoryRequest,
+        payload: &[u8],
+    ) -> Result<crate::ConfiguredHistoryPoints, DecodeError> {
+        crate::ConfiguredHistoryCodec.decode(request, payload)
+    }
+    fn decode_selected_history(
+        &self,
+        request: &crate::SelectedHistoryRequest,
+        payload: &[u8],
+    ) -> Result<crate::SelectedHistoryPage, DecodeError> {
+        crate::SelectedHistoryCodec.decode(request, payload)
+    }
     fn decode_min_max(
         &self,
         request: &crate::MinMaxRequest,
@@ -152,12 +187,13 @@ impl ProtocolProfile for DefaultProfile {
             name: "roc-plus-read-only",
             applicability: "ordinary unicast; firmware applicability is not automatically discovered",
             assumptions: "explicit addresses and caller-supplied parameter types; no routed framing",
-            evidence: "tests/protocol.rs, tests/configuration.rs, tests/integration.rs, tests/discovery.rs, tests/logs.rs, tests/history_metadata.rs, tests/history.rs; no hardware evidence",
+            evidence: "tests/protocol.rs, tests/configuration.rs, tests/integration.rs, tests/discovery.rs, tests/logs.rs, tests/history_metadata.rs, tests/history.rs, tests/multi_history.rs, tests/day_history.rs, tests/history_information.rs; no hardware evidence",
         }
     }
     fn capability(&self, opcode: u8) -> Capability {
         match opcode {
-            6 | 7 | 17 | 50 | 100 | 108 | 135 | 118 | 119 | 167 | 180 | 225 => Capability::Verified,
+            6 | 7 | 17 | 50 | 100 | 108 | 135 | 136 | 137 | 138 | 139 | 118 | 119 | 167 | 180
+            | 225 => Capability::Verified,
             105 => Capability::Provisional, // Raw five-byte occurrence regions; DEC-4.01 remains open.
             24 | 224 | 255 => Capability::Unavailable,
             _ => Capability::UserSupplied,

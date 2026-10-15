@@ -14,7 +14,9 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 #[tokio::test]
 // POL-SESSION-MALFORMED: Managed ownership contract. See docs/REQUIREMENTS.md.
 async fn standalone_session_retires_every_malformed_typed_reply() {
-    for opcode in [6, 7, 17, 50, 100, 105, 108, 135, 167, 180] {
+    for opcode in [
+        6, 7, 17, 50, 100, 105, 108, 135, 136, 137, 138, 139, 167, 180,
+    ] {
         let (stream, mut peer) = tokio::io::duplex(512);
         let responder = tokio::spawn(async move {
             assert_eq!(
@@ -76,6 +78,55 @@ async fn standalone_session_retires_every_malformed_typed_reply() {
                 .read_history(
                     rocsteady::HistoryRequest::new(0, 7, rocsteady::HistoryKind::Periodic, 0, 1)
                         .unwrap(),
+                )
+                .await
+                .map(|_| ()),
+            136 => session
+                .read_multi_history(
+                    rocsteady::MultiHistoryRequest::new(
+                        0,
+                        0,
+                        rocsteady::HistoryKind::Periodic,
+                        7,
+                        2,
+                        1,
+                    )
+                    .unwrap(),
+                )
+                .await
+                .map(|_| ()),
+            137 => session
+                .read_day_indices(
+                    rocsteady::DayIndicesRequest::new(
+                        0,
+                        rocsteady::HistoryDay::new(15, 10).unwrap(),
+                    )
+                    .unwrap(),
+                )
+                .await
+                .map(|_| ()),
+            138 => session
+                .read_history_day(
+                    rocsteady::DayHistoryRequest::new(
+                        0,
+                        rocsteady::HistoryDay::new(15, 10).unwrap(),
+                        rocsteady::DayHistoryTarget::Values(7),
+                    )
+                    .unwrap(),
+                )
+                .await
+                .map(|_| ()),
+            139 => session
+                .read_selected_history(
+                    rocsteady::SelectedHistoryRequest::new(
+                        0,
+                        0,
+                        rocsteady::HistoryKind::Periodic,
+                        vec![7],
+                        1,
+                        true,
+                    )
+                    .unwrap(),
                 )
                 .await
                 .map(|_| ()),

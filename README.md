@@ -21,6 +21,13 @@ application-provided byte streams use the same protocol implementation.
   parameters, with firmware/location checks and optional enum/bit/unit metadata.
 - **Archived samples:** bounded single-point minute/periodic/daily reads, separate timestamp
   selectors, explicit progress and replaceable index policies.
+- **Multi-point archives:** time-major timestamp/value rows for contiguous point blocks,
+  bounded period paging and explicit failure progress.
+- **Day-oriented archives:** day/month index lookup and whole-day values or timestamps,
+  plus an explicit paged alternative for larger days. Table defaults and caller codecs
+  preserve date ambiguity.
+- **Selective archive access:** discover configured history points and read an explicit
+  ordered subset, with optional timestamps and inventory-change checks.
 - **History metadata:** min/max values with raw occurrence times, selectable provisional codecs,
   and ordered history tags with a reported periodic index.
 - **Alarm/event monitoring:** typed pages, bounded ring windows and caller-consumed
@@ -37,13 +44,13 @@ application-provided byte streams use the same protocol implementation.
 - **State and shutdown:** optional heartbeats detect idle failure, state notifications
   report changes, and awaited shutdown cancels/drains work and closes the channel.
 
-Use the current stable Rust toolchain. This codebase represents version `0.1.2`.
+Use the current stable Rust toolchain. This codebase represents version `0.1.3`.
 All releases below 1.0 are experimental
 and may have incomplete protocol coverage; see the scope below.
 
 ```toml
 [dependencies]
-rocsteady = "0.1.1"
+rocsteady = "0.1.3"
 # From a checkout: rocsteady = { path = "../rocsteady" }
 # Add features = ["serial"] for SerialConnector.
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "time"] }
@@ -56,7 +63,7 @@ for ownership, cancellation and generation lifetimes.
 
 ## Scope and validation
 
-Version 0.1.2 supports configuration discovery, clock/parameter reads, legacy
+Version 0.1.3 supports configuration discovery, clock/parameter reads, legacy
 login and device errors, typed alarm/event retrieval with bounded pages and
 explicit checkpoints, plus opt-in idle SRBX polling and explicit consumed-alarm
 acknowledgement. Acknowledgement changes controller SRBX status; it is never
@@ -64,13 +71,17 @@ automatic. Explicit profiles, contextual codecs, discovery and bounded schema re
 are covered by the [extension contracts](docs/MANAGED_EXTENSIONS.md).
 OP-105/108 history metadata and OP-135 single-point history reads include selectable
 policies/codecs and bounded paging; see the [history guide](docs/HISTORY.md).
+OP-136 adds multi-point reads and bounded paging with [explicit progress](docs/MULTI_HISTORY.md).
+OP-137/138 add [day-oriented reads](docs/DAY_HISTORY.md), including replaceable
+interpretation and an explicit indexed alternative for oversized days.
+OP-139 adds [configured inventory and selected-point reads](docs/HISTORY_INFORMATION.md)
+with optional timestamps and bounded paging.
 The [catalog](docs/CATALOG.md) contains 202 ROC800 parameters, including every discrete/analog input and output read width and every pulse-input read field, plus clock, port and module fields.
-Remaining catalog tables, enhanced login and typed writes, multi-point/other history retrieval, automatic durable alarm delivery, files
+Remaining catalog tables, enhanced login and typed writes, transaction retrieval, automatic durable alarm delivery, files
 and routing remain unavailable. Raw/custom
 operations can perform side effects; they are not automatically replayed.
 
-Local macOS/stable validation passes 168 all-feature tests, 16 doctests, strict
-Clippy, fixture examples, package verification and an extracted-package consumer.
+Local validation and its version-specific scope are recorded in [release evidence](docs/RELEASE.md).
 Hosted stable Windows/Linux/macOS CI passed for the published 0.1.2
 release commit `a939ac1`, independently verified through GitHub CLI. See the release record for the evidence source.
 Physical ROC hardware and actual serial exchanges have not been validated. The simulator
@@ -91,6 +102,9 @@ firmware applicability; unknown fields are retained rather than guessed.
 | [Profiles and schemas](examples/schema_profiles.rs) | Explicit profile/applicability and a user-defined mixed-width schema read in bounded batches over an independent TCP peer. |
 | [Discovery and built-in catalog](examples/discovery_catalog.rs) | Point classifications and I/O discovery, then system/I/O reads using source-audited metadata and physical locations. |
 | [Single-point history](examples/history.rs) | Default sample/timestamp reads, bounded paging, explicit geometry and provisional minute-index choice. |
+| [Multi-point history](examples/multi_history.rs) | Time-major point blocks, bounded paging and explicit partial progress. |
+| [Day-oriented history](examples/day_history.rs) | Default day/month reads, caller interpretation and explicit value/timestamp indexed fallback. |
+| [History information](examples/history_information.rs) | Configured-point discovery, explicit ordered selections, optional timestamps and inventory checks. |
 | [History metadata](examples/history_metadata.rs) | Default raw occurrences, explicit prebuilt alternatives, consumer decoding and ordered history tags. |
 | [Alarm/event retrieval](examples/log_retrieval.rs) | Independent record fixtures, bounded log pages, caller-confirmed consumption, checkpoint resume, idle polling and explicit acknowledgement. |
 | [Configured TCP device](examples/read_device.rs) | Configuration and clock reads using an explicit endpoint and optional legacy credentials from the environment. |
@@ -122,6 +136,15 @@ cargo run --locked --example history_metadata
 
 # Single-point samples, timestamps and bounded ring windows:
 cargo run --locked --example history
+
+# Multi-point timestamp/value rows and bounded paging:
+cargo run --locked --example multi_history
+
+# Day/month values and timestamps, caller codecs and explicit indexed fallback:
+cargo run --locked --example day_history
+
+# Discover configured points and read a selected subset:
+cargo run --locked --example history_information
 ```
 
 For hardware examples, set `ROC_ENDPOINT` and optionally both `ROC_OPERATOR` and

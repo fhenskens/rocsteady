@@ -1,5 +1,39 @@
 # Experimental monitoring release checklist
 
+## 0.1.3 indexed, day-oriented and selected history
+
+OP-136 adds minute/periodic/daily contiguous point blocks with time-major TIME/FLOAT
+rows, bounded period paging, explicit confirmed progress and no implicit replay.
+Table minute bounds, provisional prose bounds and configured/caller policies use
+the same public interfaces. Profile and per-call codecs remain replaceable under
+managed ownership. Independent Table 2-19 literals/TCP and simulator evidence,
+a runnable multi_history example and extracted consumer cover the public API.
+See [exact contracts and limitations](MULTI_HISTORY.md).
+
+OP-137/138 add yearless day/month index lookup, whole-day values or special-point
+255 timestamps and an explicit indexed OP-137/135 alternative for oversized days.
+Table-based defaults use public codecs/profile seams, and callers can supply their
+own interpretation or request operation. Indexed reads preserve confirmed progress,
+geometry/ownership rules and final mapping recheck without implicit fallback/replay.
+See [day contracts and ambiguity dispositions](DAY_HISTORY.md).
+
+OP-139 adds configured inventory and ordered selected-point reads, with optional
+TIME words, bounded period pages, public policy/codec replacements and opt-in
+inventory membership/recheck. Changes and failures preserve confirmed progress;
+no atomic-snapshot, automatic-resume or physical claim is made. See
+[history-information contracts](HISTORY_INFORMATION.md).
+
+Local macOS ARM64 / stable Rust 1.99 validation passes 217 all-feature/all-target
+tests and 19 doctests, default tests, strict Clippy, formatting and all-feature
+rustdoc. All eleven controller-free fixture examples pass, including history_information.
+The 98-file development package verifies and its extracted external consumer passes
+against registry etherbird 0.4.2, including OP-136–139 defaults, consumer codecs, explicit request Operations,
+configured indexed paging and inventory-checked selections. No dependency versions changed.
+
+Hosted 0.1.3 CI, clean-commit publication checks and registry publication/tag are
+not yet recorded. Physical-controller and actual serial exchanges remain
+unvalidated. The dated 0.1.2 evidence below retains its original scope.
+
 ## 0.1.2 I/O and history — 2026-10-15
 
 Version 0.1.2 adds 72 PT-102/104/105 read fields, bringing the catalog to 202 entries,
@@ -88,7 +122,8 @@ below 1.0 are experimental and may have incomplete protocol coverage or unverifi
 hardware compatibility. Breaking API changes use a new minor version; compatible
 additions and fixes use patch releases. The first ordinary release is
 **0.1.0**, following the historical 0.1.0-alpha.1 prerelease. Cargo.toml and
-Cargo.lock now carry version 0.1.2.
+Cargo.lock carry the current version, 0.1.3. Each release requires its own
+validation and publication evidence; dated records retain their original versions.
 Error and ErrorKind are non-exhaustive; callers must include fallback match arms.
 
 ## Published 0.1.0/0.1.1 software evidence
@@ -164,6 +199,9 @@ cargo run --locked --example discovery_catalog
 cargo run --locked --example log_retrieval
 cargo run --locked --example history_metadata
 cargo run --locked --example history
+cargo run --locked --example multi_history
+cargo run --locked --example day_history
+cargo run --locked --example history_information
 cargo run --locked --features simulator --example authenticated_setup
 cargo run --locked --features simulator --example simulator
 cargo package --locked --allow-dirty --all-features

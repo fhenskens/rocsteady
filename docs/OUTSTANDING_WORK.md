@@ -6,23 +6,25 @@ Implemented behavior belongs in [coverage](COVERAGE.md), executable evidence in
 
 ## Current handoff — 2026-10-15
 
-**0.1.2** is published on crates.io with tag `v0.1.2`. It adds PT-102/104/105 read coverage
-(202 catalog parameters total), OP-105/108 history metadata and OP-135 single-point
-history reads, including bounded paging and explicit partial progress.
+The current version is **0.1.3**. The implemented history services now include:
 
-The managed extension platform, explicit profiles/codecs, schema-backed reads,
-discovery, typed logs and opt-in SRBX polling/acknowledgement are implemented.
-See [extension acceptance](EXTENSIBILITY.md), [catalog](CATALOG.md),
-[history metadata](HISTORY_METADATA.md), [single-point history](HISTORY.md) and
-[logs/SRBX](LOGS.md) for contracts and limitations.
+- OP-105/108 metadata and OP-135 single-point reads.
+- [OP-136 multi-point reads](MULTI_HISTORY.md), with time-major rows and bounded paging.
+- [OP-137/138 day reads](DAY_HISTORY.md), with yearless defaults and explicit indexed fallback.
+- [OP-139 inventory and selected reads](HISTORY_INFORMATION.md), with optional timestamps
+  and inventory checks.
 
-Version 0.1.2 local validation passes 168 all-feature/all-target tests, 16 doctests,
-strict Clippy, formatting, fixture examples, package verification and an extracted
-external consumer. Hosted stable Linux/macOS/Windows CI passed for release commit
-`a939ac1`, independently verified through GitHub CLI; the published archive matches
-that clean commit. The 0.1.2 GitHub release page is published.
-Physical-controller and actual serial exchanges remain
-unvalidated. [Release evidence](RELEASE.md) preserves exact provenance and gates.
+These build on managed extensions, explicit profiles/codecs, discovery, the
+202-parameter read catalog, schema-backed reads, typed logs and opt-in SRBX
+polling/acknowledgement. Coverage and feature contracts describe the exact limits;
+this roadmap tracks remaining acceptance.
+
+Local checks pass 217 all-feature/all-target tests, 19 doctests, strict Clippy,
+formatting, rustdoc, all eleven fixture examples, package verification and the
+extracted consumer. Hosted 0.1.3 CI and release-commit publication gates remain
+pending. Physical-controller and actual serial exchanges remain unvalidated.
+[Release evidence](RELEASE.md) owns validation/publication provenance, including the
+preceding 0.1.2 release; historical counts and commit details are retained there.
 
 ## Scope and delivery policy
 
@@ -69,7 +71,7 @@ Hardware and cross-platform validation can proceed alongside software developmen
 | M0: discovery/security foundations | Remaining CORE-1/2/3 and OP-6/7/17/50/100 variants/applicability; DEC-1/2/3/8 evidence | Explicit profiles and readiness strategies |
 | M1: parameter access | Remaining PT batches, firmware/layout applicability and discovery/bootstrap policies | Schema metadata and explicit device context |
 | M2: logs/SRBX | Stronger durable continuity evidence and remaining applicability/schema coverage | Identity, retention and index semantics |
-| M3: history | OP-136/137/138/139/206, history PT batch; outstanding OP-105/108/135 interpretation evidence | History geometry, time/schema models; DEC-4/5 |
+| M3: history | OP-206, history PT batch; remaining OP-105/135–139 interpretation/applicability evidence | History geometry, time/schema models; DEC-4/5 |
 | M4: configuration/writes | OP-8/10/11/166/181, PT-99 and writable schemas | Access/budget validation and explicit uncertain outcomes |
 | M5: files | OP-203 forms and lifecycle | Exclusive workflows, handle lifetime and uncertain outcomes; DEC-5 |
 | M6: remote/shared channels | OP-24/205, broadcast CORE-1 and network schemas | Framing/address/reader contracts; DEC-1/5/9 |
@@ -114,12 +116,12 @@ limitation on compatibility claims. No milestone permits automatic side-effect r
   local validation distinct from healthy device rejection.
 - [ ] Implement OP-10 configurable table reads, including version/width/range
   variants, independent fixtures and simulator behavior.
-- [ ] Implement OP-136/137/138/139/206 and their source-defined variants: multi-point
-  ordering, time models, transaction tags/widths, bounds and retention behavior.
+- [ ] Implement OP-206 transaction commands: record inventory, tagged field widths,
+  offsets/continuation, bounds and retention behavior.
   Use contextual codecs/policies for unresolved forms and explicit progress for
   multi-exchange work; see [service packages](SPEC_WORK_PLAN.md).
-- [ ] Resolve remaining OP-105 occurrence semantics and OP-135 minute-index
-  interpretation/applicability with source/device evidence. Existing raw defaults,
+- [ ] Resolve remaining history occurrence-time, minute-index and day/year
+  interpretation/applicability questions with source/device evidence. Existing raw defaults,
   provisional alternatives and custom replacements remain usable meanwhile.
 - [ ] Establish stronger durable log continuity/deduplication using controller
   identity, rollover and retention evidence. Matching anchors or unchanged history
@@ -175,7 +177,7 @@ claiming that already-covered cases are implemented.
 Maintain current feature contracts and test traceability as each slice lands;
 completed documentation tasks remain in the changelog and release record.
 
-- [ ] Add runnable examples for future multi-point history, file and routing APIs,
+- [ ] Add runnable examples for future transaction, file and routing APIs,
   including explicit recovery/progress and ownership semantics when implemented.
 - [ ] Cross-check every baseline OP/PT/DEC row before claiming full coverage;
   selected catalog manifests and extension seams do not close the baseline.
@@ -192,16 +194,17 @@ separate release action, not implied by completing this backlog.
 
 ## Recommended next slice
 
-**Implement OP-136 multi-point history reads**, building on OP-135's policies,
-bounded exchanges and explicit progress. Review selector/order/size variants and
-applicability in the service plan first; retain public policy/codec replacement
-where interpretation remains ambiguous. Add spec-referenced independent fixtures,
-simulator/TCP coverage, consumer examples and updated requirements together.
+**Implement schema-aware contiguous parameter writes (OP-166)** for source-unambiguous
+parameters. Establish request/access/value budgets, explicit acknowledgement versus
+unknown remote outcome, partial progress and no-replay semantics before exposing
+side effects. Use independent before-send/after-effect/lost-ack fixtures, simulator
+state checks and external-consumer evidence. Broader OP-181 writes can follow the
+same outcome contracts.
 
-After OP-136, continue the remaining history services and history schemas toward
-a coherent history capability, then prioritize schema-aware writes for well-defined
-parameters with explicit partial/uncertain outcomes. Catalog expansion can proceed
-alongside security, file and routing work; this order does not close their gaps.
+OP-139 configured inventory and selected-point reads are implemented within the
+[declared scope](HISTORY_INFORMATION.md). Continue transaction OP-206 when its
+wire ambiguities have adequate evidence; complete remaining history schemas and
+firmware/channel validation alongside parameter work.
 
 **PT-106/107 temperature I/O catalog reads** are a useful independent alternative.
 A Unix pseudo-terminal SerialConnector fixture is another focused validation slice.

@@ -56,7 +56,7 @@ impl HistoryBounds {
     pub fn capacity(self) -> Option<u32> {
         self.capacity
     }
-    fn validate(self, segment: u8, point: u8, start: u16) -> Result<(), Error> {
+    pub(crate) fn validate(self, segment: u8, point: u8, start: u16) -> Result<(), Error> {
         if segment > self.max_segment
             || self.point_count.is_some_and(|n| u16::from(point) >= n)
             || self.capacity.is_some_and(|n| u32::from(start) >= n)
@@ -73,7 +73,7 @@ impl HistoryBounds {
 pub trait HistoryIndexPolicy: Send + Sync {
     fn bounds(&self, segment: u8, point: u8, kind: HistoryKind) -> Result<HistoryBounds, Error>;
 }
-/// Default: Table 2-18 minute indices 0–59, segments 0–10. Other capacities unknown.
+/// Default: Tables 2-18/2-19 minute indices 0–59, segments 0–10. Other capacities unknown.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TableHistoryPolicy;
 impl HistoryIndexPolicy for TableHistoryPolicy {
@@ -402,45 +402,52 @@ struct HistoryRead {
     requests: Vec<HistoryRequest>,
     progress: Arc<Mutex<HistoryReadProgress>>,
 }
+pub(crate) fn plan_history_range(
+    range: HistoryRange,
+    profile: &dyn ProtocolProfile,
+) -> Result<Vec<HistoryRequest>, Error> {
+    crate::profile::validate_profile_request_size(profile, 135, 6)?;
+    crate::profile::validate_expected_response(profile, 135, 5)?;
+    let available = profile
+        .limits(135)
+        .response
+        .min(255)
+        .checked_sub(5)
+        .ok_or(Error::InvalidRequest("history header cannot fit profile"))?;
+    let capacity = (available / 4).min(60) as u32;
+    if range.total > 0 && capacity == 0 {
+        return Err(Error::InvalidRequest(
+            "history item cannot fit profile reply budget",
+        ));
+    }
+    let q = range.request;
+    let boundary = q.bounds.capacity.unwrap_or(65536);
+    let (mut cursor, mut remaining) = (u32::from(q.start), range.total);
+    let mut requests = Vec::new();
+    if remaining == 0 {
+        requests.push(q);
+    }
+    while remaining > 0 {
+        let n = remaining.min(capacity).min(boundary - cursor);
+        requests.push(HistoryRequest::from_bounds(
+            q.segment,
+            q.point,
+            q.kind,
+            cursor as u16,
+            n as u8,
+            q.bounds,
+        )?);
+        remaining -= n;
+        cursor += n;
+        if cursor == boundary && remaining > 0 {
+            cursor = 0;
+        }
+    }
+    Ok(requests)
+}
 impl HistoryRead {
     fn prepare(range: HistoryRange, profile: &dyn ProtocolProfile) -> Result<Self, Error> {
-        crate::profile::validate_profile_request_size(profile, 135, 6)?;
-        crate::profile::validate_expected_response(profile, 135, 5)?;
-        let available = profile
-            .limits(135)
-            .response
-            .min(255)
-            .checked_sub(5)
-            .ok_or(Error::InvalidRequest("history header cannot fit profile"))?;
-        let capacity = (available / 4).min(60) as u32;
-        if range.total > 0 && capacity == 0 {
-            return Err(Error::InvalidRequest(
-                "history item cannot fit profile reply budget",
-            ));
-        }
-        let q = range.request;
-        let boundary = q.bounds.capacity.unwrap_or(65536);
-        let (mut cursor, mut remaining) = (u32::from(q.start), range.total);
-        let mut requests = Vec::new();
-        if remaining == 0 {
-            requests.push(q);
-        }
-        while remaining > 0 {
-            let n = remaining.min(capacity).min(boundary - cursor);
-            requests.push(HistoryRequest::from_bounds(
-                q.segment,
-                q.point,
-                q.kind,
-                cursor as u16,
-                n as u8,
-                q.bounds,
-            )?);
-            remaining -= n;
-            cursor += n;
-            if cursor == boundary && remaining > 0 {
-                cursor = 0;
-            }
-        }
+        let requests = plan_history_range(range, profile)?;
         Ok(Self {
             range,
             requests,

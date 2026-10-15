@@ -216,3 +216,116 @@ pub(crate) fn history_with_codec<C: crate::ReplyCodec<crate::HistoryRequest>>(
         move |bytes: &[u8]| codec.decode(&request, bytes).map_err(Error::from),
     )
 }
+
+pub(crate) fn multi_history(
+    request: crate::MultiHistoryRequest,
+    profile: Arc<dyn ProtocolProfile>,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<crate::MultiHistoryPage, Error> + Send> {
+    PreparedOperation::new(
+        136,
+        request.payload(),
+        Some(request.response_size()),
+        move |bytes: &[u8]| {
+            let page = profile.decode_multi_history(&request, bytes)?;
+            page.validate_for(&request)?;
+            Ok(page)
+        },
+    )
+}
+pub(crate) fn multi_history_with_codec<C: crate::ReplyCodec<crate::MultiHistoryRequest>>(
+    request: crate::MultiHistoryRequest,
+    codec: C,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<C::Output, Error> + Send> {
+    PreparedOperation::new(
+        136,
+        request.payload(),
+        Some(request.response_size()),
+        move |bytes: &[u8]| codec.decode(&request, bytes).map_err(Error::from),
+    )
+}
+
+pub(crate) fn day_indices(
+    request: crate::DayIndicesRequest,
+    profile: Arc<dyn ProtocolProfile>,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<crate::DayIndices, Error> + Send> {
+    PreparedOperation::new(137, request.payload(), Some(9), move |bytes: &[u8]| {
+        let reply = profile.decode_day_indices(&request, bytes)?;
+        reply.validate_for(&request)?;
+        Ok(reply)
+    })
+}
+pub(crate) fn day_indices_with_codec<C: crate::ReplyCodec<crate::DayIndicesRequest>>(
+    request: crate::DayIndicesRequest,
+    codec: C,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<C::Output, Error> + Send> {
+    PreparedOperation::new(137, request.payload(), Some(9), move |bytes: &[u8]| {
+        codec.decode(&request, bytes).map_err(Error::from)
+    })
+}
+
+pub(crate) fn history_day(
+    request: crate::DayHistoryRequest,
+    profile: Arc<dyn ProtocolProfile>,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<crate::DayHistoryReply, Error> + Send> {
+    PreparedOperation::new(138, request.payload(), Some(8), move |bytes: &[u8]| {
+        let reply = profile.decode_history_day(&request, bytes)?;
+        reply.validate_for(&request)?;
+        Ok(reply)
+    })
+}
+pub(crate) fn history_day_with_codec<C: crate::ReplyCodec<crate::DayHistoryRequest>>(
+    request: crate::DayHistoryRequest,
+    codec: C,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<C::Output, Error> + Send> {
+    PreparedOperation::new(138, request.payload(), Some(8), move |bytes: &[u8]| {
+        codec.decode(&request, bytes).map_err(Error::from)
+    })
+}
+
+pub(crate) fn configured_history(
+    request: crate::ConfiguredHistoryRequest,
+    profile: Arc<dyn ProtocolProfile>,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<crate::ConfiguredHistoryPoints, Error> + Send> {
+    PreparedOperation::new(139, request.payload(), Some(3), move |bytes: &[u8]| {
+        let reply = profile.decode_configured_history(&request, bytes)?;
+        reply.validate_for(&request)?;
+        Ok(reply)
+    })
+}
+pub(crate) fn configured_history_with_codec<
+    C: crate::ReplyCodec<crate::ConfiguredHistoryRequest>,
+>(
+    request: crate::ConfiguredHistoryRequest,
+    codec: C,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<C::Output, Error> + Send> {
+    PreparedOperation::new(139, request.payload(), Some(3), move |bytes: &[u8]| {
+        codec.decode(&request, bytes).map_err(Error::from)
+    })
+}
+
+pub(crate) fn selected_history(
+    request: crate::SelectedHistoryRequest,
+    profile: Arc<dyn ProtocolProfile>,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<crate::SelectedHistoryPage, Error> + Send> {
+    PreparedOperation::new(
+        139,
+        request.payload(),
+        Some(request.response_size()),
+        move |bytes: &[u8]| {
+            let reply = profile.decode_selected_history(&request, bytes)?;
+            reply.validate_for(&request)?;
+            Ok(reply)
+        },
+    )
+}
+pub(crate) fn selected_history_with_codec<C: crate::ReplyCodec<crate::SelectedHistoryRequest>>(
+    request: crate::SelectedHistoryRequest,
+    codec: C,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<C::Output, Error> + Send> {
+    PreparedOperation::new(
+        139,
+        request.payload(),
+        Some(request.response_size()),
+        move |bytes: &[u8]| codec.decode(&request, bytes).map_err(Error::from),
+    )
+}

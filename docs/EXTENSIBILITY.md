@@ -63,7 +63,15 @@ RawOccurrenceCodec by default and named provisional CalendarOccurrenceCodec and
 PrefixedEpochOccurrenceCodec through MinMaxCodec<C>; see [scope/evidence](HISTORY_METADATA.md).
 OP-135 adds TableHistoryPolicy defaults, explicit provisional ProseMinuteHistoryPolicy,
 configured geometry and arbitrary consumer HistoryIndexPolicy/ReplyCodec replacements
-with public per-call selection; see [single-point contracts](HISTORY.md). The subsequent discovery slice adds Roc800Profile with explicit I/O
+with public per-call selection; see [single-point contracts](HISTORY.md). OP-136 reuses
+explicit index policies for coherent contiguous point blocks and exposes MultiHistoryCodec,
+per-call replacements and ProtocolProfile::decode_multi_history; see [multi-point contracts](MULTI_HISTORY.md).
+OP-137/138 add named table-based DayIndicesCodec/DayHistoryCodec, per-call and
+profile replacements, explicit raw yearless dates and Operation request overrides.
+Indexed day paging uses the shared geometry and ownership seams; see [day contracts](DAY_HISTORY.md).
+OP-139 similarly exposes ConfiguredHistoryCodec/SelectedHistoryCodec and per-call/profile
+replacements for inventory and ordered selections, with guarded structural validation;
+see [history-information contracts](HISTORY_INFORMATION.md). The subsequent discovery slice adds Roc800Profile with explicit I/O
 layouts, contextual opcode-50/100 presets and generation-bound Roc800Catalog snapshots;
 see [CATALOG.md](CATALOG.md). Automatic profile caches remain absent. Device-specific
 interoperability, occurrence-time interpretation and routed framing still need

@@ -12,7 +12,19 @@ pub struct DiscoveryPeer {
     pub connections: AtomicUsize,
     pub parameter_reads: AtomicUsize,
     pub history_reads: AtomicUsize,
+    pub inventory_reads: AtomicUsize,
+    pub inventory_replies: Mutex<std::collections::BTreeMap<usize,Vec<u8>>>,
+    pub inventory_fail_at: AtomicUsize,
+    pub inventory_fault: AtomicUsize,
+    pub day_index_reads: AtomicUsize,
+    pub day_reads: AtomicUsize,
+    pub day_index_replies: Mutex<std::collections::BTreeMap<usize,Vec<u8>>>,
+    pub day_reply: Mutex<Option<Vec<u8>>>,
+    pub day_fail_opcode: AtomicUsize,
+    pub day_fail_at: AtomicUsize,
+    pub day_fault: AtomicUsize,
     pub sample_reads: AtomicUsize,
+    pub release_late_sample: tokio::sync::Notify,
     pub sample_fail_at: AtomicUsize,
     pub sample_fault: AtomicUsize,
     pub sample_change_at: AtomicUsize,
@@ -398,6 +410,41 @@ impl DiscoveryFixture {
                                 for point in &payload[2..] {bytes.push(*point);bytes.extend(*b"FLOW      ");}
                                 bytes
                             }
+                            139 => {
+                                if payload[0]==0 {
+                                    assert_eq!(payload.len(),2);
+                                    let query=stats.inventory_reads.fetch_add(1,Ordering::SeqCst)+1;
+                                    if stats.inventory_fail_at.load(Ordering::SeqCst)==query {
+                                        stats.fault_opcode.store(139,Ordering::SeqCst);stats.fault.store(stats.inventory_fault.load(Ordering::SeqCst),Ordering::SeqCst);
+                                    }
+                                    stats.inventory_replies.lock().unwrap().get(&query).cloned().unwrap_or_else(||vec![0,payload[1],3,7,2,255])
+                                } else {
+                                    assert_eq!(payload[0],1);assert_eq!(payload.len(),8+usize::from(payload[7]));
+                                    assert!(payload[4]<=2&&payload[6]<=1&&!payload[8..].is_empty());
+                                    assert!((usize::from(payload[7])+usize::from(payload[6]))*usize::from(payload[5])<=60);
+                                    let query=stats.sample_reads.fetch_add(1,Ordering::SeqCst)+1;
+                                    if stats.sample_change_at.load(Ordering::SeqCst)==query {stats.history_periodic_index.store(stats.sample_change_index.load(Ordering::SeqCst),Ordering::SeqCst);}
+                                    let count=if stats.sample_short_at.load(Ordering::SeqCst)==query {stats.sample_short_count.load(Ordering::SeqCst) as u8}else{payload[5]};
+                                    if stats.sample_fail_at.load(Ordering::SeqCst)==query {stats.fault_opcode.store(139,Ordering::SeqCst);stats.fault.store(stats.sample_fault.load(Ordering::SeqCst),Ordering::SeqCst);}
+                                    stats.sample_replies.lock().unwrap().get(&query).cloned().unwrap_or_else(||selected_history_literal(payload[1],u16::from_le_bytes([payload[2],payload[3]]),&payload[8..],payload[6]==1,stats.history_periodic_index.load(Ordering::SeqCst) as u16,count))
+                                }
+                            }
+                            137 => {
+                                assert_eq!(payload.len(),3);
+                                let query=stats.day_index_reads.fetch_add(1,Ordering::SeqCst)+1;
+                                if stats.day_fail_opcode.load(Ordering::SeqCst)==137 && stats.day_fail_at.load(Ordering::SeqCst)==query {
+                                    stats.fault_opcode.store(137,Ordering::SeqCst);stats.fault.store(stats.day_fault.load(Ordering::SeqCst),Ordering::SeqCst);
+                                }
+                                stats.day_index_replies.lock().unwrap().get(&query).cloned().unwrap_or_else(||day_indices_literal(payload[0]))
+                            }
+                            138 => {
+                                assert_eq!(payload.len(),4);
+                                let query=stats.day_reads.fetch_add(1,Ordering::SeqCst)+1;
+                                if stats.day_fail_opcode.load(Ordering::SeqCst)==138 && stats.day_fail_at.load(Ordering::SeqCst)==query {
+                                    stats.fault_opcode.store(138,Ordering::SeqCst);stats.fault.store(stats.day_fault.load(Ordering::SeqCst),Ordering::SeqCst);
+                                }
+                                stats.day_reply.lock().unwrap().clone().unwrap_or_else(||day_history_literal(payload[0],payload[1],payload[2],payload[3]))
+                            }
                             135 => {
                                 let query=stats.sample_reads.fetch_add(1,Ordering::SeqCst)+1;
                                 assert_eq!(payload.len(),6);assert!(payload[2]<=4&&payload[5]<=60);
@@ -408,6 +455,19 @@ impl DiscoveryFixture {
                                 let response=stats.sample_replies.lock().unwrap().get(&query).cloned().unwrap_or_else(||single_history_literal(payload[0],payload[1],payload[2],stats.history_periodic_index.load(Ordering::SeqCst) as u16,count));
                                 if stats.sample_fail_at.load(Ordering::SeqCst)==query {
                                     stats.fault_opcode.store(135,Ordering::SeqCst);stats.fault.store(stats.sample_fault.load(Ordering::SeqCst),Ordering::SeqCst);
+                                }
+                                response
+                            }
+                            136 => {
+                                let query=stats.sample_reads.fetch_add(1,Ordering::SeqCst)+1;
+                                assert_eq!(payload.len(),7);assert!(payload[3]<=2&&(usize::from(payload[5])+1)*usize::from(payload[6])<=60);
+                                if stats.sample_change_at.load(Ordering::SeqCst)==query {
+                                    stats.history_periodic_index.store(stats.sample_change_index.load(Ordering::SeqCst),Ordering::SeqCst);
+                                }
+                                let count=if stats.sample_short_at.load(Ordering::SeqCst)==query {stats.sample_short_count.load(Ordering::SeqCst) as u8}else{payload[6]};
+                                let response=stats.sample_replies.lock().unwrap().get(&query).cloned().unwrap_or_else(||multi_history_literal(payload[0],u16::from_le_bytes([payload[1],payload[2]]),payload[4],payload[5],stats.history_periodic_index.load(Ordering::SeqCst) as u16,count));
+                                if stats.sample_fail_at.load(Ordering::SeqCst)==query {
+                                    stats.fault_opcode.store(136,Ordering::SeqCst);stats.fault.store(stats.sample_fault.load(Ordering::SeqCst),Ordering::SeqCst);
                                 }
                                 response
                             }
@@ -458,6 +518,7 @@ impl DiscoveryFixture {
                                 }
                                 4 => break,
                                 5 => std::future::pending::<()>().await,
+                                10 => stats.release_late_sample.notified().await,
                                 6 => response.push(0),
                                 7 => response[0] ^= 1,
                                 8 => response[2] ^= 1,

@@ -27,6 +27,9 @@ jobs:
       - run: cargo run --locked --example log_retrieval
       - run: cargo run --locked --example history_metadata
       - run: cargo run --locked --example history
+      - run: cargo run --locked --example multi_history
+      - run: cargo run --locked --example day_history
+      - run: cargo run --locked --example history_information
       - run: cargo run --locked --features simulator --example authenticated_setup
       - run: cargo package --locked --allow-dirty --all-features
       - name: Compile and run a consumer of the extracted package

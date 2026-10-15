@@ -11,10 +11,11 @@ same contracts, so callers can replace them with their own implementations.
 
 Start with the [current handoff](OUTSTANDING_WORK.md#current-handoff--2026-10-15)
 and [recommended next slice](OUTSTANDING_WORK.md#recommended-next-slice).
-Version 0.1.2 includes all PT-102/104/105 read fields.
-OP-105/108 metadata and OP-135 bounded single-point reads are also implemented
-with usable defaults and selectable policies/codecs. The handoff distinguishes shipped work, outstanding
-full-baseline requirements and software evidence from physical validation.
+Version 0.1.3 includes the 202-parameter read catalog, history metadata (OP-105/108)
+and indexed/day-oriented history reads (OP-135–139), with explicit policies/codecs,
+bounded paging and confirmed progress. Feature contracts and coverage state each
+service's limits. The handoff separates implemented work, remaining baseline
+acceptance and physical validation; the roadmap recommends OP-166 next.
 
 ## Reading order
 
@@ -41,6 +42,9 @@ full-baseline requirements and software evidence from physical validation.
 | [Service plan](SPEC_WORK_PLAN.md) | Baseline opcode/core inventory and closure criteria |
 | [Schema plan](SCHEMA_WORK_PLAN.md) | Point-type inventory and per-parameter closure criteria |
 | [Catalog](CATALOG.md) | Selected source-audited parameter metadata, discovery policies, per-variant fixtures and explicit firmware/hardware limitations |
+| [History information](HISTORY_INFORMATION.md) | OP-139 configured inventory, ordered selections, optional timestamps and bounded paging |
+| [Day-oriented history](DAY_HISTORY.md) | OP-137/138 table defaults, caller interpretation, whole-day reads and explicit indexed fallback |
+| [Multi-point history](MULTI_HISTORY.md) | OP-136 time-major rows, point/period budgets, paging and partial progress |
 | [Single-point history](HISTORY.md) | OP-135 selectors, bounds/policies, paging and partial progress |
 | [History metadata](HISTORY_METADATA.md) | OP-105/108 contracts, defaults, prebuilt alternatives and evidence |
 | [Logs and SRBX](LOGS.md) | Typed records, bounded paging/checkpoints, explicit acknowledgement outcomes and idle polling |

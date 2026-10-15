@@ -55,10 +55,10 @@ services must have the correct direction; raw request access is not typed covera
 | OP-118 | 2.13 | Alarms | Partial: fixed records, bounded pages and explicit checkpoints; continuity/physical limits remain | tests/logs.rs; tests/logs_simulator.rs; LOGS.md |
 | OP-119 | 2.14 | Events | Partial: all enumerated forms/tags, incomplete values retained; continuity/physical limits remain | tests/logs.rs; tests/logs_simulator.rs; LOGS.md |
 | OP-135 | 2.15 | Single history point | Partial: all selectors, index-only reads and bounded paging; explicit minute policies; DEC-4 applicability/continuity limits remain | tests/history.rs; tests/history_simulator.rs; HISTORY.md |
-| OP-136 | 2.16 | Multiple history points | Open | None |
-| OP-137 | 2.17 | Day indices | Open | None |
-| OP-138 | 2.18 | Day history | Open | None |
-| OP-139 | 2.19 | History information | Open | None |
+| OP-136 | 2.16 | Multiple history points | Partial: all three selectors, time-major rows, bounded paging and explicit progress; DEC-4 applicability/continuity limits remain | tests/multi_history.rs; tests/multi_history_simulator.rs; MULTI_HISTORY.md |
+| OP-137 | 2.17 | Day indices | Table-based start/count lookup and raw invalid daily index implemented; DEC-4.05/06 and physical applicability open | tests/day_history.rs; tests/day_history_simulator.rs; DAY_HISTORY.md |
+| OP-138 | 2.18 | Day history | Values/point-255 timestamps and explicit indexed alternative implemented; snapshot/physical limits remain | tests/day_history.rs; tests/day_history_simulator.rs; DAY_HISTORY.md |
+| OP-139 | 2.19 | History information | Command-0 inventory and command-1 nonempty selected lists implemented, both timestamp shapes, bounded ranges and opt-in inventory checks; applicability/physical limits remain | tests/history_information.rs; tests/history_information_simulator.rs; HISTORY_INFORMATION.md |
 | OP-166 | 2.20 | Contiguous writes | Open | None |
 | OP-167 | 2.21 | Contiguous reads | Partial | opcode_167_validates_count_range_and_echoed_block_header; TCP reads |
 | OP-180 | 2.22 | Arbitrary reads | Partial | opcode_180_request_has_count_and_ordered_tlps; opcode_180_response_echoes_tlp_before_each_value; TCP reads |
@@ -154,7 +154,8 @@ the contradictory DEC-3 prose/diagrams. Full catalog rows remain in SCHEMA_WORK_
 ### OP-167 and OP-180: reads
 
 - [x] Typed contiguous/arbitrary reads, echo/count/width validation and response budgets.
-- [ ] Add schema-aware access and batch planning with both request/response limits.
+- [x] OP-180 schema-aware access and batch planning with both request/response limits; independent TCP, budget and confirmed-progress evidence in tests/profiles_schema.rs.
+- [ ] Add schema-aware contiguous OP-167 access and batch planning; current schema plans use OP-180.
 - [ ] Audit zero counts, maximum ranges, duplicate/reordered TLPs, sparse parameters, unknown types and mixed widths.
 - [ ] Verify partial/error behavior and context-specific error offsets through independent fixtures.
 - [ ] Test malformed typed data on valid frames and reconnect between planned batches; expose incomplete progress.
@@ -233,26 +234,40 @@ public replacement seams and the source/evidence of each provisional choice.
 
 ### OP-136: multiple-point history
 
-- [ ] Implement time-major result ordering with timestamp plus point values for each period.
-- [ ] Validate point/period ranges, returned element counts and combined response budgets.
-- [ ] Model zero-period/index-only and invalid-request zero-element behavior.
-- [ ] Test shape/count mismatches, rollover, sparse/unavailable points and bounded pagination.
+- [x] Implement time-major result ordering with timestamp plus point values for each period.
+- [x] Validate point/period ranges, returned element counts and combined response budgets.
+- [x] Model zero-period/index-only and invalid-request zero-element behavior.
+- [x] Test shape/count mismatches, rollover, sparse/unavailable points and bounded pagination.
+
+See [multi-point history contracts](MULTI_HISTORY.md) for exact limits, policy/codec
+replacement, confirmed failure progress and independent evidence. Physical applicability,
+minute-index interpretation and durable continuity remain open (DEC-4.03/04).
 
 ### OP-137 and OP-138: day selection
 
-- [ ] OP-137 decode periodic start/count and optional-valid daily index/count.
-- [ ] OP-138 implement periodic/daily values and special point 255 timestamp requests.
-- [ ] Define day/month lookup without assuming a year that is absent from the request.
-- [ ] Handle missing day, multiple daily entries, zero daily entries and oversized day responses.
-- [ ] Provide a documented fallback to paged indexed reads when a day cannot fit in one reply.
+- [x] OP-137 decode periodic start/count and optional-valid daily index/count.
+- [x] OP-138 implement periodic/daily values and special point 255 timestamp requests.
+- [x] Define day/month lookup without assuming a year that is absent from the request.
+- [x] Handle missing day, multiple daily entries, zero daily entries and oversized day responses.
+- [x] Provide a documented fallback to paged indexed reads when a day cannot fit in one reply.
+
+See [day-history contracts](DAY_HISTORY.md): defaults follow Tables 2-20/21,
+ReplyCodec/profile/Operation replacements remain public, indexed reads are opt-in
+and preserve confirmed progress. Equal mappings do not prove a snapshot; physical
+applicability and DEC-4.05/06 remain open.
 
 ### OP-139: history information commands
 
-- [ ] Command 0: configured-point inventory, count and segment echo.
-- [ ] Command 1: explicit point list with minute/periodic/daily selection.
-- [ ] Command 1: separate timestamp-disabled and timestamp-enabled response shapes.
-- [ ] Validate point-period products, ordering, current index and optional timestamp widths.
-- [ ] Test configured-point changes, invalid counts and pagination while the history ring advances.
+- [x] Command 0: configured-point inventory, count and segment echo.
+- [x] Command 1: explicit point list with minute/periodic/daily selection.
+- [x] Command 1: separate timestamp-disabled and timestamp-enabled response shapes.
+- [x] Validate point-period products, ordering, current index and optional timestamp widths.
+- [x] Test configured-point changes, invalid counts and pagination while the history ring advances.
+
+See [history-information contracts](HISTORY_INFORMATION.md) for named defaults,
+public replacements, nonempty-selection policy, exact wire/profile budgets and
+partial progress. Command 0 has no paging contract; firmware/physical applicability
+and DEC-4 geometry evidence remain open.
 
 ### OP-206: transaction commands
 

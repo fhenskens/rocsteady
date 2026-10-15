@@ -92,6 +92,114 @@ impl ManagedContext<'_> {
         self.exchange_operation(crate::operations::history_with_codec(request, codec))
             .await
     }
+    /// Table 2-19: one bounded OP-136 page or zero-period current-index probe.
+    pub async fn read_multi_history(
+        &mut self,
+        request: crate::MultiHistoryRequest,
+    ) -> Result<crate::MultiHistoryPage, Error> {
+        self.exchange_operation(crate::operations::multi_history(
+            request,
+            self.session.profile.clone(),
+        ))
+        .await
+    }
+    /// Select a prebuilt or consumer contextual codec without changing transport ownership.
+    pub async fn read_multi_history_with_codec<C: crate::ReplyCodec<crate::MultiHistoryRequest>>(
+        &mut self,
+        request: crate::MultiHistoryRequest,
+        codec: C,
+    ) -> Result<C::Output, Error> {
+        self.exchange_operation(crate::operations::multi_history_with_codec(request, codec))
+            .await
+    }
+    /// Day/month history with no inferred year or snapshot; see docs/DAY_HISTORY.md.
+    pub async fn read_day_indices(
+        &mut self,
+        request: crate::DayIndicesRequest,
+    ) -> Result<crate::DayIndices, Error> {
+        self.exchange_operation(crate::operations::day_indices(
+            request,
+            self.session.profile.clone(),
+        ))
+        .await
+    }
+    /// Explicit contextual codec selection under the exchange retirement guard.
+    pub async fn read_day_indices_with_codec<C: crate::ReplyCodec<crate::DayIndicesRequest>>(
+        &mut self,
+        request: crate::DayIndicesRequest,
+        codec: C,
+    ) -> Result<C::Output, Error> {
+        self.exchange_operation(crate::operations::day_indices_with_codec(request, codec))
+            .await
+    }
+    /// Day/month history with no inferred year or snapshot; see docs/DAY_HISTORY.md.
+    pub async fn read_history_day(
+        &mut self,
+        request: crate::DayHistoryRequest,
+    ) -> Result<crate::DayHistoryReply, Error> {
+        self.exchange_operation(crate::operations::history_day(
+            request,
+            self.session.profile.clone(),
+        ))
+        .await
+    }
+    /// Explicit contextual codec selection under the exchange retirement guard.
+    pub async fn read_history_day_with_codec<C: crate::ReplyCodec<crate::DayHistoryRequest>>(
+        &mut self,
+        request: crate::DayHistoryRequest,
+        codec: C,
+    ) -> Result<C::Output, Error> {
+        self.exchange_operation(crate::operations::history_day_with_codec(request, codec))
+            .await
+    }
+    /// Table 2-22 inventory or ordered selection; see docs/HISTORY_INFORMATION.md.
+    pub async fn read_configured_history(
+        &mut self,
+        request: crate::ConfiguredHistoryRequest,
+    ) -> Result<crate::ConfiguredHistoryPoints, Error> {
+        self.exchange_operation(crate::operations::configured_history(
+            request,
+            self.session.profile.clone(),
+        ))
+        .await
+    }
+    /// Explicit contextual codec under the exchange retirement guard.
+    pub async fn read_configured_history_with_codec<
+        C: crate::ReplyCodec<crate::ConfiguredHistoryRequest>,
+    >(
+        &mut self,
+        request: crate::ConfiguredHistoryRequest,
+        codec: C,
+    ) -> Result<C::Output, Error> {
+        self.exchange_operation(crate::operations::configured_history_with_codec(
+            request, codec,
+        ))
+        .await
+    }
+    /// Table 2-22 inventory or ordered selection; see docs/HISTORY_INFORMATION.md.
+    pub async fn read_selected_history(
+        &mut self,
+        request: crate::SelectedHistoryRequest,
+    ) -> Result<crate::SelectedHistoryPage, Error> {
+        self.exchange_operation(crate::operations::selected_history(
+            request,
+            self.session.profile.clone(),
+        ))
+        .await
+    }
+    /// Explicit contextual codec under the exchange retirement guard.
+    pub async fn read_selected_history_with_codec<
+        C: crate::ReplyCodec<crate::SelectedHistoryRequest>,
+    >(
+        &mut self,
+        request: crate::SelectedHistoryRequest,
+        codec: C,
+    ) -> Result<C::Output, Error> {
+        self.exchange_operation(crate::operations::selected_history_with_codec(
+            request, codec,
+        ))
+        .await
+    }
     /// Read bounded min/max metadata; occurrence bytes stay raw unless a profile selects a codec.
     pub async fn read_min_max(
         &mut self,

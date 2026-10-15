@@ -1,7 +1,8 @@
 //! Async ROC Plus client with etherbird recovery.
 //!
 //! Experimental APIs cover discovery, schema-backed parameter reads, alarm/event logs,
-//! legacy login and device errors. Opt-in SRBX polling and explicit consumed-alarm
+//! single/multi-point, day-oriented and selected history, legacy login and device errors.
+//! Opt-in SRBX polling and explicit consumed-alarm
 //! acknowledgement support monitoring; acknowledgement changes controller status.
 //! No operation is automatically replayed. Physical interoperability is unverified.
 //! The framing/transport seam is independent of supervision.
@@ -9,12 +10,15 @@
 mod catalog;
 mod client;
 mod configuration;
+mod day_history;
 mod discovery;
 mod error;
 mod extensions;
 mod history;
+mod history_information;
 mod history_metadata;
 mod logs;
+mod multi_history;
 mod operations;
 mod profile;
 pub mod protocol;
@@ -40,6 +44,23 @@ pub use history::{
     HistoryKind, HistoryPage, HistoryRange, HistoryReadError, HistoryReadProgress, HistoryRequest,
     HistorySamples, ProseMinuteHistoryPolicy, TableHistoryPolicy,
 };
+pub use multi_history::{
+    MultiHistoryCodec, MultiHistoryPage, MultiHistoryPeriod, MultiHistoryRange,
+    MultiHistoryReadError, MultiHistoryReadProgress, MultiHistoryRequest,
+};
+
+pub use day_history::{
+    DayHistoryCodec, DayHistoryProgress, DayHistoryReadError, DayHistoryReply, DayHistoryRequest,
+    DayHistoryTarget, DayIndices, DayIndicesCodec, DayIndicesRequest, HistoryDay,
+    IndexedDayHistoryRequest,
+};
+
+pub use history_information::{
+    ConfiguredHistoryCodec, ConfiguredHistoryPoints, ConfiguredHistoryRequest,
+    SelectedHistoryCodec, SelectedHistoryPage, SelectedHistoryPeriod, SelectedHistoryProgress,
+    SelectedHistoryRange, SelectedHistoryReadError, SelectedHistoryRequest,
+};
+
 pub use history_metadata::{
     ArchivalMethod, CalendarOccurrenceCodec, HistoryExtrema, HistoryTag, HistoryTagsCodec,
     HistoryTagsReply, HistoryTagsRequest, MinMaxCodec, MinMaxReply, MinMaxRequest, OccurrenceTime,

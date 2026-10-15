@@ -8,8 +8,9 @@ Registry source/commit and package validation are recorded in RELEASE.md.
 1.0; compatible additions may ship in patch releases. Re-run the extension and
 lifecycle suites on every dependency upgrade.
 
-Requested upstream improvements and their eventual adoption are tracked in
-[the etherbird upgrade work package](OUTSTANDING_WORK.md#adopt-upstream-etherbird-lifecycle-improvements).
+The published etherbird 0.4.2 dependency is adopted; ongoing dependency and
+regression responsibilities are tracked in
+[the transport and regression backlog](OUTSTANDING_WORK.md#transport-and-regression-gaps).
 etherbird 0.4.1 supplies terminal lifecycle failures, operation retain/recover
 classification, checked configuration, post-stop cache release, bounded FIFO and
 single-attempt call/readiness timeouts. Rocsteady retains
@@ -35,7 +36,9 @@ from separate requests could interleave with the heartbeat. Session now has an
 ownership mutex acquired for the entire setup/workflow scope. All ordinary Session
 requests and heartbeats acquire that same mutex. Its inner stream mutex retains
 the existing exchange cancellation/decoding guard. Unsolicited SRBX dispatch occurs
-inside this reader; there is no competing reader. Idle reception remains deferred.
+inside this reader; there is no competing reader. Opt-in caller-driven
+`Client::srbx_poller(interval)` receives idle signals through bounded serialized
+polls; see [SRBX acknowledgement and idle polling](LOGS.md#explicit-srbx-acknowledgement-and-idle-polling).
 
 `ManagedContext` has private construction, no stream/Session accessor, and cannot
 be cloned. Exchanges borrow it mutably. Its lifetime is bounded by the framework's
@@ -310,3 +313,44 @@ still enforce typed output shape. Range reads hold one generation, obey budgets
 and expose confirmed pages on interruption. HistoryChanged is a healthy observed
 index-change outcome, not a malformed frame or a durable-gap proof.
 See [history contracts and preset evidence](HISTORY.md).
+
+## Multi-point history
+
+OP-136 read_multi_history and read_multi_history_with_codec use the same guarded
+Session/Client/ManagedContext boundary. MultiHistoryCodec is a public contextual
+codec; profiles may override decode_multi_history. Ordinary results retain request,
+period/point-shape and current-index validation. MultiHistoryRange keeps one
+exclusive generation, bounded period pages and confirmed failure progress. All
+selected points require coherent explicit policy geometry. No implicit replay,
+resume, snapshot or durable-continuity claim is made. See [contracts and evidence](MULTI_HISTORY.md).
+
+## Day-oriented history
+
+OP-137/138 read_day_indices/read_history_day and _with_codec methods use the same
+Session/Client/ManagedContext retirement guard. DayIndicesCodec/DayHistoryCodec
+are named public defaults based on Tables 2-20/21; profiles may override
+decode_day_indices/decode_history_day, including inside indexed workflows. Per-call
+codecs may attach caller-supplied context without asserting device date semantics.
+Request-layout alternatives use Operation/DecodedOperation. No point byte is
+invented for OP-137 and no year is inferred.
+
+read_history_day_indexed explicitly selects an exclusive OP-137/135 workflow with
+caller geometry, coherent column planning, confirmed progress and final mapping
+recheck. It never runs automatically after an OP-138 failure. Caller-selected
+continuity cannot suppress a changed final day mapping or mandatory validation.
+See [day contracts and extension evidence](DAY_HISTORY.md).
+
+## History-information commands
+
+OP-139 read_configured_history/read_selected_history and their _with_codec variants
+use the shared Session/Client/ManagedContext retirement guard. Named public
+ConfiguredHistoryCodec/SelectedHistoryCodec follow Table 2-22; profiles can override
+decode_configured_history/decode_selected_history, including within ranges. Typed
+output retains request, selection/period shape, timestamp presence and known-index
+bounds. Wire-layout variants use the existing Operation/DecodedOperation seam.
+
+SelectedHistoryRange holds one exclusive generation, preserves point order and
+uses the public geometry policy seam for all points. Optional inventory checks
+observe membership and before/after changes without claiming atomicity or cached
+identity. All outcomes retain cancellation retirement, bounded budgets and no
+implicit replay/resume. See [contracts and evidence](HISTORY_INFORMATION.md).
