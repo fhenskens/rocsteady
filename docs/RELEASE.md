@@ -29,12 +29,15 @@ Version 0.1.2 validation: 168 all-feature/all-target tests, 16 doctests, strict 
 formatting, the discovery example, all-feature package verification and an
 extracted-package consumer. The user confirmed hosted stable Linux/macOS/Windows
 CI passed for release commit `a939ac1b150cd75d76c789b0dc35f7ca9f22c2de` on
-2026-10-15. This is user-reported evidence; private Actions results were not
-independently accessible from this session.
+2026-10-15. After GitHub CLI authentication became available, all three jobs
+were independently verified successful in the
+[release-commit CI run](https://github.com/fhenskens/rocsteady/actions/runs/38669475919).
 
 The clean-commit publication dry-run and crates.io upload succeeded. The downloaded
 83-file registry archive records that exact clean release commit; annotated tag
-`v0.1.2` is pushed. A GitHub release page remains pending API authentication.
+`v0.1.2` is pushed. The published
+[GitHub release](https://github.com/fhenskens/rocsteady/releases/tag/v0.1.2)
+contains the changelog, validation summary and interoperability limitations.
 Physical-controller and actual serial interoperability remain unverified.
 Output writes, full PT completion and DEC-10.07 closure remain open.
 The published-release evidence below is retained with its original scope/counts.

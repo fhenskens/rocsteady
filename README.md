@@ -71,8 +71,8 @@ operations can perform side effects; they are not automatically replayed.
 
 Local macOS/stable validation passes 168 all-feature tests, 16 doctests, strict
 Clippy, fixture examples, package verification and an extracted-package consumer.
-The user confirmed stable Windows/Linux/macOS CI passed for the published 0.1.2
-release commit `a939ac1`. See the release record for the evidence source.
+Hosted stable Windows/Linux/macOS CI passed for the published 0.1.2
+release commit `a939ac1`, independently verified through GitHub CLI. See the release record for the evidence source.
 Physical ROC hardware and actual serial exchanges have not been validated. The simulator
 is a deterministic fault-injection fixture, not a full ROC800 emulator.
 

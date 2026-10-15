@@ -18,8 +18,9 @@ See [extension acceptance](EXTENSIBILITY.md), [catalog](CATALOG.md),
 
 Version 0.1.2 local validation passes 168 all-feature/all-target tests, 16 doctests,
 strict Clippy, formatting, fixture examples, package verification and an extracted
-external consumer. The user confirmed hosted stable Linux/macOS/Windows CI passed
-for release commit `a939ac1`; the published archive matches that clean commit.
+external consumer. Hosted stable Linux/macOS/Windows CI passed for release commit
+`a939ac1`, independently verified through GitHub CLI; the published archive matches
+that clean commit. The 0.1.2 GitHub release page is published.
 Physical-controller and actual serial exchanges remain
 unvalidated. [Release evidence](RELEASE.md) preserves exact provenance and gates.
 
@@ -181,8 +182,8 @@ completed documentation tasks remain in the changelog and release record.
 For each subsequent release, review final scope/changelog, run hosted stable
 Linux/macOS/Windows checks for the release commit, and verify the reviewed clean
 package and publication dry-run. Completed 0.1.2 evidence is in [RELEASE.md](RELEASE.md).
-- [ ] Create the pending published-release GitHub release page when API authentication
-  is available. Publication/tag evidence is already recorded separately.
+- [ ] Backfill GitHub release pages for historical 0.1.0/0.1.1 if desired; their
+  crates.io publication/tag evidence is already recorded. The 0.1.2 page is complete.
 - [ ] Record physical evidence before making production compatibility claims.
 
 Use stable Rust and ordinary experimental 0.x versions. The dependency remains
