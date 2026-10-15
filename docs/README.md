@@ -19,8 +19,8 @@ full-baseline requirements and software evidence from physical validation.
 
 1. [Coverage](COVERAGE.md): implemented behavior and current evidence.
 2. [Roadmap](OUTSTANDING_WORK.md): milestones, dependencies and release gates.
-3. [Extensibility plan](EXTENSIBILITY.md#first-implementation-slice): delivered
-   managed contracts, first-slice evidence and remaining extension acceptance tasks.
+3. [Extensibility plan](EXTENSIBILITY.md): delivered boundaries and remaining
+   EXT acceptance requirements; implementation contracts live in MANAGED_EXTENSIONS.md.
 4. [Current decision register](reference/DECISIONS.md): delivery dispositions,
    open questions and evidence required for the selected work.
 5. [Service work packages](SPEC_WORK_PLAN.md) and
@@ -31,6 +31,8 @@ full-baseline requirements and software evidence from physical validation.
 
 | Document | Authoritative within this repository for |
 | --- | --- |
+| [Usage](USAGE.md) | Credentials, reads, errors, serial configuration and runnable snippets |
+| [Managed contracts](MANAGED_EXTENSIONS.md) | Public extension ownership, deadlines, cancellation and generation rules |
 | [Coverage](COVERAGE.md) | Current implemented support and limitations |
 | [Roadmap](OUTSTANDING_WORK.md) | Delivery order, dependencies and product/release gates |
 | [Extensibility](EXTENSIBILITY.md) | Delivered/planned extension boundaries and external-consumer acceptance |
@@ -39,6 +41,8 @@ full-baseline requirements and software evidence from physical validation.
 | [Catalog](CATALOG.md) | Selected source-audited parameter metadata, discovery policies, per-variant fixtures and explicit firmware/hardware limitations |
 | [Logs and SRBX](LOGS.md) | Typed records, bounded paging/checkpoints, explicit acknowledgement outcomes and idle polling |
 | [Architecture](ARCHITECTURE.md) | Existing ownership, recovery and stream behavior |
+| [Release evidence](RELEASE.md) | Publication, version policy, repeatable checks and validation provenance |
+| [Dependency audit](DEPENDENCIES.md) | Locked dependency licenses and package contents |
 | [Hardware](HARDWARE.md) | Channel prerequisites and physical-validation requirements |
 | [Reference index](reference/README.md) | Normative source identity and research navigation |
 | [Decision register](reference/DECISIONS.md) | Current DEC dispositions and closure evidence |
@@ -46,11 +50,12 @@ full-baseline requirements and software evidence from physical validation.
 Work plans do not replace the vendor wire specification. The research records
 explain evidence and its limitations; they do not establish hardware compatibility.
 
-For published 0.1.0, see [usage and errors](USAGE.md),
-[managed API contracts](MANAGED_EXTENSIONS.md), [release evidence](RELEASE.md)
-and the [dependency/license inventory](DEPENDENCIES.md). Hosted Windows/Linux/macOS
-CI for 0.1.0 was confirmed by the user; the release record distinguishes this
-from independently observed local checks. Physical controller evidence remains pending.
+Keep the layers distinct: usage/contracts describe supported APIs, coverage and
+catalog manifests describe implemented scope, work plans describe remaining
+acceptance, and reference documents preserve source evidence and unresolved
+questions. Historical research is retained for provenance; current dispositions
+come from the decision register. Published release checks do not establish
+physical-controller interoperability.
 
 ## Working on a slice
 

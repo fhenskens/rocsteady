@@ -54,22 +54,11 @@ replace these presets without forking. Unknown procedures remain user-supplied;
 framework guarantees and supplemental scope decisions remain explicit prerequisites.
 See [the ambiguity delivery policy](EXTENSIBILITY.md#handling-ambiguity-during-delivery).
 
-Use these documents together:
-
-| Document | Purpose |
-| --- | --- |
-| This roadmap | Delivery order, dependencies, product workflows, transport and release work |
-| [Documentation guide](README.md) | Starting point, reading order and document responsibilities |
-| [Current decision register](reference/DECISIONS.md) | Current conclusion, delivery disposition and closure evidence for every DEC subquestion |
-| [Extensible client work plan](EXTENSIBILITY.md) | Early extension milestone, framework guarantees and external-consumer acceptance criteria |
-| [Specification work packages](SPEC_WORK_PLAN.md) | All 28 opcode services, command/record variants, core protocol requirements and unresolved specification decisions |
-| [Parameter schema work packages](SCHEMA_WORK_PLAN.md) | All 62 Chapter 3 point-type sections and the per-parameter completion contract |
-| [Coverage](COVERAGE.md) | What is implemented today and its evidence/limitations |
-| [Reference baseline](reference/README.md) | Source identity and revision discipline |
-| [Ambiguity research](reference/AMBIGUITIES.md) and [sources](reference/SOURCES.md) | Evidence, confidence and follow-up for every DEC item |
-| [Second-pass research](reference/SECOND_PASS.md) | Historical corrections, source independence and remaining public research avenues |
-| [Systematic search record](reference/SEARCH_RECORD.md) | Exact queries, per-question outcomes, failed retrievals and remaining lead queue |
-| [Hardware](HARDWARE.md) | Physical-channel prerequisites and validation sequence |
+Use the [documentation guide](README.md) for document responsibilities and the
+[reference index](reference/README.md) for research records. The authoritative
+inventories are the [service work packages](SPEC_WORK_PLAN.md),
+[point-type work packages](SCHEMA_WORK_PLAN.md) and
+[current decision register](reference/DECISIONS.md).
 
 The detailed work packages are required parts of this roadmap. A broad checkbox
 below closes only when its linked OP/PT/CORE variants close. Read the source table
@@ -78,63 +67,27 @@ Update implementation, simulator, evidence and documentation together. Track
 physical evidence independently from software completion, and keep externally
 blocked requirements visible rather than treating them as complete.
 
-Published **0.1.0-alpha.1** on 2026-10-09 after successful stable/MSRV hosted CI
-on Windows, Linux and macOS; see [release evidence](RELEASE.md). That release used
-etherbird 0.3.1. Published 0.1.0 (2026-10-15) uses registry etherbird 0.4.2 and
-adds profiles/codecs, schema-backed reads, discovery, a 130-parameter catalog,
-alarm/event retrieval and explicit SRBX polling/acknowledgement. Current local
-software and package evidence is recorded in [RELEASE.md](RELEASE.md); hosted
-stable-platform checks for release commit `2c43da0` were confirmed by the user.
-Current development supports stable Rust; the historical 1.88 validation is not
-an ongoing compatibility requirement.
-The independent TCP fixture includes a
-committed-effect counter proving lost acknowledgements do not trigger replay.
-
-Current all-feature software suite: **122 tests**, including 12 profile/schema
-cases, 29 discovery/catalog cases, 16 alarm/event cases and 19 SRBX cases. No physical
-controller or actual serial fixture has been tested. The loopback simulator and
-external extension examples are runnable; serial remains compilation-only.
+The [current handoff](#current-handoff--2026-10-15) summarizes the shipped release.
+Detailed support, source constraints and validation belong in [coverage](COVERAGE.md),
+the [catalog](CATALOG.md), [log/SRBX contracts](LOGS.md) and
+[release evidence](RELEASE.md); completed release history is in the
+[changelog](../CHANGELOG.md).
 
 ### Current extension delivery and next work
 
-- [x] Model a committed side effect followed by disconnection; assert no implicit replay.
-- [x] Add immutable explicit profiles, capability/applicability diagnostics, contextual
-  codecs, tighter payload limits and a narrow source-correlation policy.
-- [x] Add schema providers, ordered overrides, access/location validation and bounded
-  opcode-180 read planning with confirmed batch progress on failure.
-- [x] Add an external profile/schema example and independent TCP positive/negative fixtures.
-- [x] Add opcode-100 command 11 with bounded paging and preserved classifications.
-- [x] Add both opcode-50 selectors, three explicitly selected layouts, observed-change
-  checks and generation-bound I/O snapshots; keep DEC-3 contradictions explicit.
-- [x] Add the first 30 source-audited PT-91/101/103/109 catalog entries and independent
-  TCP reads for every entry; demonstrate discovery-backed reads without manual types.
-- [x] Add all 20 PT-136 clock read widths, singleton addressing and source-based
-  firmware gates, with independent literals/TCP, simulator and consumer evidence.
-  Rich metadata/writes and the disputed end-week constraint remain open.
-- [x] Add 36 PT-91/95/139 foundation read fields, explicit port/module ordinals,
-  Ethernet restrictions, firmware gates and catalog consistency checks.
-- [x] Add all PT-101/103 read widths, firmware gates, enum/alarm-bit/fixed-unit
-  annotations and explicit calibration write caveats; independent TCP and simulator
-  fixtures cover every input field and all three layouts.
-- [x] Implement OP-118/119 fixed log records, bounded windows, caller-confirmed
-  checkpoints and explicit anchor-checked resume; retain raw/incomplete values
-  and documented continuity limits. See [log evidence](LOGS.md).
-- [x] Add explicit consumed-alarm acknowledgement with staged outcomes and opt-in
-  bounded idle SRBX polling. Verify equality-based pending state, notification lag,
-  lost replies and no replay; keep caller ingestion/identity contracts explicit.
-- [ ] Expand catalog parameters/tables and independently verified device/firmware
-  applicability and discovery/bootstrap policies (remaining M0/M1).
-- [ ] Implement schema-aware write planning alongside the typed write/outcome work (M4).
-- [ ] Complete remaining EXT-1 authentication applicability/logout and EXT-2
-  device-specific presets supported by source evidence; do not invent disputed codecs.
-- [x] Release 0.1.0; user confirmed its hosted platform matrix passed.
+Profiles/codecs, schema-backed reads, discovery, catalog reads and log/SRBX APIs
+are shipped. Exact delivered and remaining EXT acceptance items are tracked in
+[EXTENSIBILITY.md](EXTENSIBILITY.md), rather than repeated as a completed chronology here.
 
-Profiles, firmware identity and layouts are explicitly caller-selected. Snapshot-derived
-catalogs/plans reject replacement generations. No automatic firmware discovery or new
-physical compatibility claim is introduced. Full M0-E and service/schema conformance
-remain open. The catalog is partial; [CATALOG.md](CATALOG.md) records exact source,
-metadata, fixtures, assumptions and missing serial/hardware evidence. Exact completed
-subitems are tracked in [EXTENSIBILITY.md](EXTENSIBILITY.md).
+- [ ] Expand catalog coverage and source-backed device/firmware applicability and
+  discovery/bootstrap policies (remaining M0/M1).
+- [ ] Add schema-aware write planning with typed writes and explicit outcomes (M4).
+- [ ] Complete protected discovery/authentication applicability, logout, identity/cache
+  policies and source-supported presets; keep unresolved device procedures explicit.
+
+Profiles, firmware identity and layouts remain caller-selected. Snapshot-derived
+catalogs/plans reject replacement generations. Full M0-E, complete point-table
+conformance and physical compatibility remain open.
 
 ## Completion rules
 
@@ -494,44 +447,15 @@ from hardware evidence.
 
 ## Adopt upstream etherbird lifecycle improvements
 
-Historical 0.4.1 migration record below. The current helper/refactor adoption
-uses published registry 0.4.2 and passes local stable suites, package and consumer
-checks. Rocsteady 0.1.0 is published; the user confirmed its hosted CI passed.
-Historical framework release:
-[etherbird 0.4.1](https://github.com/fhenskens/etherbird/releases/tag/v0.4.1).
+Completed for 0.1.0 with published registry etherbird 0.4.2. See the
+[changelog](../CHANGELOG.md) and [release record](RELEASE.md) for adoption and
+validation evidence; there is no remaining sibling-path migration task.
 
-- [x] EB-ROC-1: framework terminal lifecycle failures replace the authentication
-  latch/gate. Credential-free errors, immutable registration and stop precedence remain.
-- [x] EB-ROC-2: retain/recover operation policies replace nested healthy results.
-  Healthy device/local errors retain the session; malformed/interrupted exchanges retire.
-- [x] EB-ROC-3: delegate framework backoff validation and use checked pool construction;
-  retain ROC address, queue, heartbeat, call/wire and positive hook deadline policies.
-- [x] EB-ROC-4: adopt post-stop cache/entry release; keep explicit Session stream/state
-  teardown. External handles and abandoned hooks may still retain objects.
-- [x] Replace the local FIFO with BoundedFifoQueue and the call timeout/shutdown wrapper
-  with connected_with_timeout/execute_with_timeout. Preserve authentication error mapping.
-- [x] Use registry 0.4.1 in Cargo.toml/Cargo.lock and independent consumer scripts.
-- [x] Update guides, dependency audit and changelog with actual adopted APIs.
-- [x] Supported-platform CI confirmed by the user for 0.1.0 with registry 0.4.2.
-- [x] Publish rocsteady 0.1.0 after release review.
+etherbird owns lifecycle, admission, call deadlines and awaited shutdown. ROC
+framing/validation, authentication procedures, session teardown and state,
+heartbeat/reader coordination and remote-outcome rules remain in rocsteady.
+Framework delivery does not close the remaining protocol/extension backlog.
 
-Windows stable and Rust 1.88 pass 44 tests and nine doctests against registry 0.4.1;
-strict Clippy, fixture examples, package verification and the extracted-package
-consumer pass. The shutdown ownership regression checks cache/entry release,
-retained external handles and closed sessions. That migration recorded a registry
-checksum with no path override; the newer 0.4.2 helper integration also uses the registry source.
-Queue cancellation pruning and active-job destruction are
-asynchronous; awaited stop drains tracked jobs. Calls never replay.
-
-etherbird's exact release commit 7a9e63d4cbba7098d4f0a093a8a14b4f0619d60a passed
-[cross-platform CI](https://github.com/fhenskens/etherbird/actions/runs/37925614763)
-and [real MQTT broker verification](https://github.com/fhenskens/etherbird/actions/runs/37925880687)
-before publication. Those historical results validate etherbird separately from
-rocsteady's user-confirmed 0.1.0 hosted CI.
-
-ROC framing/codecs, authentication procedures, heartbeat/reader coordination,
-exchange/workflow cancellation poisoning and generation/remote-handle rules remain
-here. Framework completion does not close outstanding protocol/extension work.
 ## Recommended next slice
 
 **Expand read-only catalog coverage to PT-102 discrete outputs and PT-104 analog

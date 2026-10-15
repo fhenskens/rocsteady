@@ -2,7 +2,7 @@
 
 Status: managed EXT-1/4/5 slice plus explicit EXT-2 profiles/codecs and EXT-3
 schema-backed reads implemented. Remaining device presets, write planning and
-authentication acceptance tasks stay open. Updated 2026-10-09.
+authentication acceptance tasks stay open. Updated 2026-10-15.
 This is the early delivery milestone in [the roadmap](OUTSTANDING_WORK.md).
 The published etherbird crate remains responsible for lifecycle supervision,
 admission, exclusive leases, recovery and awaited shutdown.
@@ -167,63 +167,29 @@ framework contract; unrestricted plugin code is not a substitute for ownership.
 
 ## First implementation slice
 
-Contracts, dependency audit, evidence and remaining limitations are recorded in
-[Managed extension contracts](MANAGED_EXTENSIONS.md). The runnable external example
-is [managed_extensions](../examples/managed_extensions.rs); regression cases are
-in [extensions](../tests/extensions.rs). This does not close full EXT acceptance.
+Delivered: the managed exchange boundary supports custom setup, typed operations
+and exclusive workflows. Contracts live in [MANAGED_EXTENSIONS.md](MANAGED_EXTENSIONS.md);
+examples and regressions are in [managed_extensions](../examples/managed_extensions.rs)
+and [tests/extensions.rs](../tests/extensions.rs). Later profile/schema and discovery
+fixtures exercise those seams through public APIs, including preset replacement.
 
-Scope: EXT-5 contracts and the managed exchange boundary needed by EXT-1/4.
-Demonstrate custom setup, a typed operation and a two-exchange fixture workflow
-from an external consumer. The subsequent EXT-2/3 read slice is now implemented above.
-No disputed device codec is required for this slice.
+Verified contracts include exclusive ownership, bounded admission/deadlines,
+healthy rejection versus malformed-response retirement, cancellation/stop,
+generation-local state, immutable registration and no implicit replay. The
+[changelog](../CHANGELOG.md) records delivery; [release evidence](RELEASE.md)
+records local and user-confirmed hosted checks separately.
 
-Before fixing public signatures, record these decisions here or in a linked design
-document and check them against the existing architecture:
-
-| Contract | Required decision and validation |
-| --- | --- |
-| Ownership and lifetimes | One managed exclusive context per setup/workflow; exchanges borrow it; no stream/context escapes. Demonstrate async lifetime and Send/Sync ergonomics externally. |
-| Admission and deadlines | Retain bounded etherbird admission and lifecycle setup deadlines; specify overall workflow and per-exchange deadlines. Test queued and active timeouts separately. |
-| Error classification | Separate local validation, healthy device rejection, malformed typed decoding and transport failure; specify stream retirement for each. |
-| Cancellation and stop | Interrupted exchanges retire their generation; dropped work releases ownership; stop cancels/drains work and is awaited. Test late replies. |
-| Generation state | Setup reruns on replacement; keys/handles remain generation-local. Workflows cannot silently resume or replay side effects across replacement. |
-| Reader interaction | Heartbeats and unsolicited dispatch share ownership rules; competing readers cannot consume workflow responses. Idle reception is a separate deliverable. |
-| Registration and compatibility | Choose immutable registration or explicit invalidation; define dependency/API compatibility and secret-safe diagnostics. |
-
-Implementation sequence:
-
-1. Audit Client/Session/Connector and published etherbird interfaces against these
-   contracts; record any missing framework capability before exposing it.
-2. Implement the minimum scoped managed exchange context and typed operation,
-   retaining existing APIs and legacy login/clock readiness defaults.
-3. Use that boundary for a custom setup strategy and two-exchange workflow,
-   keeping the workflow in one generation under exclusive ownership.
-4. Add external-consumer fixture examples and independent integration cases for
-   rejection, malformed decoding, competing clones, deadlines, cancellation,
-   recovery and stop. Test disconnect after a simulated side effect without replay.
-5. Update coverage, EXT-1/4/5 subitems and relevant decision dispositions with exact
-   evidence links; keep unfinished requirements and unresolved DEC rows open.
-
-Alpha review adds typed DecodeError, exclusively owned state destroyed on disconnect,
-checked GenerationValue handles, required-state errors and terminal authentication
-policy. Credential-provider/recovery, README/usage doctests and extracted-package
-consumer checks are recorded in [release evidence](RELEASE.md). Explicit device
-logout remains unsupported; changed credentials require stopped-client replacement.
-
-Slice exit: an external consumer compiles and runs all three examples without
-crate-private access, and ownership/recovery checks pass. This closes only
-evidenced subitems; full EXT-1/4/5 acceptance and M0-E require their remaining
-checklist items. Applicability metadata and device logout remain explicit design tasks.
+EXT-4/5 are delivered. Remaining EXT-1/2/3 requirements stay in their checklists
+above: protected discovery/authentication applicability, logout/credential changes,
+framing/preset evidence, occurrence-time semantics, identity/cache policy and
+schema-aware write planning. A delivered extension seam does not establish a
+complete device procedure or built-in conformance.
 
 ## Delivery order
 
-1. Write EXT contracts and map known DEC questions to seams and remaining framework requirements.
-2. Implement EXT-1 and EXT-4 using existing Session/Connector paths and etherbird ownership.
-3. Implement EXT-2 and EXT-3, then exercise all seams from outside the crate.
-   Implement sufficiently specified alternatives as predefined extensions using
-   these interfaces; demonstrate replacing one preset from the external consumer.
-4. Ship supported defaults and extension guides once contract checks pass; continue typed services and built-in catalogs.
-5. Promote independently evidenced community solutions as verified built-ins.
-
-Do not attempt complete enhanced authentication, speculative file/tunnel formats
-or a universal firmware dictionary merely to demonstrate the extension API.
+Continue with the [recommended next slice](OUTSTANDING_WORK.md#recommended-next-slice)
+and the open EXT checklist items, using current [managed contracts](MANAGED_EXTENSIONS.md).
+Promote independently evidenced device behavior into replaceable named presets;
+keep unsupported and provisional behavior explicit. Speculative enhanced login,
+file/tunnel formats and a universal firmware dictionary are not prerequisites
+for unrelated, sufficiently specified services.
