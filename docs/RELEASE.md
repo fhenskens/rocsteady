@@ -3,7 +3,8 @@
 ## 0.1.2 I/O and history — 2026-10-15
 
 Version 0.1.2 adds 72 PT-102/104/105 read fields, bringing the catalog to 202 entries,
-and includes requirements-to-tests traceability. Publication and tag verification have not yet been recorded.
+and includes requirements-to-tests traceability. It is published on crates.io,
+with annotated tag `v0.1.2` pushed.
 All 27 DO, 17 AO and 28 pulse-input read fields have independent literal/TCP coverage, source
 access/range/version assertions, enum/bit/unit metadata and explicit constraints.
 Tests cover every layout, firmware boundaries, malformed replies, device errors,
@@ -26,8 +27,15 @@ is reported explicitly; no gap-free, automatic-resume or physical claim is made.
 
 Version 0.1.2 validation: 168 all-feature/all-target tests, 16 doctests, strict Clippy,
 formatting, the discovery example, all-feature package verification and an
-extracted-package consumer. These are local software checks; hosted CI and
-physical-controller/serial evidence have not been established for 0.1.2.
+extracted-package consumer. The user confirmed hosted stable Linux/macOS/Windows
+CI passed for release commit `a939ac1b150cd75d76c789b0dc35f7ca9f22c2de` on
+2026-10-15. This is user-reported evidence; private Actions results were not
+independently accessible from this session.
+
+The clean-commit publication dry-run and crates.io upload succeeded. The downloaded
+83-file registry archive records that exact clean release commit; annotated tag
+`v0.1.2` is pushed. A GitHub release page remains pending API authentication.
+Physical-controller and actual serial interoperability remain unverified.
 Output writes, full PT completion and DEC-10.07 closure remain open.
 The published-release evidence below is retained with its original scope/counts.
 

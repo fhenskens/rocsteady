@@ -6,7 +6,7 @@ Implemented behavior belongs in [coverage](COVERAGE.md), executable evidence in
 
 ## Current handoff — 2026-10-15
 
-**0.1.2** is the release represented by this codebase. It adds PT-102/104/105 read coverage
+**0.1.2** is published on crates.io with tag `v0.1.2`. It adds PT-102/104/105 read coverage
 (202 catalog parameters total), OP-105/108 history metadata and OP-135 single-point
 history reads, including bounded paging and explicit partial progress.
 
@@ -18,8 +18,9 @@ See [extension acceptance](EXTENSIBILITY.md), [catalog](CATALOG.md),
 
 Version 0.1.2 local validation passes 168 all-feature/all-target tests, 16 doctests,
 strict Clippy, formatting, fixture examples, package verification and an extracted
-external consumer. Hosted CI evidence for the published release does not establish
-0.1.2 CI success. Physical-controller and actual serial exchanges remain
+external consumer. The user confirmed hosted stable Linux/macOS/Windows CI passed
+for release commit `a939ac1`; the published archive matches that clean commit.
+Physical-controller and actual serial exchanges remain
 unvalidated. [Release evidence](RELEASE.md) preserves exact provenance and gates.
 
 ## Scope and delivery policy
@@ -177,9 +178,9 @@ completed documentation tasks remain in the changelog and release record.
   including explicit recovery/progress and ownership semantics when implemented.
 - [ ] Cross-check every baseline OP/PT/DEC row before claiming full coverage;
   selected catalog manifests and extension seams do not close the baseline.
-- [ ] Before publishing 0.1.2, review final scope/changelog, run hosted stable
-  Linux/macOS/Windows checks for the release commit, and verify the reviewed clean
-  package and publication dry-run. Local 0.1.2 checks are recorded in [RELEASE.md](RELEASE.md).
+For each subsequent release, review final scope/changelog, run hosted stable
+Linux/macOS/Windows checks for the release commit, and verify the reviewed clean
+package and publication dry-run. Completed 0.1.2 evidence is in [RELEASE.md](RELEASE.md).
 - [ ] Create the pending published-release GitHub release page when API authentication
   is available. Publication/tag evidence is already recorded separately.
 - [ ] Record physical evidence before making production compatibility claims.
