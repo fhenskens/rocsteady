@@ -1,6 +1,6 @@
 # Experimental monitoring release checklist
 
-## 0.1.1 documentation patch — 2026-10-15
+## Published 0.1.1 documentation patch — 2026-10-15
 
 This patch declares `https://docs.rs/rocsteady` as the package documentation URL,
 enables all-feature docs.rs builds and adds API documentation generation to CI.
@@ -10,6 +10,11 @@ Local patch checks pass default/all-feature tests (122 all-feature cases), 14
 doctests, strict Clippy, all-feature rustdoc, all fixture examples, package
 verification and the extracted-package consumer. Hosted CI is triggered by the
 release push; its result has not been independently inspected.
+
+The clean-commit publication dry-run and crates.io upload succeeded; `v0.1.1` is
+pushed. The downloaded registry package was verified to carry the documentation
+URL, all-feature docs.rs configuration and exact clean publication commit. Hosted
+docs.rs generation is automatic after publication.
 
 ## Published 0.1.0 — 2026-10-15
 

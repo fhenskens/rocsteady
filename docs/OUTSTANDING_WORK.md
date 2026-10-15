@@ -6,7 +6,8 @@ protocol support and [HARDWARE.md](HARDWARE.md) records channel validation.
 
 ## Current handoff — 2026-10-15
 
-- **Shipped:** 0.1.0 is on crates.io and tagged. It includes managed recovery,
+- **Shipped:** 0.1.1 is on crates.io and tagged. It adds documentation metadata
+  to 0.1.0; runtime behavior is unchanged. The client includes managed recovery,
   extension contracts, explicit profiles/codecs, schema-backed reads, OP-50/100
   discovery, the 130-parameter catalog, OP-118/119 alarm/event retrieval and
   explicit SRBX polling/consumed-alarm acknowledgement. See [coverage](COVERAGE.md).

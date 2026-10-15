@@ -11,7 +11,7 @@ same contracts, so callers can replace them with their own implementations.
 
 Start with the [current handoff](OUTSTANDING_WORK.md#current-handoff--2026-10-15)
 and [recommended next slice](OUTSTANDING_WORK.md#recommended-next-slice).
-0.1.0 is published; no feature implementation is in progress. PT-102/104 read
+0.1.1 is published (documentation patch); no feature implementation is in progress. PT-102/104 read
 coverage is recommended next. The handoff distinguishes shipped work, outstanding
 full-baseline requirements and software evidence from physical validation.
 
