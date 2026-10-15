@@ -42,6 +42,7 @@ async fn disconnect_after_observed_request_does_not_replay_workflow() {
 }
 #[tokio::test]
 async fn active_deadline_queued_deadline_and_stop() {
+    // POL-EXT-SCOPE-RETIREMENT: timeout/stop preserve the adapter retirement contract.
     let (peer, client) = fixture(Duration::from_millis(40));
     client.connected().await.unwrap();
     peer.fault.store(4, Ordering::SeqCst);
@@ -84,6 +85,7 @@ impl Workflow for HoldBetween {
 }
 #[tokio::test]
 async fn competing_clone_cannot_enter_between_steps_and_cancellation_retires() {
+    // POL-EXT-SCOPE-RETIREMENT: upstream scope guard retains ownership and invalidates on abort.
     let (peer, client) = fixture(Duration::from_secs(2));
     client.connected().await.unwrap();
     let (entered, wait) = tokio::sync::oneshot::channel();
@@ -172,6 +174,7 @@ impl Workflow for UseHandle {
 }
 #[tokio::test]
 async fn stale_handle_and_missing_state_fail_locally_without_reconnecting() {
+    // POL-EXT-GENERATION-IDENTITY: upstream binding retains local stale-handle rejection.
     let (peer, client) = fixture(Duration::from_secs(2));
     let handle = client.workflow(BindHandle).await.unwrap();
     peer.fault.store(3, Ordering::SeqCst);
@@ -384,4 +387,25 @@ fn invalid_lifecycle_deadlines_and_retry_bounds_fail_at_construction() {
             Err(Error::InvalidConfig(_))
         ));
     }
+}
+
+#[tokio::test]
+async fn generation_bound_handles_reject_other_clients_without_io_or_recovery() {
+    // POL-EXT-GENERATION-IDENTITY: upstream opaque binding plus local readiness.
+    let (_first_peer, first) = fixture(Duration::from_secs(2));
+    let (second_peer, second) = fixture(Duration::from_secs(2));
+    let handle = first.workflow(BindHandle).await.unwrap();
+    second.connected().await.unwrap();
+    let requests = second_peer.requests.load(Ordering::SeqCst);
+    let connections = second_peer.connections.load(Ordering::SeqCst);
+    assert!(matches!(
+        second.workflow(UseHandle(handle)).await,
+        Err(etherbird::Error::Operation(Error::StaleGeneration { .. }))
+    ));
+    assert_eq!(second_peer.requests.load(Ordering::SeqCst), requests);
+    assert_eq!(second_peer.connections.load(Ordering::SeqCst), connections);
+    assert_eq!(second.operation(FixtureClock).await.unwrap(), 2026);
+    assert_eq!(second_peer.connections.load(Ordering::SeqCst), connections);
+    first.stop().await;
+    second.stop().await;
 }

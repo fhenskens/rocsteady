@@ -267,3 +267,12 @@ The all-catalog fixture now checks 332 entries. The CI monitoring example uses
 finite caller-selected attempts/intervals and its explicit disconnect demo; no
 background monitoring/replay policy is added to Client. [MVS contracts](MVS.md)
 and DEC-10.09 keep software evidence separate from source/physical closure.
+
+## Etherbird adapter composition (2026-10-15)
+
+These are library ownership policies, not additional ROC wire requirements.
+
+| Stable ID | Source | Requirement asserted | Executable test |
+| --- | --- | --- | --- |
+| POL-EXT-GENERATION-IDENTITY | Managed extension contract; etherbird 0.4.3 opaque generation binding | A handle from another client fails locally without sending or reconnecting; numeric reporting and live-state checks remain | [generation_bound_handles_reject_other_clients_without_io_or_recovery](../tests/extensions.rs), [stale_handle_and_missing_state_fail_locally_without_reconnecting](../tests/extensions.rs) |
+| POL-EXT-SCOPE-RETIREMENT | Managed ownership contract; etherbird 0.4.3 DisconnectOnDrop | Exclusive ownership spans exchanges; abort between steps retires the generation before subsequent work, without replay | [competing_clone_cannot_enter_between_steps_and_cancellation_retires](../tests/extensions.rs), [active_deadline_queued_deadline_and_stop](../tests/extensions.rs) |

@@ -113,7 +113,7 @@ impl Lifecycle for Hooks {
             return Err(Error::Disconnected);
         }
         *context.state = Some(state);
-        context.complete = true;
+        context.scope.complete();
         Ok(())
     }
     async fn disconnect(&self, session: &Session) -> Result<(), Error> {
@@ -349,7 +349,7 @@ impl Client {
                 {
                     session.connected.send_replace(false);
                 }
-                context.complete = true;
+                context.scope.complete();
                 let healthy_result = match &result {
                     Ok(_) => true,
                     Err(error) => error.preserves_connection(),

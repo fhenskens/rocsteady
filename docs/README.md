@@ -54,6 +54,7 @@ validation; the next slice is release preparation.
 | [Single-point history](HISTORY.md) | OP-135 selectors, bounds/policies, paging and partial progress |
 | [History metadata](HISTORY_METADATA.md) | OP-105/108 contracts, defaults, prebuilt alternatives and evidence |
 | [Logs and SRBX](LOGS.md) | Typed records, bounded paging/checkpoints, explicit acknowledgement outcomes and idle polling |
+| [Shared-library boundaries](EXTRACTION.md) | Adopted etherbird helpers and other extraction candidates with scope/evidence limits |
 | [Architecture](ARCHITECTURE.md) | Existing ownership, recovery and stream behavior |
 | [Release evidence](RELEASE.md) | Publication, version policy, repeatable checks and validation provenance |
 | [Dependency audit](DEPENDENCIES.md) | Locked dependency licenses and package contents |

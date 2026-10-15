@@ -1,5 +1,27 @@
 # Experimental monitoring release checklist
 
+## Etherbird 0.4.3 registry adoption — 2026-10-15
+
+The current checkout adopts registry etherbird 0.4.3 and its opaque generation
+bindings and DisconnectOnDrop ownership guard. Rocsteady retains its public
+GenerationValue API, live-state checks, numeric generation reporting, per-exchange
+RetireOnDrop guard and explicit outcomes/no replay. A cross-client handle
+regression and existing cancellation/stale-handle tests exercise the composition;
+[requirements](REQUIREMENTS.md#etherbird-adapter-composition-2026-10-15) links them.
+[EXTRACTION.md](EXTRACTION.md) records other candidates and their scope boundaries.
+
+Upstream release commit `695b33e0166b0ee63031fe952dcd01abd1d759f3` passed
+[all seven hosted platform/serial jobs](https://github.com/fhenskens/etherbird/actions/runs/38725355730)
+and the clean publication dry-run before publication. The registry package's VCS
+metadata and pushed v0.4.3 tag identify that commit. Earlier dated evidence below
+retains the dependency/version used at the time.
+
+Registry-based local verification passed 244 all-feature/all-target tests, the
+default-feature gate, 22 doctests, strict Clippy, formatting and rustdoc, plus
+package verification, an extracted-package consumer and the bounded polling demo.
+No path override remains. Rocsteady's manifest remains 0.1.3; this is dependency
+adoption and unreleased application work, not a new rocsteady publication.
+
 ## Unreleased MVS and caller-driven polling evidence — 2026-10-15
 
 PT-108 adds 69 read definitions, bringing the catalog to 332 entries. The /67
@@ -202,10 +224,10 @@ and [log/SRBX contracts](LOGS.md) for exact scope.
 
 Use current stable Rust on Linux/macOS/Windows; there is no fixed older-toolchain
 compatibility promise. Rust 1.88 checks below are historical alpha.1 evidence.
-The dependency is published registry **etherbird 0.4.2** with its pool feature;
+The dependency is published registry **etherbird 0.4.3** with its pool feature;
 there is no sibling path override. Cargo.lock pins the validated dependencies.
-Its package VCS commit is `d3431ea84920505a2de3214164b8f8eb82039d70`.
-The subsequent etherbird cleanup is unreleased and is not required by this update.
+Its package VCS commit is `695b33e0166b0ee63031fe952dcd01abd1d759f3`.
+The release includes the generation/scope helpers and preceding internal cleanup.
 
 `ClientConfig.profile` is a new required field in exhaustive struct literals.
 Supply it explicitly or use `..Default::default()` to retain default behavior.

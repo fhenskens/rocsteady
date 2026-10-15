@@ -20,6 +20,7 @@ pub struct Session {
     stream: Mutex<Option<Stream>>,
     ownership: Mutex<()>,
     pub(crate) generation: u64,
+    pub(crate) generation_token: etherbird::Generation,
     state: Mutex<Option<crate::SessionState>>,
     host: Address,
     device: Address,
@@ -71,6 +72,7 @@ impl Session {
             stream: Mutex::new(Some(stream)),
             ownership: Mutex::new(()),
             generation: NEXT_GENERATION.fetch_add(1, Ordering::Relaxed),
+            generation_token: etherbird::Generation::new(),
             state: Mutex::new(None),
             host,
             device,
@@ -103,11 +105,11 @@ impl Session {
 
     pub(crate) async fn managed(&self) -> crate::ManagedContext<'_> {
         let ownership = self.ownership.lock().await;
+        let scope = etherbird::DisconnectOnDrop::new(ownership, &self.connected);
         crate::ManagedContext {
             session: self,
-            complete: false,
+            scope,
             state: self.state.lock().await,
-            _ownership: ownership,
         }
     }
     pub(crate) async fn exchange_operation<T, D>(

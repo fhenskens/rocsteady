@@ -1,6 +1,6 @@
 # Managed extension contracts (setup, profiles, schemas and workflows)
 
-Implemented against published etherbird 0.4.2 from crates.io with the `pool`
+Implemented against published etherbird 0.4.3 from crates.io with the `pool`
 feature, current stable Rust and Tokio 1. All dependency interfaces are public.
 Registry source/commit and package validation are recorded in RELEASE.md.
 `Cargo.lock` identifies the tested dependency versions. Public traits are early
@@ -8,17 +8,20 @@ Registry source/commit and package validation are recorded in RELEASE.md.
 1.0; compatible additions may ship in patch releases. Re-run the extension and
 lifecycle suites on every dependency upgrade.
 
-The published etherbird 0.4.2 dependency is adopted; ongoing dependency and
+The published etherbird 0.4.3 dependency is adopted; ongoing dependency and
 regression responsibilities are tracked in
 [the transport and regression backlog](OUTSTANDING_WORK.md#transport-and-regression-gaps).
 etherbird 0.4.1 supplies terminal lifecycle failures, operation retain/recover
 classification, checked configuration, post-stop cache release, bounded FIFO and
 single-attempt call/readiness timeouts. Rocsteady retains
 stricter positive hook deadlines and explicit stream/generation-state cleanup.
-Version 0.4.2 adds the optional RetireOnDrop adapter helper. Rocsteady
+Version 0.4.3 adds opaque generation bindings and DisconnectOnDrop for exclusive
+scopes; [shared-library boundaries](EXTRACTION.md) describes their adoption.
+Version 0.4.2 added the optional RetireOnDrop adapter helper. Rocsteady
 holds it across the complete exchange and decoder, and explicitly completes
-valid replies or healthy device rejections. Between-exchange workflow cancellation,
-generation state and protocol validation remain here.
+valid replies or healthy device rejections. Rocsteady composes the upstream
+between-exchange scope guard and opaque generation binding; setup state, protocol
+validation and remote-outcome interpretation remain here.
 
 ## Audit and ownership
 

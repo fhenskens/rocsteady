@@ -182,7 +182,7 @@ impl crate::Session {
         })?;
         let mut context = self.managed().await;
         let result = context.acknowledge_alarms(checkpoint).await;
-        context.complete = true;
+        context.scope.complete();
         result
     }
 }

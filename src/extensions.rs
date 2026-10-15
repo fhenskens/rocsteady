@@ -21,9 +21,8 @@ pub trait Operation: Send + Sync + 'static {
 /// ```
 pub struct ManagedContext<'a> {
     pub(crate) session: &'a Session,
-    pub(crate) complete: bool,
+    pub(crate) scope: etherbird::DisconnectOnDrop<'a, tokio::sync::MutexGuard<'a, ()>>,
     pub(crate) state: tokio::sync::MutexGuard<'a, Option<SessionState>>,
-    pub(crate) _ownership: tokio::sync::MutexGuard<'a, ()>,
 }
 impl ManagedContext<'_> {
     pub async fn read_configuration(&mut self) -> Result<crate::SystemConfiguration, Error> {
@@ -251,7 +250,7 @@ impl ManagedContext<'_> {
     pub fn bind<T>(&self, value: T) -> GenerationValue<T> {
         GenerationValue {
             generation: self.generation(),
-            value,
+            value: self.session.generation_token.bind(value),
         }
     }
     pub async fn exchange(&mut self, opcode: u8, data: Vec<u8>) -> Result<Vec<u8>, Error> {
@@ -311,7 +310,7 @@ impl SetupStrategy for LegacySetup {
 /// exposes the value. Extensions must not extract/copy it for unchecked reuse.
 pub struct GenerationValue<T> {
     generation: u64,
-    value: T,
+    value: etherbird::GenerationValue<T>,
 }
 impl<T> GenerationValue<T> {
     pub fn generation(&self) -> u64 {
@@ -327,14 +326,11 @@ impl<T> GenerationValue<T> {
         if !context.session.is_connected() {
             return Err(Error::Disconnected);
         }
-        Ok(&self.value)
-    }
-}
-
-impl Drop for ManagedContext<'_> {
-    fn drop(&mut self) {
-        if !self.complete {
-            self.session.connected.send_replace(false);
-        }
+        self.value
+            .get(&context.session.generation_token)
+            .map_err(|_| Error::StaleGeneration {
+                expected: self.generation,
+                actual: context.generation(),
+            })
     }
 }

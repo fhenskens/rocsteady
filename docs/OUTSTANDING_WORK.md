@@ -25,7 +25,7 @@ source-audited writable subset, explicit partial/uncertain outcomes and no repla
 PT-106/107 temperature and PT-108 multi-variable sensor reads now extend the
 catalog to 332 entries; see [temperature scope](TEMPERATURE.md) and
 [MVS/caller-driven polling contracts](MVS.md). Current development verification passed
-243 all-feature/all-target tests, the default-feature gate and 22 doctests;
+244 all-feature/all-target tests, the default-feature gate and 22 doctests;
 [release evidence](RELEASE.md) records the checks. The dated 0.1.3 history
 evidence remains in that record.
 Strict Clippy, formatting, rustdoc, offline package verification and the extracted
@@ -199,8 +199,11 @@ package and publication dry-run. Completed 0.1.2 evidence is in [RELEASE.md](REL
 - [ ] Record physical evidence before making production compatibility claims.
 
 Use stable Rust and ordinary experimental 0.x versions. The dependency remains
-registry etherbird 0.4.2; no sibling path migration is pending. Publication is a
+registry etherbird 0.4.3; no sibling path migration is pending. Publication is a
 separate release action, not implied by completing this backlog.
+
+Further potentially shared patterns and their ownership boundaries are recorded
+in [EXTRACTION.md](EXTRACTION.md); no additional extraction is committed.
 
 ## Recommended next slice
 

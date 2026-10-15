@@ -129,7 +129,7 @@ completion remains an operation-specific contract; no implicit side-effect repla
 - [x] Distinguish built-in verified, built-in provisional, user-supplied and unavailable capabilities in docs/diagnostics.
 - [x] Publish guides for all four extension seams, including what knowledge/evidence an implementer must supply.
 - [x] Test external implementation ergonomics with a consumer using the published etherbird dependency; examples must not depend on crate-private access.
-- [x] Maintain framework contract tests across dependency upgrades; existing extension tests and new profile/schema tests run against published etherbird 0.4.2. The user confirmed hosted stable Windows/Linux/macOS CI passed for 0.1.0; see RELEASE.md.
+- [x] Maintain framework contract tests across dependency upgrades; existing extension tests and new profile/schema tests run against published etherbird 0.4.3. The user confirmed hosted stable Windows/Linux/macOS CI passed for 0.1.0; see RELEASE.md.
 - [x] Establish a contribution path: source/evidence, independent fixtures, applicable model/firmware, review, simulator/integration tests, then promotion to built-in support.
 - [x] Keep extension compatibility claims separate from the crate's built-in conformance matrix.
 

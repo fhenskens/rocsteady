@@ -5,7 +5,7 @@ registry source manifests for the tracked Cargo.lock, including target-specific
 dependencies. This is a license inventory and package review, not a security
 advisory audit. No dependency source is vendored in the rocsteady package.
 
-Current registry dependency: etherbird 0.4.2 (Apache-2.0), adopted 2026-10-14.
+Current registry dependency: etherbird 0.4.3 (Apache-2.0), adopted 2026-10-15.
 Its published VCS commit matches the reviewed release. Cargo.lock records the
 registry checksum; transitive versions/licenses remain unchanged. Local patched
 checks before publication are separate from registry package/consumer evidence.
@@ -34,7 +34,7 @@ inventory and repeat lifecycle, stable-toolchain, platform and package consumer 
 | cfg-if | 1.0.5 | MIT OR Apache-2.0 |
 | core-foundation | 0.10.1 | MIT OR Apache-2.0 |
 | core-foundation-sys | 0.8.7 | MIT OR Apache-2.0 |
-| etherbird | 0.4.2 | Apache-2.0 |
+| etherbird | 0.4.3 | Apache-2.0 |
 | futures-core | 0.3.34 | MIT OR Apache-2.0 |
 | futures-sink | 0.3.34 | MIT OR Apache-2.0 |
 | io-kit-sys | 0.4.1 | MIT / Apache-2.0 |

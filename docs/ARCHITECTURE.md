@@ -79,8 +79,8 @@ signals through the serialized exchange reader and reuses etherbird stopped watc
 The first EXT-1/4/5 slice now uses the [managed extension contracts](MANAGED_EXTENSIONS.md).
 A Session ownership mutex spans entire setup/workflow scopes and is shared by
 ordinary requests and heartbeats; the inner stream guard still retires incomplete
-exchanges. Cancelled scopes between exchanges signal retirement before releasing
-ownership. Setup state is installed once per generation and accessed by borrowing
+exchanges. Etherbird's DisconnectOnDrop owns that lock guard and signals retirement before
+releasing ownership when a scope is cancelled, including between exchanges. Setup state is installed once per generation and accessed by borrowing
 the scoped context. Registration is immutable; setup is repeated on replacement.
 
 Alarm/event records retain fixed raw bytes alongside typed interpretation. Their
@@ -90,3 +90,8 @@ Checkpoints are caller-confirmed consumed anchors, not durable sequence numbers.
 Explicit resume checks them before and after paging; observed LogChanged errors
 preserve healthy sessions. Neither modulo indices nor matching bytes can prove
 continuity, device identity or permission to acknowledge alarms. See LOGS.md.
+
+Session-local handles use etherbird's opaque Generation/GenerationValue binding
+behind rocsteady's existing numeric-generation/error API and live-state check.
+See [shared-library boundaries](EXTRACTION.md) for adopted helpers and further
+extraction candidates; protocol and remote-outcome semantics remain here.

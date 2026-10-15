@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Adopt etherbird 0.4.3 generation-bound values and interrupted-scope guards,
+  retaining rocsteady's public handle API, live-state checks, explicit outcomes
+  and no automatic replay. Document further shared-library extraction candidates.
+
 - Add all 69 PT-108 multi-variable sensor read definitions, bringing the catalog
   to 332 entries, with raw DP/SP/temperature and module/status metadata, firmware
   gates and explicit per-location 4088 applicability for the configuration counter.
