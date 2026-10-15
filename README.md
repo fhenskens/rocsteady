@@ -293,6 +293,7 @@ package/consumer verification and remaining gates; the [dependency audit](docs/D
 records the locked license inventory. Inspect publication contents with
 `cargo package --list --allow-dirty --locked`.
 
+[API documentation](https://docs.rs/rocsteady) ·
 [Coverage](https://github.com/fhenskens/rocsteady/blob/main/docs/COVERAGE.md) ·
 [Architecture](https://github.com/fhenskens/rocsteady/blob/main/docs/ARCHITECTURE.md) ·
 [Hardware and channels](https://github.com/fhenskens/rocsteady/blob/main/docs/HARDWARE.md) ·

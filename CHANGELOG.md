@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Declare the docs.rs documentation URL in crate metadata and build hosted API
+  documentation with all features, including serial and simulator APIs.
+
 ## 0.1.0 — 2026-10-15
 
 - Add explicit protocol profiles, contextual reply codecs and replaceable

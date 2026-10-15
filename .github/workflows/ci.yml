@@ -18,6 +18,7 @@ jobs:
       - run: cargo test --locked
       - run: cargo test --locked --all-features --all-targets
       - run: cargo test --locked --all-features --doc
+      - run: cargo doc --locked --all-features --no-deps
       - run: cargo clippy --locked --all-features --all-targets -- -D warnings
       - run: cargo run --locked --features simulator --example simulator
       - run: cargo run --locked --example managed_extensions

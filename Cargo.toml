@@ -5,9 +5,13 @@ edition = "2024"
 description = "A Rust client for Emerson ROC Plus devices with automatic reconnection and session recovery"
 license = "Apache-2.0"
 repository = "https://github.com/fhenskens/rocsteady"
+documentation = "https://docs.rs/rocsteady"
 keywords = ["roc-plus", "emerson", "industrial", "async", "reconnect"]
 categories = ["network-programming", "asynchronous"]
 include = ["/src/**", "/tests/**", "/examples/**", "/Cargo.toml", "/Cargo.lock", "/README.md", "/LICENSE", "/CHANGELOG.md", "/docs/**"]
+
+[package.metadata.docs.rs]
+all-features = true
 
 [features]
 default = []
