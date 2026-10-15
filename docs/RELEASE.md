@@ -1,5 +1,16 @@
 # Experimental monitoring release checklist
 
+## 0.1.1 documentation patch — 2026-10-15
+
+This patch declares `https://docs.rs/rocsteady` as the package documentation URL,
+enables all-feature docs.rs builds and adds API documentation generation to CI.
+No Rust source, public API or dependency versions change. Existing documentation
+cleanup is included; 0.1.0's runtime behavior and physical-validation limits apply.
+Local patch checks pass default/all-feature tests (122 all-feature cases), 14
+doctests, strict Clippy, all-feature rustdoc, all fixture examples, package
+verification and the extracted-package consumer. Hosted CI is triggered by the
+release push; its result has not been independently inspected.
+
 ## Published 0.1.0 — 2026-10-15
 
 [Version 0.1.0](https://crates.io/crates/rocsteady/0.1.0) is a substantial feature update over
@@ -30,7 +41,7 @@ below 1.0 are experimental and may have incomplete protocol coverage or unverifi
 hardware compatibility. Breaking API changes use a new minor version; compatible
 additions and fixes use patch releases. The first ordinary release is
 **0.1.0**, following the historical 0.1.0-alpha.1 prerelease. Cargo.toml and
-Cargo.lock carry published version 0.1.0.
+Cargo.lock now carry the 0.1.1 documentation patch version.
 Error and ErrorKind are non-exhaustive; callers must include fallback match arms.
 
 ## Current software evidence

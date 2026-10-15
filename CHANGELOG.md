@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 — 2026-10-15
 
 - Declare the docs.rs documentation URL in crate metadata and build hosted API
   documentation with all features, including serial and simulator APIs.

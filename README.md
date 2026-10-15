@@ -33,13 +33,13 @@ application-provided byte streams use the same protocol implementation.
 - **State and shutdown:** optional heartbeats detect idle failure, state notifications
   report changes, and awaited shutdown cancels/drains work and closes the channel.
 
-Use the current stable Rust toolchain. Version `0.1.0` is available on crates.io.
+Use the current stable Rust toolchain. The documentation patch release is `0.1.1`.
 All releases below 1.0 are experimental
 and may have incomplete protocol coverage; see the scope below.
 
 ```toml
 [dependencies]
-rocsteady = "0.1.0"
+rocsteady = "0.1.1"
 # From a checkout: rocsteady = { path = "../rocsteady" }
 # Add features = ["serial"] for SerialConnector.
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "time"] }
