@@ -216,7 +216,7 @@ async fn all_layouts_map_logicals_to_physical_tlps_and_preserve_unknown_points()
         let snapshot = client.discover_io(firmware()).await.unwrap();
         assert_eq!(snapshot.point_types().len(), last + 1);
         assert_eq!(snapshot.logical_numbers().len(), last + 1);
-        assert_eq!(snapshot.points().len(), 11); // Five CPU diagnostics, five field points, unknown.
+        assert_eq!(snapshot.points().len(), 14); // Five CPU diagnostics, eight field points, unknown.
         assert!(snapshot.by_location(5).is_none());
         assert_eq!(
             snapshot.by_logical(103, 0).unwrap().tlp(21).unwrap(),
@@ -425,6 +425,30 @@ fn expected_catalog_value(pt: u8, p: u8) -> Value {
         (105, 11) => Value::UInt8(2),
         (105, 10 | 12..=19 | 24..=27) => Value::Float(12.5),
         (105, 23) => Value::Binary(255),
+        (106, 0) => Value::Ascii("RTD SAMPLE".into()),
+        (107, 0) => Value::Ascii("TC SAMPLE ".into()),
+        (106 | 107, 1) => Value::Ascii("C         ".into()),
+        (106, 2 | 6 | 7 | 23 | 30..=32) | (107, 2 | 3 | 8 | 16..=18 | 21) => Value::UInt8(1),
+        (106, 3 | 4) | (107, 5 | 6) => Value::Float(1.0),
+        (106, 5) | (107, 7) => Value::UInt8(99),
+        (106, 8..=13) => Value::UInt16(0x1234),
+        (106, 14..=22) => Value::Float(-10.0),
+        (106, 24..=29) | (107, 9..=15 | 20 | 22) => Value::Float(12.5),
+        (106, 33) | (107, 19) => Value::Binary(255),
+        (106, 34) => Value::Float(3600.0),
+        (106, 35 | 37) => Value::UInt8(4),
+        (106, 36) => Value::UInt8(6),
+        (107, 4) => Value::UInt8(10),
+        (108, 0) => Value::Ascii("MVS SAMPLE".into()),
+        (108, 1 | 7) => Value::UInt8(255),
+        (108, 2) => Value::UInt8(5),
+        (108, 3..=6 | 9 | 25..=27 | 40..=42 | 55..=57 | 62 | 63 | 68) => Value::UInt8(1),
+        (108, 10 | 11 | 28 | 43 | 58) => Value::Binary(255),
+        (108, 8) => Value::Float(1.5),
+        (108, 59 | 60) => Value::UInt8(7),
+        (108, 65) => Value::Float(1.0),
+        (108, 67) => Value::UInt16(0x1234),
+        (108, 12..=24 | 29..=39 | 44..=54 | 61 | 64 | 66) => Value::Float(12.5),
         (109, 0) => Value::Ascii("Battery   ".into()),
         (109, 1) => Value::Ascii("Volts     ".into()),
         (109, 4) => Value::Float(1.0),
@@ -453,10 +477,13 @@ async fn every_catalog_row_reads_independent_literal_values_over_tcp() {
     let peer = DiscoveryFixture::start(0).await;
     let client = client(&peer, IoLayout::Compatibility160);
     let snapshot = client
-        .discover_io(FirmwareVersion::new(3, 40).unwrap())
+        .discover_io(FirmwareVersion::new(3, 60).unwrap())
         .await
         .unwrap();
-    let catalog = Roc800Catalog::from_discovery(snapshot).unwrap();
+    let catalog = Roc800Catalog::from_discovery(snapshot)
+        .unwrap()
+        .with_mvs_4088(128)
+        .unwrap();
     let mut tlps = Vec::new();
     let mut expected = Vec::new();
     let mut keys = std::collections::BTreeSet::new();
@@ -471,6 +498,9 @@ async fn every_catalog_row_reads_independent_literal_values_over_tcp() {
             102 => 48,
             104 => 64,
             105 => 80,
+            106 => 96,
+            107 => 112,
+            108 => 128,
             103 => 16,
             _ => panic!("unreviewed row"),
         };
@@ -491,6 +521,9 @@ async fn every_catalog_row_reads_independent_literal_values_over_tcp() {
             | (102, 0..=5 | 7..=10 | 12..=22 | 26)
             | (104, 0..=5 | 7..=12 | 14 | 15)
             | (105, 0..=5 | 7..=9 | 11..=22)
+            | (106, 0..=3 | 5..=7 | 19 | 20 | 22..=32 | 35..=37)
+            | (107, 0..=5 | 7..=18 | 20..=22)
+            | (108, 0..=6 | 9 | 12 | 19 | 21..=27 | 35..=42 | 50..=57 | 59..=64 | 66)
             | (103, 0..=3 | 5 | 6 | 8..=19 | 22..=31 | 34..=37)
             | (109, 0 | 1 | 7 | 12)
             | (136, 8 | 10..=13 | 15..=18) => Access::ReadWrite,
@@ -505,6 +538,11 @@ async fn every_catalog_row_reads_independent_literal_values_over_tcp() {
                 (139, _) => (2, 2),
                 (103, 36..=38) => (3, 0),
                 (103, 39) => (3, 10),
+                (106, 19) => (3, 0),
+                (107, 21 | 22) => (3, 50),
+                (108, 64 | 65) => (2, 2),
+                (108, 66) => (3, 20),
+                (108, 67 | 68) => (3, 60),
                 (102, 24 | 25) => (1, 10),
                 (102, 26) => (3, 1),
                 (91, 50) => (2, 0),
@@ -515,7 +553,7 @@ async fn every_catalog_row_reads_independent_literal_values_over_tcp() {
         );
         expected.push(value);
     }
-    assert_eq!(tlps.len(), 202);
+    assert_eq!(tlps.len(), 332);
     assert_eq!(
         client
             .read_schema(&catalog, &catalog.context(), &tlps)

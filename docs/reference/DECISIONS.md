@@ -56,7 +56,7 @@ Evidence: [search assessment](SEARCH_RECORD.md#dec-1--framing-budgets-crc-and-se
 | --- | --- | --- | --- | --- |
 | DEC-1.01 | Byte length field versus total ordinary-frame limit | Documented field capacity; actual safe device limit unresolved | Deferred framework | Earlier applicable protocol editions/errata or boundary captures; retain separate limits |
 | DEC-1.02 | Routed total size and embedded overhead | Vendor wording inspected; no independent boundary evidence | Deferred framework | Chapter 7 revision comparison and routed client test/capture provenance |
-| DEC-1.03 | Per-service limits, including file blocks | Service-specific text exists; do not apply one universal number | Deferred framework | Audit individual request AND response shapes against source/firmware |
+| DEC-1.03 | Per-service limits, including file blocks | OP-166 value limit audited; OP-181 response-size prose does not establish its request limit; explicit conservative write policy implemented | Write framework implemented; other service audits deferred | Audit individual request AND response shapes against source/firmware |
 | DEC-1.04 | Incoming Ethernet CRC behavior | Outgoing bytes/checking distinction documented; reply validity unverified | Retained default | Ethernet captures with CRC recomputation and model/firmware |
 | DEC-1.05 | Partial serial frames and resynchronization | No usable wire recovery procedure located | Retained default | Serial implementation-owner code, timing/resync documentation or captured failures |
 
@@ -136,7 +136,7 @@ Evidence: [search assessment](SEARCH_RECORD.md#dec-6--errors-and-partial-commits
 | --- | --- | --- | --- | --- |
 | DEC-6.01 | Generic versus service-local error codes | Multiple primary driver lists differ; preserve unknown codes | Retained default | Per-service reconciliation including file/tunnel errors |
 | DEC-6.02 | Actual parameter versus tuple-position offsets | Vendor context rules exist; applicability needs exact fixtures | User extension: EXT-4 | Independent error replies for 166/167 and 180/181 |
-| DEC-6.03 | Which writes committed after multiple errors | No usable independent transcript located | Deferred framework | Documented atomicity/partial semantics or before/after captured exchange |
+| DEC-6.03 | Which writes committed after multiple errors | No usable independent transcript located; explicit OP-166/181 batch uncertainty implemented | Uncertainty framework implemented; device commit evidence deferred | Documented atomicity/partial semantics or before/after captured exchange |
 | DEC-6.04 | Busy/authentication/configuration errors and recovery | Code descriptions are not complete state transitions | Deferred framework | Firmware-specific error/session behavior |
 
 ## DEC-7 — absent services and historical editions
@@ -194,6 +194,8 @@ Evidence: [search assessment](SEARCH_RECORD.md#dec-10--widths-conditional-access
 | DEC-10.05 | PT-136/17 DST end-week range 1-56 versus /12 start-week range 1-6 | October 2022 Table 3-48 visually confirms the discrepancy; UInt8 read width/access/version are clear, constraint left unspecified | User extension: EXT-3; built-in raw read available | Applicable erratum or model/firmware evidence establishing valid week values; never substitute a guessed range |
 | DEC-10.06 | PT-103/19, /34, /35 write access | Table 3-15 columns say R/W but visually audited row notes suggest R/O for external ROC Plus; read widths are unambiguous | Built-in read metadata with explicit write caveat; writes deferred | Applicable erratum or controller/firmware evidence establishing external write access |
 | DEC-10.07 | PT-102 timing/type constraints and PT-104 failsafe prose | Tables 3-14/3-16 text audited 2026-10-15: DO /14 module-dependent bounds, /15 open lower bound, /25 range 0–1 vs code 3, /26 ACIO wording; AO /7 cites nonexistent /22 and misidentifies /13 | Built-in raw reads and explicit metadata caveats; no universal DO /14–15 or /25 numeric range; writes deferred | Applicable errata/model and module/firmware evidence before write behavior or full table conformance |
+| DEC-10.08 | RTD access suffixes/calibration notes; TC copied alarm references, duplicate failsafe name and clear-bit prose | Tables 3-18/19 text audited 2026-10-15: read widths/access base and firmware are clear; R/W_LOG/R/W_CNDL procedure unspecified, RTD /20 and /36 suggest external R/O; TC prose refers to absent RTD fields and repeats Failsafe Mode on FLOAT /22; bit-7 clear wording repeats disabled | Built-in raw reads with explicit source caveats; SchemaProvider/SchemaChain replacements; temperature writes blocked | Applicable errata and module/firmware evidence for access, calibration and alarm behavior; software fixture agreement does not close this row |
+| DEC-10.09 | MVS calibration-command bounds, SP zero-shift units and subtype-specific counter | Table 3-20 text audited 2026-10-15: /59 range 0–6 conflicts with code 7 and gaps; /64 units differ from other SP rows; /65 is clearly FLOAT, /68 UINT8; /67 is invalid for 205 and describes 4088 configuration | Built-in raw reads, explicit source caveats and per-location `with_mvs_4088` assertion; SchemaProvider replacements; MVS writes blocked | Applicable errata and module/firmware evidence for command/units behavior and counter applicability; fixtures do not prove hardware identity |
 
 ## Managed extension delivery evidence (2026-10-09)
 
@@ -208,3 +210,58 @@ remain open. Ordinary-unicast profiles and read schema providers were subsequent
 delivered; see the current contracts/catalog for their exact scope. Routing, broader
 framing and schema/write conformance retain their framework/evidence prerequisites.
 Physical evidence remains none.
+
+## Write framework delivery update — 2026-10-15
+
+OP-166 uses `SchemaProvider::lookup_write`, `WritePlan` and an exclusive managed
+workflow; [contracts](../WRITES.md) record exact scope. Table 2-23 and Table 3-5
+PT-91/2 were checked against the publisher PDF in this pass. PT-91/2 is the sole
+built-in writable field; DEC-10 conditional/ambiguous fields stay blocked. Custom
+providers opt in through the same schema boundary. DEC-6.02/03 remain open:
+raw device error pairs never imply individual commits or rollback. Explicit
+acknowledged/device-error/uncertain/unattempted batch progress implements the
+framework without resolving controller partial-commit semantics. Independent TCP
+and simulator fixtures are software evidence only; physical evidence remains none.
+
+## OP-181 and writable catalog delivery update — 2026-10-15
+
+`WritePlan::build_arbitrary` provides Table 2-26 count/TLP/value packing through
+the same exclusive workflow and outcome gate as OP-166. `WriteBatch::opcode`
+keeps wire forms explicit. Section 2.23's opcode-180 and response-size wording
+is defective; `MAX_ARBITRARY_WRITE_REQUEST` is a conservative 240-byte library
+request policy, not a resolved device boundary (DEC-1.03). No alternate packing
+preset is justified by this wording. Custom managed `Operation` remains available
+with applicable evidence and framework limits.
+
+`SchemaProvider::lookup_write` now admits the 12-field manifest in WRITES.md,
+including existing PT-91/2 and eleven R/W User I/O fields. Tables 3-13..17 tags,
+DI scanning /1 and bounded filter /2 were text-audited; discovered physical
+locations and explicit firmware gates remain. Conditional and disputed fields stay
+blocked; DEC-10.05/06/07 remain open. Independent TCP literals and simulator
+fixtures cover the declared framework. DEC-6.02/03 stay open: OP-255 offsets
+never establish individual commits, and deliberate simulator partial effects do
+not establish controller atomicity. Physical evidence remains none.
+
+## Temperature read catalog delivery update — 2026-10-15
+
+PT-106/107 add 61 source-audited read fields through the existing schema provider
+and OP-180 planner. All three explicit I/O layouts, firmware-gated RTD /19 and
+TC /21–22, raw enums/IEEE payloads and alarm bits are covered by independent
+literal/TCP fixtures and simulator datasets. Unit codes are read rather than
+inferred from the source's 3.40 default change. DEC-10.08 keeps source defects
+and access suffixes explicit; no speculative alternative preset is justified.
+`SchemaProvider`/`SchemaChain` remain public replacement seams; every built-in
+temperature write stays blocked. No physical evidence or full PT closure follows.
+
+## MVS and polling delivery update — 2026-10-15
+
+PT-108 adds all 69 read definitions via the existing schema and OP-180 boundaries.
+Firmware gates and the explicit discovered-location 4088 assertion preserve known
+/67 applicability without inferring it from firmware or parser success. Source
+range/units defects remain in DEC-10.09; no speculative alternate preset is supplied.
+`SchemaProvider`/`SchemaChain` remain replacement seams. All MVS writes stay blocked.
+The example-owned `poll_once` explicitly re-discovers each sample, reports partial
+progress once and leaves intervals/next attempts to the caller. It establishes no
+persistent identity/cache policy and never replays a failed sample. Independent
+TCP, simulator and extracted-consumer evidence remain software-only; physical
+validation and full PT conformance remain open.

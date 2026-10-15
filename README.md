@@ -8,7 +8,7 @@ Configured login and protocol readiness are restored before application calls re
 
 [etherbird](https://crates.io/crates/etherbird) supplies lifecycle supervision,
 bounded admission and exclusive channel access. rocsteady supplies the ROC Plus
-framing, typed reads and session rules. TCP, optional serial connections and
+framing, typed reads/writes and session rules. TCP, optional serial connections and
 application-provided byte streams use the same protocol implementation.
 
 ## Useful features
@@ -17,8 +17,12 @@ application-provided byte streams use the same protocol implementation.
   for replacement setup after a transport failure.
 - **Typed reads:** discover configuration, read the clock, and read individual or
   contiguous parameters using types supplied from your device's schema.
-- **Discovery and catalog:** explicit I/O layouts and 202 source-audited ROC800
+- **Discovery and catalog:** explicit I/O layouts and 332 source-audited ROC800
   parameters, with firmware/location checks and optional enum/bit/unit metadata.
+- **Schema-aware writes:** OP-166/181 with 12 source-audited writable fields,
+  explicit partial/uncertain outcomes and no automatic replay; see [contracts](docs/WRITES.md).
+- **Temperature and MVS reads:** RTD/thermocouple/MVS metadata and a finite,
+  caller-paced [polling example](docs/MVS.md) with explicit re-discovery after reconnect.
 - **Archived samples:** bounded single-point minute/periodic/daily reads, separate timestamp
   selectors, explicit progress and replaceable index policies.
 - **Multi-point archives:** time-major timestamp/value rows for contiguous point blocks,
@@ -44,7 +48,10 @@ application-provided byte streams use the same protocol implementation.
 - **State and shutdown:** optional heartbeats detect idle failure, state notifications
   report changes, and awaited shutdown cancels/drains work and closes the channel.
 
-Use the current stable Rust toolchain. This codebase represents version `0.1.3`.
+Use the current stable Rust toolchain. The manifest remains at `0.1.3`; this
+checkout includes unreleased schema writes, temperature/MVS reads and polling
+examples beyond the completed 0.1.3 history baseline. Those additions require
+this checkout until released.
 All releases below 1.0 are experimental
 and may have incomplete protocol coverage; see the scope below.
 
@@ -76,8 +83,13 @@ OP-137/138 add [day-oriented reads](docs/DAY_HISTORY.md), including replaceable
 interpretation and an explicit indexed alternative for oversized days.
 OP-139 adds [configured inventory and selected-point reads](docs/HISTORY_INFORMATION.md)
 with optional timestamps and bounded paging.
-The [catalog](docs/CATALOG.md) contains 202 ROC800 parameters, including every discrete/analog input and output read width and every pulse-input read field, plus clock, port and module fields.
-Remaining catalog tables, enhanced login and typed writes, transaction retrieval, automatic durable alarm delivery, files
+The current checkout adds [schema writes](docs/WRITES.md) for station name, selected
+I/O tags and discrete-input scanning/filter settings. Read access metadata alone
+never enables writes. Temperature and MVS writes remain blocked.
+The [catalog](docs/CATALOG.md) contains 332 ROC800 parameters, including every discrete/analog input and output read width and every pulse-input, RTD, thermocouple and multi-variable sensor read field, plus clock, port and module fields.
+The PT-108/67 configuration counter requires caller-established 4088 applicability
+at its discovered physical location; see [MVS contracts](docs/MVS.md).
+Remaining catalog tables, enhanced login and broader typed writes, transaction retrieval, automatic durable alarm delivery, files
 and routing remain unavailable. Raw/custom
 operations can perform side effects; they are not automatically replayed.
 
@@ -101,6 +113,8 @@ firmware applicability; unknown fields are retained rather than guessed.
 | [Managed extensions](examples/managed_extensions.rs) | Custom setup, a typed operation and a two-exchange workflow against an independent in-memory peer. |
 | [Profiles and schemas](examples/schema_profiles.rs) | Explicit profile/applicability and a user-defined mixed-width schema read in bounded batches over an independent TCP peer. |
 | [Discovery and built-in catalog](examples/discovery_catalog.rs) | Point classifications and I/O discovery, then system/I/O reads using source-audited metadata and physical locations. |
+| [Parameter writes](examples/parameter_writes.rs) | OP-166/181 planning and explicit simulator write/read-back. |
+| [Temperature monitoring](examples/temperature_monitoring.rs) | Finite RTD/TC/MVS sampling, partial errors and explicit re-discovery after disconnect. |
 | [Single-point history](examples/history.rs) | Default sample/timestamp reads, bounded paging, explicit geometry and provisional minute-index choice. |
 | [Multi-point history](examples/multi_history.rs) | Time-major point blocks, bounded paging and explicit partial progress. |
 | [Day-oriented history](examples/day_history.rs) | Default day/month reads, caller interpretation and explicit value/timestamp indexed fallback. |
@@ -127,6 +141,12 @@ cargo run --locked --example schema_profiles
 
 # Discovery and the built-in catalog:
 cargo run --locked --example discovery_catalog
+
+# Schema-aware writes and simulator read-back:
+cargo run --locked --features simulator --example parameter_writes
+
+# RTD/TC/MVS polling with one disconnect and explicit re-discovery:
+cargo run --locked --example temperature_monitoring -- 3 100 --demo-reconnect
 
 # Alarm/event windows, checkpoint resume and explicit SRBX handling:
 cargo run --locked --example log_retrieval

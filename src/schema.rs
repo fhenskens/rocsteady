@@ -1,4 +1,4 @@
-//! Schema lookup and bounded, generation-exclusive opcode-180 read planning.
+//! Schema lookup, write opt-in metadata and bounded opcode-180 read planning.
 use crate::{DataType, Error, Parameter, ProtocolProfile, Tlp, Value};
 use std::sync::{Arc, Mutex};
 
@@ -13,7 +13,7 @@ pub enum Access {
     ReadOnly,
     ReadWrite,
     WriteOnly,
-    /// Provider must resolve the condition before returning readable metadata.
+    /// Provider must resolve the condition before returning usable metadata.
     Conditional,
 }
 #[derive(Debug, Clone, Copy)]
@@ -21,12 +21,21 @@ pub struct ParameterSchema {
     pub data_type: DataType,
     pub access: Access,
     pub logical_range: Option<(u8, u8)>,
-    /// Optional write metadata; this read planner does not interpret value bounds.
+    /// Inclusive write bounds; the read planner does not interpret value bounds.
     pub numeric_range: Option<(f64, f64)>,
 }
 pub trait SchemaProvider: Send + Sync + 'static {
     /// Discovery-derived metadata must remain in the connection generation that verified it.
     fn generation(&self) -> Result<Option<u64>, Error> {
+        Ok(None)
+    }
+    /// Write-specific metadata. Providers opt in after resolving all write constraints.
+    /// Read metadata alone never authorizes a write.
+    fn lookup_write(
+        &self,
+        _context: &SchemaContext,
+        _tlp: Tlp,
+    ) -> Result<Option<ParameterSchema>, Error> {
         Ok(None)
     }
     /// None means missing; Err means unsupported/invalid applicability and stops fallback.
@@ -51,6 +60,18 @@ impl SchemaProvider for SchemaChain {
             }
         }
         Ok(bound)
+    }
+    fn lookup_write(
+        &self,
+        context: &SchemaContext,
+        tlp: Tlp,
+    ) -> Result<Option<ParameterSchema>, Error> {
+        for provider in &self.0 {
+            if let Some(schema) = provider.lookup_write(context, tlp)? {
+                return Ok(Some(schema));
+            }
+        }
+        Ok(None)
     }
     fn lookup(&self, context: &SchemaContext, tlp: Tlp) -> Result<Option<ParameterSchema>, Error> {
         for provider in &self.0 {

@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased
+
+- Add all 69 PT-108 multi-variable sensor read definitions, bringing the catalog
+  to 332 entries, with raw DP/SP/temperature and module/status metadata, firmware
+  gates and explicit per-location 4088 applicability for the configuration counter.
+- Extend monitoring with finite caller-selected counts/intervals, explicit discovery
+  for each sample, partial-error reporting and a disconnect/re-discovery demo.
+
+- Add all 61 PT-106/107 RTD and thermocouple read fields, with raw
+  unit/sensor/calibration labels, alarm masks and explicit
+  firmware/location gates. Keep source caveats and temperature-write restrictions.
+- Add independent temperature TCP literals, simulator datasets, monitoring example,
+  requirement-linked lifecycle tests and extracted-package consumer coverage.
+
+- Add schema-aware OP-166/181 write planning and exclusive execution with bounded
+  contiguous and arbitrary batches, explicit uncertain effects, partial progress and no replay.
+- Enable 12 source-audited writable fields: station name, selected I/O tags,
+  DI scanning and input filter. Other fields remain blocked pending write audits.
+  Add separate OP-181 budgets, literal/TCP, simulator and package-consumer evidence.
+
 ## 0.1.3
 
 - Add OP-139 configured-point inventory and selected minute/periodic/daily reads

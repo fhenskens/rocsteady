@@ -54,6 +54,8 @@ the implementation must not guess undocumented wire forms.
 | Contiguous parameter read | Section 2.21, Table 2-24 |
 | Arbitrary parameter reads | Section 2.22, Table 2-25 |
 | SRBX and errors | Sections 2.27–2.29 |
+| Multi-variable sensor reads | Section 3.4.19, Table 3-20, printed pp.3-82–89; reviewed 2026-10-15 |
+| RTD / thermocouple read fields | Sections 3.4.17–18, Tables 3-18/19, printed pp.3-75–81; reviewed 2026-10-15 |
 | TLP addressing and data types | Sections 3.1–3.3 |
 | CRC and published example | Chapter 4 |
 | Numeric byte representation | Chapter 5 |

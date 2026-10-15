@@ -300,6 +300,332 @@ const PI_EU_MODE: &[EnumMeaning] = &[
         key: "accumulator_entered_rollover",
     },
 ];
+// Tables 3-18/19: labels preserve all documented codes; unknown bytes remain raw.
+const RTD_ALPHA: &[EnumMeaning] = &[
+    EnumMeaning {
+        value: 0,
+        key: "alpha_0_00385",
+    },
+    EnumMeaning {
+        value: 1,
+        key: "alpha_0_00392",
+    },
+];
+const TEMPERATURE_UNITS: &[EnumMeaning] = &[
+    EnumMeaning {
+        value: 0,
+        key: "fahrenheit",
+    },
+    EnumMeaning {
+        value: 1,
+        key: "celsius",
+    },
+    EnumMeaning {
+        value: 2,
+        key: "kelvin",
+    },
+    EnumMeaning {
+        value: 3,
+        key: "rankine",
+    },
+];
+const RTD_UNITS: &[EnumMeaning] = &[
+    EnumMeaning {
+        value: 0,
+        key: "fahrenheit",
+    },
+    EnumMeaning {
+        value: 1,
+        key: "celsius",
+    },
+    EnumMeaning {
+        value: 2,
+        key: "kelvin",
+    },
+    EnumMeaning {
+        value: 3,
+        key: "rankine",
+    },
+    EnumMeaning {
+        value: 4,
+        key: "ohms",
+    },
+];
+const TC_TYPE: &[EnumMeaning] = &[
+    EnumMeaning {
+        value: 0,
+        key: "type_j",
+    },
+    EnumMeaning {
+        value: 1,
+        key: "type_k",
+    },
+    EnumMeaning {
+        value: 2,
+        key: "type_b",
+    },
+    EnumMeaning {
+        value: 3,
+        key: "type_e",
+    },
+    EnumMeaning {
+        value: 4,
+        key: "type_r",
+    },
+    EnumMeaning {
+        value: 5,
+        key: "type_s",
+    },
+    EnumMeaning {
+        value: 6,
+        key: "type_t",
+    },
+    EnumMeaning {
+        value: 8,
+        key: "type_10",
+    },
+    EnumMeaning {
+        value: 9,
+        key: "type_c",
+    },
+    EnumMeaning {
+        value: 10,
+        key: "type_n",
+    },
+];
+const RTD_CALIBRATION_TYPE: &[EnumMeaning] = &[
+    EnumMeaning {
+        value: 0,
+        key: "nothing",
+    },
+    EnumMeaning {
+        value: 1,
+        key: "zero",
+    },
+    EnumMeaning {
+        value: 2,
+        key: "span",
+    },
+    EnumMeaning {
+        value: 3,
+        key: "midpoint_1",
+    },
+    EnumMeaning {
+        value: 4,
+        key: "midpoint_2",
+    },
+    EnumMeaning {
+        value: 5,
+        key: "midpoint_3",
+    },
+    EnumMeaning {
+        value: 6,
+        key: "unused",
+    },
+];
+// Table 3-20: source codes and masks, preserving gaps and all uninterpreted bits.
+const MVS_POLL: &[EnumMeaning] = &[
+    EnumMeaning {
+        value: 0,
+        key: "off_scan",
+    },
+    EnumMeaning {
+        value: 1,
+        key: "normal",
+    },
+    EnumMeaning {
+        value: 2,
+        key: "input_freeze",
+    },
+    EnumMeaning {
+        value: 4,
+        key: "configuration",
+    },
+    EnumMeaning {
+        value: 5,
+        key: "set_tag_address",
+    },
+];
+const MVS_UNITS: &[EnumMeaning] = &[
+    EnumMeaning {
+        value: 0,
+        key: "english",
+    },
+    EnumMeaning {
+        value: 1,
+        key: "metric",
+    },
+];
+const MVS_WATER_REFERENCE: &[EnumMeaning] = &[
+    EnumMeaning {
+        value: 0,
+        key: "water_60_f",
+    },
+    EnumMeaning {
+        value: 1,
+        key: "water_68_f",
+    },
+];
+const MVS_TAP: &[EnumMeaning] = &[
+    EnumMeaning {
+        value: 0,
+        key: "downstream",
+    },
+    EnumMeaning {
+        value: 1,
+        key: "upstream",
+    },
+];
+const MVS_FAILURE: &[EnumMeaning] = &[
+    EnumMeaning {
+        value: 0,
+        key: "retain_last",
+    },
+    EnumMeaning {
+        value: 1,
+        key: "use_fault_value",
+    },
+];
+const MVS_CALIBRATION_COMMAND: &[EnumMeaning] = &[
+    EnumMeaning {
+        value: 0,
+        key: "no_action",
+    },
+    EnumMeaning {
+        value: 1,
+        key: "calibrate_dp",
+    },
+    EnumMeaning {
+        value: 2,
+        key: "calibrate_sp",
+    },
+    EnumMeaning {
+        value: 3,
+        key: "calibrate_temperature",
+    },
+    EnumMeaning {
+        value: 6,
+        key: "save_calibration",
+    },
+    EnumMeaning {
+        value: 7,
+        key: "set_defaults",
+    },
+];
+const MVS_CALIBRATION_TYPE: &[EnumMeaning] = &[
+    EnumMeaning {
+        value: 0,
+        key: "none",
+    },
+    EnumMeaning {
+        value: 1,
+        key: "zero",
+    },
+    EnumMeaning {
+        value: 2,
+        key: "span",
+    },
+    EnumMeaning {
+        value: 3,
+        key: "midpoint_1",
+    },
+    EnumMeaning {
+        value: 4,
+        key: "midpoint_2",
+    },
+    EnumMeaning {
+        value: 5,
+        key: "midpoint_3",
+    },
+    EnumMeaning {
+        value: 6,
+        key: "sensor_setup",
+    },
+    EnumMeaning {
+        value: 7,
+        key: "sensor_restore",
+    },
+];
+const MVS_SENSOR_TYPE: &[EnumMeaning] = &[
+    EnumMeaning {
+        value: 0,
+        key: "undefined",
+    },
+    EnumMeaning {
+        value: 1,
+        key: "4088_a",
+    },
+    EnumMeaning {
+        value: 2,
+        key: "4088_b",
+    },
+    EnumMeaning {
+        value: 3,
+        key: "3095",
+    },
+    EnumMeaning {
+        value: 4,
+        key: "mvs205",
+    },
+];
+const MVS_SENSOR_ALARMS: &[BitMeaning] = &[
+    BitMeaning {
+        mask: 16,
+        key: "input_freeze",
+    },
+    BitMeaning {
+        mask: 32,
+        key: "sensor_communication_failure",
+    },
+    BitMeaning {
+        mask: 64,
+        key: "rs485_communication_failure",
+    },
+    BitMeaning {
+        mask: 128,
+        key: "off_scan",
+    },
+];
+const MVS_RANGE_BITS: &[BitMeaning] = &[
+    BitMeaning {
+        mask: 1,
+        key: "dp_below_zero",
+    },
+    BitMeaning {
+        mask: 2,
+        key: "sp_below_zero",
+    },
+    BitMeaning {
+        mask: 4,
+        key: "temperature_below_zero",
+    },
+    BitMeaning {
+        mask: 8,
+        key: "dp_above_span",
+    },
+    BitMeaning {
+        mask: 16,
+        key: "sp_above_span",
+    },
+    BitMeaning {
+        mask: 32,
+        key: "temperature_above_span",
+    },
+];
+const MVS_VALUE_ALARMS: &[BitMeaning] = &[
+    BitMeaning {
+        mask: 1,
+        key: "low",
+    },
+    BitMeaning {
+        mask: 4,
+        key: "high",
+    },
+    BitMeaning {
+        mask: 64,
+        key: "point_fail",
+    },
+];
 const CALIBRATION_CAVEAT: &str = "Table labels R/W, but the row note suggests R/O for external ROC Plus; write access is unresolved";
 
 pub(super) const fn for_parameter(point_type: u8, parameter: u8) -> CatalogMetadata {
@@ -319,6 +645,22 @@ pub(super) const fn for_parameter(point_type: u8, parameter: u8) -> CatalogMetad
         (103, 34) => CALIBRATION_MODE,
         (103, 35) => CALIBRATION_TYPE,
         (103, 38) => AI_TYPE,
+        (106, 2 | 6 | 23 | 30..=32) | (107, 2 | 8 | 16..=18 | 21) => ENABLED,
+        (106, 7) => RTD_ALPHA,
+        (106, 35) => CALIBRATION_MODE,
+        (106, 36) => RTD_CALIBRATION_TYPE,
+        (106, 37) => RTD_UNITS,
+        (107, 3) => TEMPERATURE_UNITS,
+        (107, 4) => TC_TYPE,
+        (108, 2) => MVS_POLL,
+        (108, 3) => MVS_UNITS,
+        (108, 4) => MVS_WATER_REFERENCE,
+        (108, 5) => MVS_TAP,
+        (108, 6) => MVS_FAILURE,
+        (108, 9 | 25..=27 | 40..=42 | 55..=57 | 62 | 63) => ENABLED,
+        (108, 59) => MVS_CALIBRATION_COMMAND,
+        (108, 60) => MVS_CALIBRATION_TYPE,
+        (108, 68) => MVS_SENSOR_TYPE,
         _ => &[],
     };
     metadata.units = match (point_type, parameter) {
@@ -328,6 +670,9 @@ pub(super) const fn for_parameter(point_type: u8, parameter: u8) -> CatalogMetad
         (102, 14..=17 | 23) | (105, 3) => Some("s"),
         (105, 4 | 6) => Some("pulses"),
         (105, 27) => Some("pulses/s"),
+        (106, 3 | 4 | 34) | (107, 5 | 6) => Some("s"),
+        (106, 5) | (107, 7) => Some("%"),
+        (108, 8) => Some("V"),
         _ => None,
     };
     match (point_type, parameter) {
@@ -336,7 +681,7 @@ pub(super) const fn for_parameter(point_type: u8, parameter: u8) -> CatalogMetad
             metadata.unused_bits = 0x5f;
         }
         // Tables 3-15/3-17 define the same seven alarm bits and unused bit 5.
-        (103, 32) | (105, 23) => {
+        (103, 32) | (105, 23) | (106, 33) | (107, 19) => {
             metadata.bits = AI_ALARMS;
             metadata.unused_bits = 0x20;
         }
@@ -380,6 +725,83 @@ pub(super) const fn for_parameter(point_type: u8, parameter: u8) -> CatalogMetad
         }
         (103, 19 | 34 | 35) => {
             metadata.write_caveat = Some(CALIBRATION_CAVEAT);
+        }
+        (106, 2 | 7) => {
+            metadata.write_caveat = Some(
+                "Source access token R/W_LOG retained without inferring its logging procedure; temperature writes unavailable",
+            )
+        }
+        (106, 3 | 5 | 6) => {
+            metadata.write_caveat = Some(
+                "Source access token R/W_CNDL retained without inferring its condition; readable width is clear; temperature writes unavailable",
+            )
+        }
+        (106, 20) => {
+            metadata.write_caveat = Some(
+                "Set-value range depends on selected units and alpha; row note suggests R/O for external ROC Plus; no universal range selected",
+            )
+        }
+        (106, 35) => {
+            metadata.write_caveat = Some(
+                "Calibration-mode changes are not event logged; calibration workflow and temperature writes unavailable",
+            )
+        }
+        (106, 36) => {
+            metadata.write_caveat = Some(
+                "Row note suggests R/O for external ROC Plus; calibration type 6 is unused, not offset",
+            )
+        }
+        (107, 4) => {
+            metadata.write_caveat = Some(
+                "Noncontiguous sensor codes exclude 7; original 5-point TC module only supports J/K; no universal numeric range selected",
+            )
+        }
+        (107, 10 | 13..=15) => {
+            metadata.write_caveat = Some(
+                "Source prose copies RTD parameter references, including clipping parameter 23 absent from this table; no clipping or conversion behavior inferred",
+            )
+        }
+        (107, 22) => {
+            metadata.write_caveat = Some(
+                "Source repeats the Failsafe Mode name on a FLOAT row; description identifies a failsafe value; raw read only",
+            )
+        }
+        (108, 10) => {
+            metadata.bits = MVS_SENSOR_ALARMS;
+            metadata.unused_bits = 0x0f;
+        }
+        (108, 11) => {
+            metadata.bits = MVS_RANGE_BITS;
+            metadata.unused_bits = 0xc0;
+        }
+        (108, 28 | 43 | 58) => {
+            metadata.bits = MVS_VALUE_ALARMS;
+            metadata.unused_bits = 0xba;
+        }
+        (108, 2) => {
+            metadata.write_caveat = Some(
+                "Poll-mode codes are noncontiguous (0,1,2,4,5); no universal inclusive range selected",
+            )
+        }
+        (108, 59) => {
+            metadata.write_caveat = Some(
+                "Printed range 0-6 conflicts with documented set-defaults code 7 and code gaps; commands remain read-only through this catalog",
+            )
+        }
+        (108, 64) => {
+            metadata.write_caveat = Some(
+                "SP zero-shift prose names inches of water while other SP rows name PSI; no fixed units or conversion inferred",
+            )
+        }
+        (108, 65) => {
+            metadata.write_caveat = Some(
+                "Module-type codes 0 standard MVS, 1 smart MVS, 2 3095 are stored as FLOAT; no byte coercion or numeric filter",
+            )
+        }
+        (108, 67) => {
+            metadata.write_caveat = Some(
+                "4088 configuration counter is invalid for MVS205; explicit per-location 4088 assertion required before reads",
+            )
         }
         _ => {}
     }

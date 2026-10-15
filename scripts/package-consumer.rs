@@ -60,11 +60,32 @@ impl Workflow for Pair {
 }
 #[tokio::main]
 async fn main() {
+    assert_eq!(packaged_write_plan().unwrap().batches()[0].payload().len(), 24);
     let mut model = Model::default();
     model.io_point_types[16] = 103;
+    model.io_point_types[32] = 101;
     model.io_point_types[48] = 102;
     model.io_point_types[64] = 104;
     model.io_point_types[80] = 105;
+    model.io_point_types[96] = 106;
+    model.io_point_types[112] = 107;
+    model.io_point_types[128] = 108;
+    model.parameters.insert(rocsteady::Tlp::new(108,128,3),rocsteady::Value::UInt8(1));
+    model.parameters.insert(rocsteady::Tlp::new(108,128,19),rocsteady::Value::Float(12.5));
+    model.parameters.insert(rocsteady::Tlp::new(108,128,35),rocsteady::Value::Float(100.0));
+    model.parameters.insert(rocsteady::Tlp::new(108,128,50),rocsteady::Value::Float(25.0));
+    model.parameters.insert(rocsteady::Tlp::new(108,128,10),rocsteady::Value::Binary(0x70));
+    model.parameters.insert(rocsteady::Tlp::new(108,128,11),rocsteady::Value::Binary(0xc0));
+    model.parameters.insert(rocsteady::Tlp::new(108,128,65),rocsteady::Value::Float(1.0));
+    model.parameters.insert(rocsteady::Tlp::new(108,128,67),rocsteady::Value::UInt16(42));
+    model.parameters.insert(rocsteady::Tlp::new(108,128,68),rocsteady::Value::UInt8(1));
+    model.parameters.insert(rocsteady::Tlp::new(106,96,22),rocsteady::Value::Float(-10.0));
+    model.parameters.insert(rocsteady::Tlp::new(106,96,37),rocsteady::Value::UInt8(1));
+    model.parameters.insert(rocsteady::Tlp::new(106,96,33),rocsteady::Value::Binary(0x20));
+    model.parameters.insert(rocsteady::Tlp::new(107,112,9),rocsteady::Value::Float(12.5));
+    model.parameters.insert(rocsteady::Tlp::new(107,112,4),rocsteady::Value::UInt8(10));
+    model.parameters.insert(rocsteady::Tlp::new(107,112,21),rocsteady::Value::UInt8(1));
+    model.parameters.insert(rocsteady::Tlp::new(107,112,22),rocsteady::Value::Float(-50.0));
     model.parameters.insert(rocsteady::Tlp::new(105,80,4),rocsteady::Value::UInt32(16000000));
     model.parameters.insert(rocsteady::Tlp::new(105,80,6),rocsteady::Value::UInt32(u32::MAX));
     model.parameters.insert(rocsteady::Tlp::new(105,80,10),rocsteady::Value::Float(42.5));
@@ -194,7 +215,7 @@ async fn main() {
         2
     );
     let io = discovery_client
-        .discover_io(rocsteady::FirmwareVersion::new(3, 10).unwrap())
+        .discover_io(rocsteady::FirmwareVersion::new(3, 60).unwrap())
         .await
         .unwrap();
     let ai = io.by_logical(103, 0).unwrap().tlp(21).unwrap();
@@ -348,7 +369,45 @@ async fn main() {
     assert!(!server.srbx_status().pending);
     let events = discovery_client.read_events(rocsteady::LogRequest::new(0, 1).unwrap()).await.unwrap();
     assert!(matches!(events.records()[0].data(), rocsteady::EventData::ClockSet { time: 0x12345678 }));
+    // REQ-TEMP-PACKAGE: both temperature schemas, raw alarm bits and sensor/unit codes.
+    let temperature_catalog=rocsteady::Roc800Catalog::from_discovery(discovery_client.discover_io(rocsteady::FirmwareVersion::new(3,60).unwrap()).await.unwrap()).unwrap();
+    let temperature_tlps=[rocsteady::Tlp::new(106,96,22),rocsteady::Tlp::new(106,96,37),rocsteady::Tlp::new(106,96,33),rocsteady::Tlp::new(107,112,9),rocsteady::Tlp::new(107,112,4),rocsteady::Tlp::new(107,112,21),rocsteady::Tlp::new(107,112,22)];
+    assert_eq!(discovery_client.read_schema(&temperature_catalog,&temperature_catalog.context(),&temperature_tlps).await.unwrap(),[rocsteady::Value::Float(-10.0),rocsteady::Value::UInt8(1),rocsteady::Value::Binary(0x20),rocsteady::Value::Float(12.5),rocsteady::Value::UInt8(10),rocsteady::Value::UInt8(1),rocsteady::Value::Float(-50.0)]);
+    assert_eq!(rocsteady::Roc800Catalog::entry(107,4).unwrap().metadata.enum_meaning(10).unwrap().key,"type_n");
+    assert_eq!(rocsteady::Roc800Catalog::entry(106,33).unwrap().metadata.uninterpreted_bits(0x20),0x20);
+    assert!(rocsteady::WritePlan::build_arbitrary(&temperature_catalog,&temperature_catalog.context(),&[(temperature_tlps[0],rocsteady::Value::Float(0.0))],discovery_client.profile()).is_err());
+    // REQ-MVS-PACKAGE: read the conditional counter only with caller-established 4088 context.
+    let mvs_io=discovery_client.discover_io(rocsteady::FirmwareVersion::new(3,60).unwrap()).await.unwrap();
+    let mvs_catalog=rocsteady::Roc800Catalog::from_discovery(mvs_io).unwrap();
+    assert!(discovery_client.read_schema(&mvs_catalog,&mvs_catalog.context(),&[rocsteady::Tlp::new(108,128,67)]).await.is_err());
+    let mvs_catalog=mvs_catalog.with_mvs_4088(128).unwrap();
+    let mvs_fields=[3,19,35,50,10,11,65,67,68].map(|p|rocsteady::Tlp::new(108,128,p));
+    assert_eq!(discovery_client.read_schema(&mvs_catalog,&mvs_catalog.context(),&mvs_fields).await.unwrap(),[rocsteady::Value::UInt8(1),rocsteady::Value::Float(12.5),rocsteady::Value::Float(100.0),rocsteady::Value::Float(25.0),rocsteady::Value::Binary(0x70),rocsteady::Value::Binary(0xc0),rocsteady::Value::Float(1.0),rocsteady::Value::UInt16(42),rocsteady::Value::UInt8(1)]);
+    assert_eq!(rocsteady::Roc800Catalog::entry(108,11).unwrap().metadata.uninterpreted_bits(0xc0),0xc0);
+    assert!(rocsteady::WritePlan::build_arbitrary(&mvs_catalog,&mvs_catalog.context(),&[(mvs_fields[1],rocsteady::Value::Float(0.0))],discovery_client.profile()).is_err());
+    // POL-181-PACKAGE: execute arbitrary cross-point writes and explicit read-back.
+    let writes = [
+        (rocsteady::Tlp::new(103,16,0),rocsteady::Value::Ascii("FLOW TAG  ".into())),
+        (rocsteady::Tlp::new(101,32,1),rocsteady::Value::UInt8(1)),
+        (rocsteady::Tlp::new(101,32,2),rocsteady::Value::Float(0.5)),
+        (rocsteady::Tlp::new(104,64,1),rocsteady::Value::Ascii("Percent   ".into())),
+    ];
+    let plan=rocsteady::WritePlan::build_arbitrary(&catalog,&catalog.context(),&writes,discovery_client.profile()).unwrap();
+    assert_eq!(plan.batches()[0].opcode(),181);
+    assert_eq!(discovery_client.write_plan(plan).await.unwrap().batches,[rocsteady::WriteOutcome::Acknowledged]);
+    assert_eq!(discovery_client.read_schema(&catalog,&catalog.context(),&writes.iter().map(|(t,_)|*t).collect::<Vec<_>>()).await.unwrap(),writes.iter().map(|(_,v)|v.clone()).collect::<Vec<_>>());
     discovery_client.stop().await;
     server.stop().await.unwrap();
     println!("packaged external consumer passed");
+}
+
+// POL-WRITE-PACKAGE: compile the opt-in schema/write planner from the extracted crate.
+#[allow(dead_code)]
+fn packaged_write_plan() -> Result<rocsteady::WritePlan, rocsteady::Error> {
+    let catalog = rocsteady::Roc800Catalog::new(rocsteady::FirmwareVersion::new(3, 60)?)?;
+    rocsteady::WritePlan::build(
+        &catalog, &catalog.context(),
+        &[(rocsteady::Tlp::new(91, 0, 2), rocsteady::Value::Ascii("Example station     ".into()))],
+        &rocsteady::DefaultProfile,
+    )
 }

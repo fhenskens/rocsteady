@@ -1,6 +1,8 @@
 # Using the experimental monitoring client
 
-This guide describes version 0.1.3. All releases below 1.0 are experimental.
+This guide describes the current checkout, including unreleased additions to the
+0.1.3 history baseline. The package manifest still declares 0.1.3; new features
+require this checkout until released. All releases below 1.0 are experimental.
 Built-ins include configuration/clock/parameter reads, legacy login, explicit
 profiles, discovery, schema-backed catalog reads, history metadata and
 indexed/day/selected history reads, alarm/event retrieval and opt-in SRBX
@@ -172,7 +174,9 @@ async fn read_first_analog_input(client: &Client)
 ```
 
 The catalog supplies the parameter type and checks its discovered physical location.
-It covers 202 parameters, including every PT-101/102/103/104/105 read width; [the manifest](CATALOG.md) records source references,
+It covers 332 parameter definitions, including every PT-101–108 read field;
+PT-108/67 additionally requires explicit per-location 4088 applicability (see
+[MVS contracts](MVS.md)). [The manifest](CATALOG.md) records source references,
 applicability and omissions. Snapshot-derived catalogs/plans fail with StaleGeneration
 after replacement; rediscover before starting a new attempt. The owning application
 must await client.stop(). Run `cargo run --example discovery_catalog` for a complete
@@ -420,3 +424,18 @@ opt-in observations; equal lists/cursors do not prove an atomic snapshot or devi
 identity. Short/error replies retain explicit progress, without automatic replay.
 See [contracts and evidence](HISTORY_INFORMATION.md) and the runnable
 `history_information` example for external codec selection.
+
+## Parameter writes and monitoring
+
+Use `WritePlan` and `Client::write_plan` for schema-aware OP-166/181 writes.
+See the [write guide](WRITES.md) for the 12-field manifest, runnable example
+and handling of partial/uncertain outcomes without automatic replay.
+
+For RTD and thermocouple monitoring, use the [temperature read guide](TEMPERATURE.md)
+and `cargo run --locked --example temperature_monitoring`. Read unit selectors
+with values; neither firmware nor the units tag selects a conversion automatically.
+
+The [MVS/polling guide](MVS.md) covers PT-108 and the example-owned one-sample
+helper. Use `cargo run --locked --example temperature_monitoring -- 3 1 --demo-reconnect`
+for a bounded failure/re-discovery demo. Each failed sample returns once; only
+another caller-scheduled attempt performs fresh discovery and new reads.

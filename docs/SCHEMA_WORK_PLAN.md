@@ -8,9 +8,9 @@ See [roadmap](OUTSTANDING_WORK.md) and [service plan](SPEC_WORK_PLAN.md).
 
 The provider boundary is an early deliverable in [EXT-3](EXTENSIBILITY.md).
 The provider API and bounded schema-aware opcode-180 reads are implemented.
-The 202-parameter built-in ROC800 slice covers PT-91/95/101/102/103/104/105/109/136/139
+The 332-parameter built-in ROC800 slice covers PT-91/95/101/102/103/104/105/106/107/108/109/136/139
 entries; see [the source/applicability manifest](CATALOG.md). Full catalog rows
-and schema-aware writes remain separate work.
+and broader schema-aware writes remain separate work.
 Provider extensibility and a particular built-in PT row have separate completion
 criteria; caller extensions do not imply verified firmware coverage for the crate.
 
@@ -21,15 +21,15 @@ layout and enhanced-security fields. These leads do not close catalog rows.
 
 - [x] Define a schema identity including device family, firmware applicability, point type and parameter number; caller identity is explicit and discovery-derived providers are generation-bound.
 - [ ] Model width/type, name, units where documented, access (including conditional access), ranges, defaults, update ownership, enumerations, bit fields and reserved fields.
-  PT-101/102/103/104/105 now have every read width, source access/ranges, fixed units and enum/bit
-  annotations. Defaults, update ownership and verified write conditions remain open.
+  PT-101–108 now have every read definition, source access/ranges, fixed units and enum/bit
+  annotations. Defaults, update ownership and write conditions beyond the [12-field subset](WRITES.md) remain open.
 - [ ] Represent version-introduced/changed/deprecated parameters without selecting a firmware version from opcode 6 revision alone.
 - [ ] Separate known metadata from unspecified metadata; do not invent ranges, defaults or units.
 - [ ] Model logical versus physical location rules from sections 3.1-3.2; validate against opcode 50 discovery.
 - [x] Support caller-defined/vendor schemas and opcode 100 classifications without claiming that classifications disclose parameter widths.
 - [x] Define unknown-parameter behavior and explicit overrides for firmware not yet catalogued.
-- [ ] Build schema-aware reads and writes over 167/180 and 166/181; preserve raw access.
-- [x] Define read batch splitting by request AND response budgets; expose partial progress and avoid claiming atomicity across exchanges. Write batch planning remains open.
+- [ ] Complete schema-aware reads and writes over 167/180 and 166/181; preserve raw access. OP-180 reads and OP-166/181 writes are implemented; schema-aware OP-167 planning remains open.
+- [x] Define read batch splitting by request AND response budgets; expose partial progress and avoid claiming atomicity across exchanges. OP-166/181 write batch planning is implemented for the declared subset.
 - [ ] Generate or maintain catalog artifacts reproducibly; review redistribution/licensing before copying vendor text.
 - [x] Add consistency checks for duplicate keys/names, invalid widths, numeric bounds, introduction versions, enum/bit consistency and missing source references. The current catalog has one variant per key; overlapping future applicability still needs checks.
 
@@ -49,8 +49,8 @@ For each row:
 4. Exercise representative reads and applicable writes over TCP; cross-check all catalog metadata against the source.
 5. Record physical evidence separately, with model/firmware; catalogue completion does not establish hardware compatibility.
 
-Status: ten rows have an explicitly **partial** built-in slice; all other rows
-are open. No complete PT conformance is claimed. Every one of the 202 delivered parameters
+Status: thirteen rows have an explicitly **partial** built-in slice; all other rows
+are open. No complete PT conformance is claimed. Every one of the 332 delivered parameters
 has an independent literal and TCP read fixture; [CATALOG.md](CATALOG.md) lists
 the exact metadata and remaining omissions.
 “Hardware: none” applies to every row. Introduce separate implementation/test/hardware
@@ -61,7 +61,7 @@ statuses as work lands; never replace them with one ambiguous “supported” fl
 | PT-82 | 82 | Virtual discrete outputs | 3.4.1 | Open |
 | PT-84 | 84 | Extended HART | 3.4.2 | Open |
 | PT-85 | 85 | HART | 3.4.3 | Open |
-| PT-91 | 91 | System variables | 3.4.4 | Partial: 0-6, 8-14, 22-23, 37-38, 41-48, 50 |
+| PT-91 | 91 | System variables | 3.4.4 | Partial: reads 0-6, 8-14, 22-23, 37-38, 41-48, 50; station-name /2 writes enabled |
 | PT-92 | 92 | Logon | 3.4.5 | Open |
 | PT-95 | 95 | Communication ports | 3.4.6 | Partial: 0-9, 36-37, 42, 44; explicit Ethernet restrictions |
 | PT-96 | 96 | FST | 3.4.7 | Open |
@@ -69,14 +69,14 @@ statuses as work lands; never replace them with one ambiguous “supported” fl
 | PT-98 | 98 | Soft points | 3.4.9 | Open |
 | PT-99 | 99 | Configurable opcode tables | 3.4.10 | Open |
 | PT-100 | 100 | Power control | 3.4.11 | Open |
-| PT-101 | 101 | Discrete inputs | 3.4.12 | Partial: all 0-15 read widths, access/ranges, enums and alarm bits; writes/defaults/ownership remain open |
-| PT-102 | 102 | Discrete outputs | 3.4.13 | Partial: all 0-26 read widths, source access/ranges, enums/bits and firmware gates; module timing constraints, writes/defaults/ownership remain open |
-| PT-103 | 103 | Analog inputs | 3.4.14 | Partial: all 0-39 read widths, access/ranges, version gates, enums and alarm bits; calibration write notes unresolved |
-| PT-104 | 104 | Analog outputs | 3.4.15 | Partial: all 0-16 read widths, source access/ranges, enums/bits; failsafe prose, writes/defaults/ownership remain open |
-| PT-105 | 105 | Pulse inputs | 3.4.16 | Partial: all 0-27 read widths, source access/ranges, enums/bits/units; nonzero conversion constraint explicit; writes/defaults/ownership remain open |
-| PT-106 | 106 | RTD | 3.4.17 | Open |
-| PT-107 | 107 | Thermocouple | 3.4.18 | Open |
-| PT-108 | 108 | Multi-variable sensor | 3.4.19 | Open |
+| PT-101 | 101 | Discrete inputs | 3.4.12 | Partial: all 0-15 read widths, access/ranges, enums and alarm bits; writes 0–2 enabled; other writes/defaults/ownership remain open |
+| PT-102 | 102 | Discrete outputs | 3.4.13 | Partial: all 0-26 read widths, source access/ranges, enums/bits and firmware gates; module timing constraints, tag writes 0–1 enabled; other writes/defaults/ownership remain open |
+| PT-103 | 103 | Analog inputs | 3.4.14 | Partial: all 0-39 read widths, access/ranges, version gates, enums and alarm bits; tag writes 0–1 enabled; calibration write notes unresolved |
+| PT-104 | 104 | Analog outputs | 3.4.15 | Partial: all 0-16 read widths, source access/ranges, enums/bits; failsafe prose, tag writes 0–1 enabled; other writes/defaults/ownership remain open |
+| PT-105 | 105 | Pulse inputs | 3.4.16 | Partial: all 0-27 read widths, source access/ranges, enums/bits/units; nonzero conversion constraint explicit; tag writes 0–1 enabled; other writes/defaults/ownership remain open |
+| PT-106 | 106 | RTD | 3.4.17 | Partial: all 0–37 read fields, access/ranges, enums/bits/units and offset 3.00 gate; source caveats, writes/defaults/ownership and hardware remain open |
+| PT-107 | 107 | Thermocouple | 3.4.18 | Partial: all 0–22 read fields, access/ranges, enums/bits/units and failsafe 3.50 gate; copied prose, writes/defaults/ownership and hardware remain open |
+| PT-108 | 108 | Multi-variable sensor | 3.4.19 | Partial: all 0–68 read definitions, raw codes/masks and firmware gates; /67 requires explicit 4088 applicability; source caveats, writes/defaults/ownership and hardware remain open |
 | PT-109 | 109 | System analog inputs | 3.4.20 | Partial: 0, 1, 4, 7, 12, 23 |
 | PT-110 | 110 | PID | 3.4.21 | Open |
 | PT-111 | 111 | Sampler/odorizer | 3.4.22 | Open |
@@ -135,3 +135,12 @@ These batches determine delivery order; every row remains in scope.
 Completion of all batches includes the documented parameter interfaces for HART,
 Modbus, DS800, user programs and wireless networks. It does not implement those
 other protocols themselves or undocumented ROC services.
+
+The [write manifest](WRITES.md#write-specific-schema-and-built-in-manifest)
+records the 12 enabled fields and remaining constraints.
+
+PT-106/107 per-field source metadata and caveats are recorded in [CATALOG.md](CATALOG.md)
+and [temperature contracts](TEMPERATURE.md); DEC-10.08 remains open.
+
+PT-108 source metadata, the conditional /67 read gate and polling policy are in
+[MVS.md](MVS.md); DEC-10.09 remains open.

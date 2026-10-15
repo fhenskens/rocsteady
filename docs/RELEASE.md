@@ -1,5 +1,97 @@
 # Experimental monitoring release checklist
 
+## Unreleased MVS and caller-driven polling evidence — 2026-10-15
+
+PT-108 adds 69 read definitions, bringing the catalog to 332 entries. The /67
+configuration counter requires a caller-established per-location 4088 assertion;
+all MVS writes remain blocked. [MVS contracts](MVS.md), the per-parameter manifest
+and DEC-10.09 retain command-range, unit and subtype caveats. The finite monitoring
+example explicitly discovers each sample, reports partial errors once and leaves
+subsequent attempts/intervals to the caller. Existing temperature/write work,
+version 0.1.3 and completed history code remain intact.
+
+Local checks passed: 243 all-feature/all-target tests, the default-feature test
+gate, 22 doctests, strict all-feature/all-target Clippy, formatting and rustdoc.
+The monitoring demo completed sample 1, reported sample 2's injected disconnect
+without replay and completed sample 3 after explicit discovery on generation 2.
+Independent TCP tests additionally moved the MVS physical position after reconnect
+and verified the next caller sample used the new TLP. Offline package verification
+and the extracted consumer passed, including DP/SP/temperature, FLOAT module type,
+raw masks and explicit 4088 counter reads. CI/Linux scripts run the bounded demo.
+
+TCP fixtures required execution outside the network sandbox. Offline consumer
+resolution added its own package to the copied lockfile. No dependencies, package
+version or publication were changed. Software evidence establishes neither
+physical/controller interoperability nor persistent identity, full PT conformance
+or resolution of DEC-10.09; those acceptance items remain open.
+
+## Unreleased temperature catalog evidence — 2026-10-15
+
+PT-106/107 add all 61 RTD/thermocouple read fields, bringing the catalog to 263
+entries. [Temperature contracts](TEMPERATURE.md), the per-parameter catalog
+manifest and DEC-10.08 keep source-access/calibration/copy defects explicit.
+All temperature writes remain blocked. Existing OP-166/181 development work,
+version 0.1.3 and the completed history implementation are retained.
+
+Local verification passed 235 all-feature/all-target tests, the default-feature
+`cargo test --locked` gate, 21 doctests, strict all-feature/all-target Clippy,
+formatting and rustdoc. The independent `temperature_monitoring` TCP example,
+offline package verification and extracted-package consumer passed. The consumer
+reads both temperature schemas, unit/sensor metadata, unused alarm bits and
+firmware-gated failsafe fields, and checks the temperature-write gate. CI and the
+Linux check script now run the monitoring example. Local TCP tests required
+execution outside the network sandbox; offline consumer resolution added its own
+package to the copied lockfile. No dependency change or publication occurred.
+
+Evidence is software-only: synthetic independent literals, simulator datasets and
+framework lifecycle checks do not establish physical Ethernet/serial/controller
+compatibility or resolve DEC-10.08. Full PT completion still requires remaining
+metadata, write procedures and applicability/interoperability evidence.
+
+## Unreleased OP-181 and writable catalog evidence — 2026-10-15
+
+This slice extends the existing uncommitted OP-166 work; it does not replace the
+completed 0.1.3 history implementation or bump the package version. OP-181 has
+separate count/TLP/value packing and a documented conservative 240-byte request
+policy. The writable catalog now has 12 audited fields; see [the manifest and
+outcome contracts](WRITES.md). No physical-controller or publication claim follows.
+
+Local checks passed: 228 all-feature/all-target tests, 20 doctests, strict
+all-feature/all-target Clippy, formatting, rustdoc, the combined `parameter_writes`
+simulator example, offline package verification and an extracted-package consumer
+that executes cross-point OP-181 writes and explicit read-back. Independent TCP
+literals cover mixed widths/order/duplicates and all three catalog layouts;
+shared write tests exercise both opcodes' interruption, preflight and generation
+contracts. Simulator tests cover the declared manifest, explicit partial effects
+and lost-ack recovery without replay or implicit continuation. Test TCP listeners
+required execution outside the network sandbox. The consumer used offline
+resolution to add its own package to the copied lockfile.
+
+Broader parameter constraints, remaining active-cancellation/stop matrices,
+controller error-offset/partial-commit evidence, hosted CI and physical validation
+remain open. Historical OP-166 and 0.1.3 evidence below is retained as recorded.
+
+## Unreleased OP-166 development evidence — 2026-10-15
+
+The working tree was clean before this slice; completed 0.1.3 history work and
+its release evidence below were retained. Version remains 0.1.3; this work is
+unreleased and introduces no publication or physical-compatibility claim.
+
+Local verification: all-feature/all-target regression suite passed 221 tests
+(existing 217 plus the first four write tests). The final targeted write suite
+passed five tests after adding queued-future cancellation. All 20 doctests passed,
+strict all-feature/all-target Clippy, formatting and rustdoc passed, and the
+`parameter_writes` simulator example completed write/read-back. Offline package
+verification passed; an extracted-package consumer compiled and ran successfully,
+including the public write-plan assertion. Local TCP checks required execution
+outside the network sandbox. The initial online package attempt failed on registry
+DNS access; the offline retry verified successfully with cached locked dependencies.
+The consumer used offline resolution to add its own package to the copied lockfile.
+
+This verifies software behavior for the [declared write subset](WRITES.md), not
+controller atomicity, firmware interoperability, serial exchange or hosted CI.
+
+
 ## 0.1.3 indexed, day-oriented and selected history
 
 OP-136 adds minute/periodic/daily contiguous point blocks with time-major TIME/FLOAT
@@ -196,6 +288,8 @@ cargo clippy --locked --all-features --all-targets -- -D warnings
 cargo run --locked --example managed_extensions
 cargo run --locked --example schema_profiles
 cargo run --locked --example discovery_catalog
+cargo run --locked --features simulator --example parameter_writes
+cargo run --locked --example temperature_monitoring -- 3 100 --demo-reconnect
 cargo run --locked --example log_retrieval
 cargo run --locked --example history_metadata
 cargo run --locked --example history

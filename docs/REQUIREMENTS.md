@@ -167,9 +167,10 @@ corresponding §§2.16–2.19; source ambiguity and physical evidence remain sep
 - **Discovery:** selected 160/240/224 layouts are tested interpretations, not a
   resolution of conflicting diagrams or firmware applicability (DEC-3). Repeated
   discovery detects observed changes, not an atomic device snapshot.
-- **Catalog:** the 202-entry per-parameter source/literal/TCP manifest is
+- **Catalog:** the 332-entry per-parameter source/literal/TCP manifest is
   [CATALOG.md](CATALOG.md). Defaults, update ownership, conditional writes,
   omitted/reserved parameters and unimplemented table variants remain open.
+  PT-108/67 requires explicit per-location 4088 applicability.
   No entire PT row is closed by the all-entry test.
 - **Logs/SRBX:** tested bounded windows and observed anchors cannot prove durable,
   gap-free ingestion, controller identity or absence of a full unseen ring wrap.
@@ -200,3 +201,69 @@ cargo test --locked --all-features --doc
 
 Named requirements can be selected with Cargo's filter, for example
 `cargo test --locked --test protocol req_167_`.
+
+## Parameter writes (2026-10-15)
+
+| Stable ID | Source | Requirement asserted | Executable test |
+| --- | --- | --- | --- |
+| REQ-166-REQUEST / POL-WRITE-VALIDATION | §2.20/Table 2-23; schema contract | Literal header/data, 230-byte splitting, nonwrapping parameter 255, exact types and bounds, built-in audit gate | [req_166_literal_budgets_types_and_ranges](../tests/writes.rs) |
+| REQ-166-ACK / POL-WRITE-PROGRESS / POL-WRITE-NO-REPLAY | Table 2-23; DEC-6; managed contract | Empty acknowledgement, malformed acknowledgement, multiple raw errors, lost acknowledgement and call deadline retain confirmed prefix/uncertain batch/unattempted tail | [pol_write_progress_lost_ack_and_device_errors_never_replay](../tests/writes.rs) |
+| POL-WRITE-BEFORE-SEND / POL-WRITE-GENERATION | Write contract | Unavailable profile and stale generation never permit a write | [pol_write_before_send_and_stale_generation_are_not_attempted](../tests/writes.rs) |
+| REQ-166-SIMULATOR | Table 2-23/Table 3-5 | Station-name effect survives lost acknowledgement; explicit read-back after recovery | [req_166_simulator_effect_survives_lost_ack](../tests/writes.rs) |
+| POL-WRITE-CANCEL | Managed write contract | Dropping queued future closes send gate before ownership is available | [pol_write_dropped_queued_future_closes_send_gate](../tests/writes.rs) |
+| POL-WRITE-PACKAGE | Public write contract | Source-audited plan through extracted crate | [package consumer](../scripts/package-consumer.rs) |
+
+## Arbitrary writes and writable I/O catalog (2026-10-15)
+
+| Stable ID | Source | Requirement asserted | Executable test |
+| --- | --- | --- | --- |
+| REQ-181-REQUEST / REQ-181-ACK | §2.23/Table 2-26, p.2-39 | Count and ordered cross-point TLP/value tuples, mixed widths, duplicates and empty acknowledgement | [req_181_mixed_width_literals_preserve_cross_point_order_and_duplicates](../tests/arbitrary_writes.rs) |
+| POL-181-BUDGET | Library policy; Table 2-26 packing; DEC-1.03 | Conservative 240-byte total request payload, 236-byte indivisible value, count/TLP overhead, tighter limits and 256-input splitting | [req_181_budget_counts_tlps_values_and_count_independently_of_166](../tests/arbitrary_writes.rs) |
+| REQ-WRITE-CATALOG | Tables 3-5/13–17, pp.3-34/61/63/66/70/72 | Independent TCP literals and explicit metadata for all 12 fields, all layouts; numeric/enum/ASCII bounds, wrong/absent physical locations and disputed fields rejected before send | [req_write_catalog_literals_and_local_constraints_cover_all_audited_fields](../tests/arbitrary_writes.rs) |
+| POL-181-PROGRESS | Table 2-26; DEC-6; managed write contract | Both opcodes retain acknowledged prefix, uncertain/device-error batch and unattempted tail after loss, malformed reply, raw multiple errors or deadline | [pol_write_progress_lost_ack_and_device_errors_never_replay](../tests/writes.rs) |
+| POL-181-NO-REPLAY | Managed write contract | Lost acknowledgement retains first effect, later batch never sends; replacement serves explicit read with no additional write | [pol_181_lost_ack_recovery_retains_effects_without_replay_or_resume](../tests/arbitrary_writes.rs) |
+| REQ-181-SIMULATOR | Tables 2-23/26, declared write manifest | Both services change all 12 fields with explicit read-back, 1.00/3.60 firmware identities and all layouts | [req_write_simulator_updates_each_audited_field_with_both_services](../tests/arbitrary_writes.rs) |
+| POL-181-PARTIAL-DEVICE | Deliberate simulator policy; DEC-6 remains open | Preserve earlier effect after later unsupported/read-only tuple; reject zero count, truncated header/value and trailing bytes | [req_181_simulator_reports_partial_effect_and_rejects_malformed_tuples](../tests/arbitrary_writes.rs) |
+| POL-181-PACKAGE | Public write contract | Execute cross-point writes, outcomes and explicit read-back through extracted package | [package consumer](../scripts/package-consumer.rs) |
+
+`POL-WRITE-BEFORE-SEND`, `POL-WRITE-GENERATION` and `POL-WRITE-CANCEL`
+now run both write opcodes in the existing named tests. Partial-effect simulator
+policy, conservative request limits and independent synthetic TCP peers remain
+software evidence; no controller error-offset/atomicity or physical claim follows.
+
+## Temperature catalog reads (2026-10-15)
+
+| Stable ID | Source | Requirement asserted | Executable test |
+| --- | --- | --- | --- |
+| REQ-TEMP-TABLE | §§3.4.17–18/Tables 3-18/19, pp.3-75–81 | All 61 widths, source access, versions, scalar ranges, fixed units and source caveats | [temperature_tables_account_for_every_width_access_range_unit_and_caveat](../tests/temperature_catalog.rs) |
+| REQ-TEMP-ENUMS / REQ-TEMP-ALARMS | Tables 3-18/19 | Every documented enum/unknown byte, noncontiguous TC codes, all 256 alarm bytes and unused bit 5 | [temperature_enum_codes_and_alarm_bits_preserve_every_unknown_byte](../tests/temperature_catalog.rs) |
+| REQ-TEMP-READS / REQ-TEMP-FIRMWARE / POL-TEMP-NO-WRITES | Tables 3-18/19; §3.2; read/write contracts | Independent TCP reads of every available field, all layouts, 1.00/2.99/3.00/3.39/3.40/3.49/3.50/3.60 boundaries, invalid locations/identity and blocked writes fail before send | [temperature_reads_every_field_with_firmware_location_and_write_gates](../tests/temperature_catalog.rs) |
+| POL-TEMP-RETIREMENT / POL-TEMP-NO-REPLAY | Table 2-25; managed ownership contract | Healthy rejection vs malformed/truncated/echo/count/length/disconnect failure, no replay, stale-plan rejection after replacement | [temperature_malformed_replies_and_replacements_preserve_lifecycle_contracts](../tests/temperature_catalog.rs) |
+| REQ-TEMP-RAW | Tables 3-18/19; read contract | Unknown alpha/unit/sensor codes, unused alarm bits, out-of-range bytes and NaN/infinity/signed-zero FLOAT bits stay raw | [temperature_raw_codes_unused_bits_and_ieee_payloads_remain_readable](../tests/temperature_catalog.rs) |
+| POL-TEMP-PROGRESS | Bounded schema read contract | Acknowledged 38-field RTD prefix remains after malformed second TC batch; no implicit replay/resume | [temperature_failed_second_batch_returns_confirmed_prefix_without_resume](../tests/temperature_catalog.rs) |
+| REQ-TEMP-SIMULATOR | Tables 3-18/19 | Explicit values for all 61 fields, all three layouts, real loopback reads | [simulator_reads_all_temperature_fields_across_layouts](../tests/temperature_catalog.rs) |
+| REQ-TEMP-PACKAGE | Public temperature read contract | Both schemas, unit/sensor labels, raw alarm bits, 3.50 failsafe fields and blocked writes through extracted package | [package consumer](../scripts/package-consumer.rs) |
+
+The existing `REQ-CATALOG-VALUES` fixture now reads all 332 entries over TCP.
+[Source caveats](TEMPERATURE.md) and DEC-10.08 remain distinct from executable
+framework evidence and physical validation. Neither read labels nor numeric ranges
+perform temperature conversion, calibration or alarm evaluation.
+
+## MVS reads and caller-driven monitoring (2026-10-15)
+
+| Stable ID | Source | Requirement asserted | Executable test |
+| --- | --- | --- | --- |
+| REQ-MVS-TABLE | §3.4.19/Table 3-20, pp.3-82–89 | All 69 source widths/access/version/ranges/units/caveats, FLOAT /65, UInt16 /67 and unspecified bounds for code gaps | [mvs_table_accounts_for_all_widths_access_versions_ranges_units_and_source_caveats](../tests/mvs_catalog.rs) |
+| REQ-MVS-ENUMS / REQ-MVS-BITS | Table 3-20 | Every documented/unknown byte code, all 256 values in five BIN fields, distinct masks/unused bits | [mvs_enums_and_all_alarm_bytes_preserve_noncontiguous_and_unknown_values](../tests/mvs_catalog.rs) |
+| REQ-MVS-READS / POL-MVS-4088 / POL-MVS-NO-WRITES | Table 3-20; §3.2; explicit applicability contract | Independent TCP reads, all layouts, 1.00/2.01/2.02/3.19/3.20/3.59/3.60 boundaries, physical locations, rejected unsupported fields, explicit 4088 gate and blocked writes | [mvs_every_field_reads_at_firmware_boundaries_with_explicit_sensor_applicability](../tests/mvs_catalog.rs) |
+| POL-MVS-PROGRESS / POL-MVS-RETIREMENT | OP-180/managed contract; Table 3-20 | Retain exact first batch after malformed second batch, no replay, healthy device rejection, stale-plan rejection and new catalogs lose 4088 assertions | [mvs_partial_progress_and_rejections_preserve_generation_and_no_replay](../tests/mvs_catalog.rs) |
+| REQ-MVS-RAW | Table 3-20; read contract | Unknown unit/sensor/poll codes, contradictory command code 7, NaN FLOAT module type, infinity/signed zero and unused bits stay raw | [mvs_unknown_codes_raw_float_type_and_unused_bits_remain_lossless](../tests/mvs_catalog.rs) |
+| REQ-MVS-SIMULATOR | Declared Table 3-20 subset | Explicit dataset for all 69 fields, every layout, real loopback TCP and explicit 4088 context | [simulator_reads_all_mvs_fields_with_explicit_4088_context](../tests/mvs_catalog.rs) |
+| POL-MONITOR-REDISCOVER / POL-MONITOR-NO-REPLAY | Example-owned polling policy | Each caller sample explicitly discovers; one disconnect returns once; next call resolves changed physical position on replacement generation with no read replay | [polling_reports_one_failure_then_explicitly_rediscovers_changed_locations](../tests/monitoring.rs) |
+| POL-MONITOR-PROGRESS | Example-owned polling policy | Preserve confirmed partial read progress and reject empty targets before discovery; no internal retry | [polling_retains_partial_samples_and_validates_empty_targets_before_io](../tests/monitoring.rs) |
+| REQ-MVS-PACKAGE | Public read/applicability contract | Pressure/temperature, raw status/type fields and conditional 4088 counter through extracted package, with blocked MVS writes | [package consumer](../scripts/package-consumer.rs) |
+
+The all-catalog fixture now checks 332 entries. The CI monitoring example uses
+finite caller-selected attempts/intervals and its explicit disconnect demo; no
+background monitoring/replay policy is added to Client. [MVS contracts](MVS.md)
+and DEC-10.09 keep software evidence separate from source/physical closure.

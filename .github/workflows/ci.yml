@@ -24,6 +24,7 @@ jobs:
       - run: cargo run --locked --example managed_extensions
       - run: cargo run --locked --example schema_profiles
       - run: cargo run --locked --example discovery_catalog
+      - run: cargo run --locked --example temperature_monitoring -- 3 1 --demo-reconnect
       - run: cargo run --locked --example log_retrieval
       - run: cargo run --locked --example history_metadata
       - run: cargo run --locked --example history

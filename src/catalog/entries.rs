@@ -2042,4 +2042,1306 @@ pub(super) const ENTRIES: &[CatalogEntry] = &[
         (1, 0),
         "3.4.16/Table 3-17, p.3-74"
     ),
+    // Tables 3-18/3-19: read widths only; every temperature write remains blocked.
+    entry!(
+        106,
+        0,
+        "rtd_tag",
+        DataType::Ascii(10),
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-75"
+    ),
+    entry!(
+        106,
+        1,
+        "rtd_units_tag",
+        DataType::Ascii(10),
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-75"
+    ),
+    entry!(
+        106,
+        2,
+        "rtd_scanning",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-75"
+    ),
+    entry!(
+        106,
+        3,
+        "rtd_scan_period",
+        DataType::Float,
+        ReadWrite,
+        Some((0.066, 43200.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-75"
+    ),
+    entry!(
+        106,
+        4,
+        "rtd_scan_time",
+        DataType::Float,
+        ReadOnly,
+        Some((0.05, 43200.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-75"
+    ),
+    entry!(
+        106,
+        5,
+        "rtd_filter",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 99.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-75"
+    ),
+    entry!(
+        106,
+        6,
+        "rtd_averaging",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-75"
+    ),
+    entry!(
+        106,
+        7,
+        "rtd_alpha",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-75"
+    ),
+    entry!(
+        106,
+        8,
+        "rtd_raw",
+        DataType::UInt16,
+        ReadOnly,
+        Some((0.0, 65535.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-75"
+    ),
+    entry!(
+        106,
+        9,
+        "rtd_zero_raw",
+        DataType::UInt16,
+        ReadOnly,
+        Some((0.0, 65535.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-75"
+    ),
+    entry!(
+        106,
+        10,
+        "rtd_midpoint_1_raw",
+        DataType::UInt16,
+        ReadOnly,
+        Some((0.0, 65535.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-75"
+    ),
+    entry!(
+        106,
+        11,
+        "rtd_midpoint_2_raw",
+        DataType::UInt16,
+        ReadOnly,
+        Some((0.0, 65535.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-75"
+    ),
+    entry!(
+        106,
+        12,
+        "rtd_midpoint_3_raw",
+        DataType::UInt16,
+        ReadOnly,
+        Some((0.0, 65535.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-75"
+    ),
+    entry!(
+        106,
+        13,
+        "rtd_span_raw",
+        DataType::UInt16,
+        ReadOnly,
+        Some((0.0, 65535.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-76"
+    ),
+    entry!(
+        106,
+        14,
+        "rtd_zero_eu",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-76"
+    ),
+    entry!(
+        106,
+        15,
+        "rtd_midpoint_1_eu",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-76"
+    ),
+    entry!(
+        106,
+        16,
+        "rtd_midpoint_2_eu",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-76"
+    ),
+    entry!(
+        106,
+        17,
+        "rtd_midpoint_3_eu",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-76"
+    ),
+    entry!(
+        106,
+        18,
+        "rtd_span_eu",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-76"
+    ),
+    entry!(
+        106,
+        19,
+        "rtd_offset",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (3, 0),
+        "3.4.17/Table 3-18, p.3-76"
+    ),
+    entry!(
+        106,
+        20,
+        "rtd_set_value",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-76"
+    ),
+    entry!(
+        106,
+        21,
+        "rtd_manual_value",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-76"
+    ),
+    entry!(
+        106,
+        22,
+        "rtd_eu",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-76"
+    ),
+    entry!(
+        106,
+        23,
+        "rtd_clipping",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-76"
+    ),
+    entry!(
+        106,
+        24,
+        "rtd_low_low_alarm",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-76"
+    ),
+    entry!(
+        106,
+        25,
+        "rtd_low_alarm",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-76"
+    ),
+    entry!(
+        106,
+        26,
+        "rtd_high_alarm",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-76"
+    ),
+    entry!(
+        106,
+        27,
+        "rtd_high_high_alarm",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-76"
+    ),
+    entry!(
+        106,
+        28,
+        "rtd_rate_alarm",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-76"
+    ),
+    entry!(
+        106,
+        29,
+        "rtd_deadband",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-77"
+    ),
+    entry!(
+        106,
+        30,
+        "rtd_alarming",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-77"
+    ),
+    entry!(
+        106,
+        31,
+        "rtd_srbx_clear",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-77"
+    ),
+    entry!(
+        106,
+        32,
+        "rtd_srbx_set",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-77"
+    ),
+    entry!(
+        106,
+        33,
+        "rtd_alarm_bits",
+        DataType::Binary,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-77"
+    ),
+    entry!(
+        106,
+        34,
+        "rtd_calibration_timer",
+        DataType::Float,
+        ReadOnly,
+        Some((0.0, 3600.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-78"
+    ),
+    entry!(
+        106,
+        35,
+        "rtd_calibration_mode",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 4.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-78"
+    ),
+    entry!(
+        106,
+        36,
+        "rtd_calibration_type",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 6.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-78"
+    ),
+    entry!(
+        106,
+        37,
+        "rtd_units",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 4.0)),
+        (1, 0),
+        "3.4.17/Table 3-18, p.3-78"
+    ),
+    entry!(
+        107,
+        0,
+        "tc_tag",
+        DataType::Ascii(10),
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-79"
+    ),
+    entry!(
+        107,
+        1,
+        "tc_units_tag",
+        DataType::Ascii(10),
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-79"
+    ),
+    entry!(
+        107,
+        2,
+        "tc_scanning",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-79"
+    ),
+    entry!(
+        107,
+        3,
+        "tc_units",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 3.0)),
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-79"
+    ),
+    entry!(
+        107,
+        4,
+        "tc_sensor_type",
+        DataType::UInt8,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-79"
+    ),
+    entry!(
+        107,
+        5,
+        "tc_scan_period",
+        DataType::Float,
+        ReadWrite,
+        Some((0.1, 43200.0)),
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-79"
+    ),
+    entry!(
+        107,
+        6,
+        "tc_scan_time",
+        DataType::Float,
+        ReadOnly,
+        Some((0.0, 43200.0)),
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-80"
+    ),
+    entry!(
+        107,
+        7,
+        "tc_filter",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 99.0)),
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-80"
+    ),
+    entry!(
+        107,
+        8,
+        "tc_averaging",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-80"
+    ),
+    entry!(
+        107,
+        9,
+        "tc_eu",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-80"
+    ),
+    entry!(
+        107,
+        10,
+        "tc_low_low_alarm",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-80"
+    ),
+    entry!(
+        107,
+        11,
+        "tc_low_alarm",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-80"
+    ),
+    entry!(
+        107,
+        12,
+        "tc_high_alarm",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-80"
+    ),
+    entry!(
+        107,
+        13,
+        "tc_high_high_alarm",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-80"
+    ),
+    entry!(
+        107,
+        14,
+        "tc_rate_alarm",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-80"
+    ),
+    entry!(
+        107,
+        15,
+        "tc_deadband",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-80"
+    ),
+    entry!(
+        107,
+        16,
+        "tc_alarming",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-80"
+    ),
+    entry!(
+        107,
+        17,
+        "tc_srbx_clear",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-80"
+    ),
+    entry!(
+        107,
+        18,
+        "tc_srbx_set",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-80"
+    ),
+    entry!(
+        107,
+        19,
+        "tc_alarm_bits",
+        DataType::Binary,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-80"
+    ),
+    entry!(
+        107,
+        20,
+        "tc_offset",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.18/Table 3-19, p.3-81"
+    ),
+    entry!(
+        107,
+        21,
+        "tc_failsafe_mode",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (3, 50),
+        "3.4.18/Table 3-19, p.3-81"
+    ),
+    entry!(
+        107,
+        22,
+        "tc_failsafe_value",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (3, 50),
+        "3.4.18/Table 3-19, p.3-81"
+    ),
+    // Table 3-20: MVS reads only; /67 additionally requires explicit 4088 applicability.
+    entry!(
+        108,
+        0,
+        "mvs_tag",
+        DataType::Ascii(10),
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-82"
+    ),
+    entry!(
+        108,
+        1,
+        "mvs_sensor_address",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 255.0)),
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-82"
+    ),
+    entry!(
+        108,
+        2,
+        "mvs_poll_mode",
+        DataType::UInt8,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-82"
+    ),
+    entry!(
+        108,
+        3,
+        "mvs_units",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-82"
+    ),
+    entry!(
+        108,
+        4,
+        "mvs_water_reference",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-82"
+    ),
+    entry!(
+        108,
+        5,
+        "mvs_pressure_tap",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-82"
+    ),
+    entry!(
+        108,
+        6,
+        "mvs_failure_action",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-82"
+    ),
+    entry!(
+        108,
+        7,
+        "mvs_interface_revision",
+        DataType::UInt8,
+        ReadOnly,
+        Some((0.0, 255.0)),
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-82"
+    ),
+    entry!(
+        108,
+        8,
+        "mvs_sensor_voltage",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-82"
+    ),
+    entry!(
+        108,
+        9,
+        "mvs_sensor_alarming",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-83"
+    ),
+    entry!(
+        108,
+        10,
+        "mvs_sensor_alarm_bits",
+        DataType::Binary,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-83"
+    ),
+    entry!(
+        108,
+        11,
+        "mvs_range_bits",
+        DataType::Binary,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-83"
+    ),
+    entry!(
+        108,
+        12,
+        "mvs_dp_static_effect",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-84"
+    ),
+    entry!(
+        108,
+        13,
+        "mvs_dp_zero",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-84"
+    ),
+    entry!(
+        108,
+        14,
+        "mvs_dp_midpoint_1",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-84"
+    ),
+    entry!(
+        108,
+        15,
+        "mvs_dp_midpoint_2",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-84"
+    ),
+    entry!(
+        108,
+        16,
+        "mvs_dp_midpoint_3",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-84"
+    ),
+    entry!(
+        108,
+        17,
+        "mvs_dp_span",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-84"
+    ),
+    entry!(
+        108,
+        18,
+        "mvs_dp_manual",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-84"
+    ),
+    entry!(
+        108,
+        19,
+        "mvs_dp",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-84"
+    ),
+    entry!(
+        108,
+        20,
+        "mvs_dp_reverse",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-84"
+    ),
+    entry!(
+        108,
+        21,
+        "mvs_dp_fault",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-85"
+    ),
+    entry!(
+        108,
+        22,
+        "mvs_dp_low_alarm",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-85"
+    ),
+    entry!(
+        108,
+        23,
+        "mvs_dp_high_alarm",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-85"
+    ),
+    entry!(
+        108,
+        24,
+        "mvs_dp_deadband",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-85"
+    ),
+    entry!(
+        108,
+        25,
+        "mvs_dp_alarming",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-85"
+    ),
+    entry!(
+        108,
+        26,
+        "mvs_dp_srbx_clear",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-85"
+    ),
+    entry!(
+        108,
+        27,
+        "mvs_dp_srbx_set",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-85"
+    ),
+    entry!(
+        108,
+        28,
+        "mvs_dp_alarm_bits",
+        DataType::Binary,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-85"
+    ),
+    entry!(
+        108,
+        29,
+        "mvs_sp_zero",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-86"
+    ),
+    entry!(
+        108,
+        30,
+        "mvs_sp_midpoint_1",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-86"
+    ),
+    entry!(
+        108,
+        31,
+        "mvs_sp_midpoint_2",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-86"
+    ),
+    entry!(
+        108,
+        32,
+        "mvs_sp_midpoint_3",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-86"
+    ),
+    entry!(
+        108,
+        33,
+        "mvs_sp_span",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-86"
+    ),
+    entry!(
+        108,
+        34,
+        "mvs_sp_manual",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-86"
+    ),
+    entry!(
+        108,
+        35,
+        "mvs_sp",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-86"
+    ),
+    entry!(
+        108,
+        36,
+        "mvs_sp_fault",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-86"
+    ),
+    entry!(
+        108,
+        37,
+        "mvs_sp_low_alarm",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-86"
+    ),
+    entry!(
+        108,
+        38,
+        "mvs_sp_high_alarm",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-86"
+    ),
+    entry!(
+        108,
+        39,
+        "mvs_sp_deadband",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-86"
+    ),
+    entry!(
+        108,
+        40,
+        "mvs_sp_alarming",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-86"
+    ),
+    entry!(
+        108,
+        41,
+        "mvs_sp_srbx_clear",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-86"
+    ),
+    entry!(
+        108,
+        42,
+        "mvs_sp_srbx_set",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-86"
+    ),
+    entry!(
+        108,
+        43,
+        "mvs_sp_alarm_bits",
+        DataType::Binary,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-86"
+    ),
+    entry!(
+        108,
+        44,
+        "mvs_temperature_zero",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-87"
+    ),
+    entry!(
+        108,
+        45,
+        "mvs_temperature_midpoint_1",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-87"
+    ),
+    entry!(
+        108,
+        46,
+        "mvs_temperature_midpoint_2",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-87"
+    ),
+    entry!(
+        108,
+        47,
+        "mvs_temperature_midpoint_3",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-87"
+    ),
+    entry!(
+        108,
+        48,
+        "mvs_temperature_span",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-87"
+    ),
+    entry!(
+        108,
+        49,
+        "mvs_temperature_manual",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-87"
+    ),
+    entry!(
+        108,
+        50,
+        "mvs_temperature",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-87"
+    ),
+    entry!(
+        108,
+        51,
+        "mvs_temperature_fault",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-87"
+    ),
+    entry!(
+        108,
+        52,
+        "mvs_temperature_low_alarm",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-87"
+    ),
+    entry!(
+        108,
+        53,
+        "mvs_temperature_high_alarm",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-87"
+    ),
+    entry!(
+        108,
+        54,
+        "mvs_temperature_deadband",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-87"
+    ),
+    entry!(
+        108,
+        55,
+        "mvs_temperature_alarming",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-87"
+    ),
+    entry!(
+        108,
+        56,
+        "mvs_temperature_srbx_clear",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-88"
+    ),
+    entry!(
+        108,
+        57,
+        "mvs_temperature_srbx_set",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-88"
+    ),
+    entry!(
+        108,
+        58,
+        "mvs_temperature_alarm_bits",
+        DataType::Binary,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-88"
+    ),
+    entry!(
+        108,
+        59,
+        "mvs_calibration_command",
+        DataType::UInt8,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-88"
+    ),
+    entry!(
+        108,
+        60,
+        "mvs_calibration_type",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 7.0)),
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-88"
+    ),
+    entry!(
+        108,
+        61,
+        "mvs_calibration_set_value",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-89"
+    ),
+    entry!(
+        108,
+        62,
+        "mvs_sensor_srbx_clear",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-89"
+    ),
+    entry!(
+        108,
+        63,
+        "mvs_sensor_srbx_set",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.19/Table 3-20, p.3-89"
+    ),
+    entry!(
+        108,
+        64,
+        "mvs_sp_zero_shift",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (2, 2),
+        "3.4.19/Table 3-20, p.3-89"
+    ),
+    entry!(
+        108,
+        65,
+        "mvs_module_type",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (2, 2),
+        "3.4.19/Table 3-20, p.3-89"
+    ),
+    entry!(
+        108,
+        66,
+        "mvs_temperature_bias",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (3, 20),
+        "3.4.19/Table 3-20, p.3-89"
+    ),
+    entry!(
+        108,
+        67,
+        "mvs_config_change_count",
+        DataType::UInt16,
+        ReadOnly,
+        Some((0.0, 65535.0)),
+        (3, 60),
+        "3.4.19/Table 3-20, p.3-89"
+    ),
+    entry!(
+        108,
+        68,
+        "mvs_sensor_type",
+        DataType::UInt8,
+        ReadOnly,
+        Some((0.0, 4.0)),
+        (3, 60),
+        "3.4.19/Table 3-20, p.3-89"
+    ),
 ];

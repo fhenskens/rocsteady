@@ -1,6 +1,6 @@
 //! Async ROC Plus client with etherbird recovery.
 //!
-//! Experimental APIs cover discovery, schema-backed parameter reads, alarm/event logs,
+//! Experimental APIs cover discovery, schema-backed parameter reads and writes, alarm/event logs,
 //! single/multi-point, day-oriented and selected history, legacy login and device errors.
 //! Opt-in SRBX polling and explicit consumed-alarm
 //! acknowledgement support monitoring; acknowledgement changes controller status.
@@ -28,6 +28,7 @@ mod session;
 pub mod simulator;
 mod srbx;
 pub mod transport;
+mod writes;
 
 pub use catalog::{BitMeaning, CatalogEntry, CatalogMetadata, EnumMeaning, Roc800Catalog};
 pub use client::{Client, ClientConfig};
@@ -96,3 +97,17 @@ pub mod guide {}
 
 #[doc = include_str!("../docs/USAGE.md")]
 pub mod usage {}
+
+pub use writes::{
+    MAX_ARBITRARY_WRITE_REQUEST, SchemaWriteError, WriteBatch, WriteOutcome, WritePlan,
+    WriteProgress,
+};
+
+#[doc = include_str!("../docs/WRITES.md")]
+pub mod write_guide {}
+
+#[doc = include_str!("../docs/TEMPERATURE.md")]
+pub mod temperature_guide {}
+
+#[doc = include_str!("../docs/MVS.md")]
+pub mod mvs_guide {}

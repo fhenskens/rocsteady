@@ -1,7 +1,7 @@
 # Extensible client work plan
 
 Status: managed EXT-1/4/5 slice plus explicit EXT-2 profiles/codecs and EXT-3
-schema-backed reads implemented. Remaining device presets, write planning and
+schema-backed reads and OP-166/181 write planning implemented. Remaining device presets and
 authentication acceptance tasks stay open. Updated 2026-10-15.
 This is the early delivery milestone in [the roadmap](OUTSTANDING_WORK.md).
 The published etherbird crate remains responsible for lifecycle supervision,
@@ -86,9 +86,8 @@ streams and preserve valid device-rejection semantics.
 - [x] Define lookup by point type/parameter and applicable device/firmware, including location rules.
 - [x] Support width/type, access and optional constraints without guessing missing metadata.
 - [x] Define deterministic precedence for caller overrides and built-in catalogs; preserve caller-supplied raw parameter access.
-- [ ] Integrate provider lookup with schema-aware write planning and explicit
-  partial/uncertain outcomes (M4); bounded read planning is complete below.
-- [x] Integrate provider lookup with bounded read batch planning and confirmed failure progress; write planning awaits M4 codecs/outcome semantics.
+- [x] Integrate opt-in provider lookup with OP-166/181 schema-aware write planning and explicit partial/uncertain outcomes; wider writable catalogs and conditional constraints remain open.
+- [x] Integrate provider lookup with bounded read batch planning and confirmed failure progress; write plans retain separate partial/uncertain outcomes.
 - [x] Separate local validation from device rejection and uncertain remote outcomes.
 - [x] Add an external-provider example for a vendor/user-defined point type, with mixed widths and bounds.
 - [x] Keep comprehensive catalog manifests in SCHEMA_WORK_PLAN.md; a provider seam does not close those rows.
@@ -97,7 +96,8 @@ Evidence: [schema implementation](../src/schema.rs),
 [independent mixed-width/budget/progress tests](../tests/profiles_schema.rs), and
 [external provider example](../examples/schema_profiles.rs). SchemaContext is explicit
 caller identity, not inferred discovery. Access and logical bounds are enforced for
-reads; optional numeric bounds are metadata reserved for future writes. Missing schema,
+reads; numeric bounds constrain opted-in schema writes without filtering read
+values. Write permission requires separate provider opt-in. Missing schema,
 unsupported identity, conditional access and invalid widths fail before admission.
 
 Acceptance: a user adds a point type and correct typed access without changing
@@ -197,7 +197,7 @@ records local and user-confirmed hosted checks separately.
 EXT-4/5 are delivered. Remaining EXT-1/2/3 requirements stay in their checklists
 above: protected discovery/authentication applicability, logout/credential changes,
 framing/preset evidence, occurrence-time semantics, identity/cache policy and
-schema-aware write planning. A delivered extension seam does not establish a
+broader write-schema constraints. A delivered extension seam does not establish a
 complete device procedure or built-in conformance.
 
 ## Delivery order
@@ -208,3 +208,6 @@ Promote independently evidenced device behavior into replaceable named presets;
 keep unsupported and provisional behavior explicit. Speculative enhanced login,
 file/tunnel formats and a universal firmware dictionary are not prerequisites
 for unrelated, sufficiently specified services.
+
+Write-provider opt-in and remaining constraints are covered by
+[EXT-3 above](#ext-3-schema-providers) and the [write contracts](WRITES.md).

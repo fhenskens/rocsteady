@@ -59,10 +59,10 @@ services must have the correct direction; raw request access is not typed covera
 | OP-137 | 2.17 | Day indices | Table-based start/count lookup and raw invalid daily index implemented; DEC-4.05/06 and physical applicability open | tests/day_history.rs; tests/day_history_simulator.rs; DAY_HISTORY.md |
 | OP-138 | 2.18 | Day history | Values/point-255 timestamps and explicit indexed alternative implemented; snapshot/physical limits remain | tests/day_history.rs; tests/day_history_simulator.rs; DAY_HISTORY.md |
 | OP-139 | 2.19 | History information | Command-0 inventory and command-1 nonempty selected lists implemented, both timestamp shapes, bounded ranges and opt-in inventory checks; applicability/physical limits remain | tests/history_information.rs; tests/history_information_simulator.rs; HISTORY_INFORMATION.md |
-| OP-166 | 2.20 | Contiguous writes | Open | None |
+| OP-166 | 2.20 | Contiguous writes | Schema-aware bounded batches implemented; 12 audited writable fields; broader applicability remains open | tests/writes.rs; WRITES.md |
 | OP-167 | 2.21 | Contiguous reads | Partial | opcode_167_validates_count_range_and_echoed_block_header; TCP reads |
 | OP-180 | 2.22 | Arbitrary reads | Partial | opcode_180_request_has_count_and_ordered_tlps; opcode_180_response_echoes_tlp_before_each_value; TCP reads |
-| OP-181 | 2.23 | Arbitrary writes | Open | None |
+| OP-181 | 2.23 | Arbitrary writes | Schema-aware ordered TLP/value batches implemented; explicit conservative request policy and partial outcomes; physical applicability remains open | tests/arbitrary_writes.rs; tests/writes.rs; WRITES.md |
 | OP-203 | 2.24 | Files | Open | None |
 | OP-205 | 2.25 | Network tunnel | Open | None |
 | OP-206 | 2.26 | Transactions | Open | None |
@@ -162,12 +162,19 @@ the contradictory DEC-3 prose/diagrams. Full catalog rows remain in SCHEMA_WORK_
 
 ### OP-166 and OP-181: writes
 
-- [ ] Implement separately bounded contiguous and arbitrary write codecs/APIs.
-- [ ] Validate schema access, conditional access, values, byte counts and acknowledgement shape.
-- [ ] Model single and multiple errors, mixed writable/read-only ranges and partial remote changes.
-- [ ] Distinguish confirmed rejection/acknowledgement from unconfirmed outcome after send.
-- [ ] Provide explicit batch progress; preserve exclusive ownership when a workflow requires it.
-- [ ] Test changed simulator state, disconnect before/after send and cancellation; no implicit replay.
+OP-166/181 now have separately bounded packing, schema-aware planning, empty-ack
+validation, exclusive batch progress and explicit uncertain/device-error outcomes
+with no replay. The built-in writable subset has 12 fields; see
+[write contracts and manifest](WRITES.md). Broader parameter constraints and
+physical applicability remain open; software evidence does not resolve DEC-6.
+
+- [x] Implement separately bounded contiguous and arbitrary write codecs/APIs.
+- [x] Validate access, exact types/widths, numeric bounds, byte counts and empty acknowledgement for the declared subset; unresolved conditional fields remain blocked.
+- [x] Preserve raw multiple errors and acknowledged/uncertain/unattempted batch progress without per-parameter commit inference.
+- [x] Keep one exclusive workflow lease; exercise lost/malformed acknowledgements, deadlines, queued cancellation, generation/profile rejection and no replay for both opcodes.
+- [x] Exercise cross-point ordering/duplicates, independent literals/TCP and simulator state/read-back with the extracted public API.
+- [ ] Complete remaining parameter-level conditions, noncontiguous enumerations, before-send/active-cancellation/stop failure matrices and firmware/device applicability evidence.
+- [ ] Establish controller partial-commit and error-offset evidence (DEC-6); fixture partial effects do not close this acceptance.
 
 ### OP-10 and OP-11: configurable tables
 
@@ -379,3 +386,11 @@ identifying supported defaults and user-supplied capabilities.
 - [ ] Multi-request workflows retain progress and communicate uncertain/gapped outcomes across recovery.
 - [ ] The supported-device/firmware/channel matrix is backed by recorded interoperability evidence.
 - [ ] Documentation distinguishes implementation completion from firmware/channel validation and lists any remaining restrictions.
+
+PT-106/107 schema reads now use the existing OP-180 service contract; see
+[TEMPERATURE.md](TEMPERATURE.md) and the schema work plan. This adds no new
+opcode variant or temperature write support.
+
+PT-108 source-backed reads and example-owned caller-driven polling use existing
+OP-50/180 contracts; [MVS.md](MVS.md) records source conditions and the explicit
+4088 counter assertion. No new opcode or state-changing command is implemented.

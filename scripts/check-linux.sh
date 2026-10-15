@@ -8,6 +8,7 @@ cargo test --locked --all-features --doc
 cargo run --locked --example managed_extensions
 cargo run --locked --example schema_profiles
 cargo run --locked --example discovery_catalog
+cargo run --locked --example temperature_monitoring -- 3 1 --demo-reconnect
 cargo run --locked --example log_retrieval
 cargo run --locked --example history_metadata
 cargo run --locked --example history

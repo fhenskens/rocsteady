@@ -329,3 +329,14 @@ pub(crate) fn selected_history_with_codec<C: crate::ReplyCodec<crate::SelectedHi
         move |bytes: &[u8]| codec.decode(&request, bytes).map_err(Error::from),
     )
 }
+
+pub(crate) fn write_batch(
+    opcode: u8,
+    payload: Vec<u8>,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<(), Error> + Send> {
+    empty_ack(
+        opcode,
+        payload,
+        "parameter write acknowledgement must be empty",
+    )
+}

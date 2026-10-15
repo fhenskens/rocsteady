@@ -11,11 +11,14 @@ same contracts, so callers can replace them with their own implementations.
 
 Start with the [current handoff](OUTSTANDING_WORK.md#current-handoff--2026-10-15)
 and [recommended next slice](OUTSTANDING_WORK.md#recommended-next-slice).
-Version 0.1.3 includes the 202-parameter read catalog, history metadata (OP-105/108)
-and indexed/day-oriented history reads (OP-135–139), with explicit policies/codecs,
-bounded paging and confirmed progress. Feature contracts and coverage state each
-service's limits. The handoff separates implemented work, remaining baseline
-acceptance and physical validation; the roadmap recommends OP-166 next.
+The current checkout retains the completed 0.1.3 history baseline and adds
+unreleased OP-166/181 writes (12 audited fields), PT-106/107/108 reads
+(332 total catalog definitions) and finite caller-driven polling. The manifest
+still declares 0.1.3; these additions require the checkout until released.
+[Write contracts](WRITES.md), [temperature contracts](TEMPERATURE.md) and
+[MVS/polling contracts](MVS.md) record outcomes, firmware and applicability limits.
+The handoff separates implementation, remaining baseline acceptance and physical
+validation; the next slice is release preparation.
 
 ## Reading order
 
@@ -41,6 +44,9 @@ acceptance and physical validation; the roadmap recommends OP-166 next.
 | [Extensibility](EXTENSIBILITY.md) | Delivered/planned extension boundaries and external-consumer acceptance |
 | [Service plan](SPEC_WORK_PLAN.md) | Baseline opcode/core inventory and closure criteria |
 | [Schema plan](SCHEMA_WORK_PLAN.md) | Point-type inventory and per-parameter closure criteria |
+| [Parameter writes](WRITES.md) | OP-166/181 planning, audited writable manifest, partial/uncertain outcomes and no replay |
+| [MVS reads and polling](MVS.md) | PT-108 fields, explicit 4088 applicability and caller-driven sampling/re-discovery |
+| [Temperature reads](TEMPERATURE.md) | PT-106/107 read fields, units/sensor labels, source caveats and validation evidence |
 | [Catalog](CATALOG.md) | Selected source-audited parameter metadata, discovery policies, per-variant fixtures and explicit firmware/hardware limitations |
 | [History information](HISTORY_INFORMATION.md) | OP-139 configured inventory, ordered selections, optional timestamps and bounded paging |
 | [Day-oriented history](DAY_HISTORY.md) | OP-137/138 table defaults, caller interpretation, whole-day reads and explicit indexed fallback |

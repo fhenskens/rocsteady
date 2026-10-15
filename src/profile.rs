@@ -184,16 +184,16 @@ pub struct DefaultProfile;
 impl ProtocolProfile for DefaultProfile {
     fn metadata(&self) -> ProfileMetadata {
         ProfileMetadata {
-            name: "roc-plus-read-only",
+            name: "roc-plus-default",
             applicability: "ordinary unicast; firmware applicability is not automatically discovered",
             assumptions: "explicit addresses and caller-supplied parameter types; no routed framing",
-            evidence: "tests/protocol.rs, tests/configuration.rs, tests/integration.rs, tests/discovery.rs, tests/logs.rs, tests/history_metadata.rs, tests/history.rs, tests/multi_history.rs, tests/day_history.rs, tests/history_information.rs; no hardware evidence",
+            evidence: "tests/protocol.rs, tests/configuration.rs, tests/integration.rs, tests/discovery.rs, tests/logs.rs, tests/history_metadata.rs, tests/history.rs, tests/multi_history.rs, tests/day_history.rs, tests/history_information.rs, tests/writes.rs, tests/arbitrary_writes.rs; no hardware evidence",
         }
     }
     fn capability(&self, opcode: u8) -> Capability {
         match opcode {
-            6 | 7 | 17 | 50 | 100 | 108 | 135 | 136 | 137 | 138 | 139 | 118 | 119 | 167 | 180
-            | 225 => Capability::Verified,
+            6 | 7 | 17 | 50 | 100 | 108 | 135 | 136 | 137 | 138 | 139 | 118 | 119 | 166 | 167
+            | 180 | 181 | 225 => Capability::Verified,
             105 => Capability::Provisional, // Raw five-byte occurrence regions; DEC-4.01 remains open.
             24 | 224 | 255 => Capability::Unavailable,
             _ => Capability::UserSupplied,

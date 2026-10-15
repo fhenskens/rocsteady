@@ -11,6 +11,9 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 pub struct DiscoveryPeer {
     pub connections: AtomicUsize,
     pub parameter_reads: AtomicUsize,
+    pub io_positions: Mutex<std::collections::BTreeMap<u8,usize>>,
+    pub parameter_fault_at: AtomicUsize,
+    pub parameter_fault: AtomicUsize,
     pub history_reads: AtomicUsize,
     pub inventory_reads: AtomicUsize,
     pub inventory_replies: Mutex<std::collections::BTreeMap<usize,Vec<u8>>>,
@@ -179,6 +182,32 @@ pub fn catalog_literal(point_type: u8, parameter: u8) -> Option<Vec<u8>> {
         (105, 11) => vec![2],
         (105, 10 | 12..=19 | 24..=27) => vec![0, 0, 0x48, 0x41], // 12.5, FLOAT
         (105, 23) => vec![0xff],
+        // Tables 3-18/3-19, pp.3-75..81: independent widths/values.
+        (106,0) => b"RTD SAMPLE".to_vec(),
+        (107,0) => b"TC SAMPLE ".to_vec(),
+        (106 | 107,1) => b"C         ".to_vec(),
+        (106,2 | 6 | 7 | 23 | 30..=32) | (107,2 | 3 | 8 | 16..=18 | 21) => vec![1],
+        (106,3 | 4) | (107,5 | 6) => vec![0,0,0x80,0x3f],
+        (106,5) | (107,7) => vec![99],
+        (106,8..=13) => vec![0x34,0x12],
+        (106,14..=22) => vec![0,0,0x20,0xc1],
+        (106,24..=29) | (107,9..=15 | 20 | 22) => vec![0,0,0x48,0x41],
+        (106,33) | (107,19) => vec![0xff],
+        (106,34) => vec![0,0,0x61,0x45],
+        (106,35 | 37) => vec![4],
+        (106,36) => vec![6],
+        (107,4) => vec![10],
+        // Table 3-20, pp.3-82..89: independent MVS literals, including FLOAT module type.
+        (108,0) => b"MVS SAMPLE".to_vec(),
+        (108,1|7) => vec![255],
+        (108,2) => vec![5],
+        (108,3..=6|9|25..=27|40..=42|55..=57|62|63|68) => vec![1],
+        (108,10|11|28|43|58) => vec![255],
+        (108,8) => vec![0,0,0xc0,0x3f],
+        (108,59|60) => vec![7],
+        (108,65) => vec![0,0,0x80,0x3f],
+        (108,67) => vec![0x34,0x12],
+        (108,12..=24|29..=39|44..=54|61|64|66) => vec![0,0,0x48,0x41],
         (109, 0) => b"Battery   ".to_vec(),
         (109, 1) => b"Volts     ".to_vec(),
         (109, 4) => vec![0, 0, 0x80, 0x3f],
@@ -264,9 +293,11 @@ impl DiscoveryFixture {
                                 bytes[50] = 1; // Table 2-2 count for PT-91 (offset 19 + 91 - 60).
                                 bytes[60] = 1;
                                 bytes[62] = 1;
-                                bytes[67] = 1; // One DO.
+                                bytes[67] = 1; // PT-108 MVS count.
                                 bytes[69] = 1; // One AO.
                                 bytes[64] = 1; // One pulse input (Table 2-2 PT-105).
+                                bytes[65] = 1; // PT-106 RTD.
+                                bytes[66] = 1; // PT-107 TC.
                                 bytes[68] = 5; // CPU diagnostic count; fixture is not an emulator.
                                 bytes[95] = 1; // PT-136 is a singleton, outside the I/O map.
                                 if stats.change_config_at.load(Ordering::SeqCst) == query {
@@ -290,6 +321,13 @@ impl DiscoveryFixture {
                                     bytes[3 * stride] = 102;
                                     bytes[4 * stride] = 104;
                                     bytes[5 * stride] = 105;
+                                    bytes[6 * stride] = 106;
+                                    bytes[7 * stride] = 107;
+                                    bytes[8 * stride] = 108;
+                                    for (&point_type,&position) in stats.io_positions.lock().unwrap().iter() {
+                                        for byte in &mut bytes {if *byte == point_type {*byte=0;}}
+                                        bytes[position]=point_type;
+                                    }
                                     bytes[length - 1] = 200; // Unknown type retained.
                                     if stats.change_type_at.load(Ordering::SeqCst) == query {
                                         bytes[stride] = 104;
@@ -318,7 +356,7 @@ impl DiscoveryFixture {
                                         0..=7 => point_type as u8,
                                         60 => 253,
                                         61 => 42,
-                                        91 | 95 | 101 | 102 | 103 | 104 | 105 | 109 | 136 | 139 => 254,
+                                        91 | 95 | 101 | 102 | 103 | 104 | 105 | 106 | 107 | 108 | 109 | 136 | 139 => 254,
                                         _ => 255,
                                     });
                                 }
@@ -472,11 +510,15 @@ impl DiscoveryFixture {
                                 response
                             }
                             180 => {
-                                stats.parameter_reads.fetch_add(1, Ordering::SeqCst);
+                                let query=stats.parameter_reads.fetch_add(1, Ordering::SeqCst)+1;
+                                if stats.parameter_fault_at.load(Ordering::SeqCst)==query {
+                                    stats.fault_opcode.store(180,Ordering::SeqCst);
+                                    stats.fault.store(stats.parameter_fault.load(Ordering::SeqCst),Ordering::SeqCst);
+                                }
                                 assert_eq!(payload.len(), 1 + usize::from(payload[0]) * 3);
                                 let mut bytes = vec![payload[0]];
                                 for tlp in payload[1..].as_chunks::<3>().0 {
-                                    let valid_location = match tlp[0] {
+                                    let valid_location = if let Some(&position)=stats.io_positions.lock().unwrap().get(&tlp[0]) {usize::from(tlp[1])==position} else {match tlp[0] {
                                         91 | 136 => tlp[1] == 0,
                                         95 => tlp[1] <= 5 && (tlp[1] != 1 || matches!(tlp[2], 36 | 37 | 42 | 44)),
                                         139 => tlp[1] <= 26,
@@ -485,9 +527,12 @@ impl DiscoveryFixture {
                                         102 => usize::from(tlp[1]) == 3 * stride,
                                         104 => usize::from(tlp[1]) == 4 * stride,
                                         105 => usize::from(tlp[1]) == 5 * stride,
+                                        106 => usize::from(tlp[1]) == 6 * stride,
+                                        107 => usize::from(tlp[1]) == 7 * stride,
+                                        108 => usize::from(tlp[1]) == 8 * stride,
                                         109 => tlp[1] < 5,
                                         _ => false,
-                                    };
+                                    }};
                                     assert!(
                                         valid_location,
                                         "fixture TLP must use physical position: {tlp:?}"

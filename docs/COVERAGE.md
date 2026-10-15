@@ -33,6 +33,7 @@ the sections used by the implementation and fixtures.
 | 136 | Minute/periodic/daily time-major point blocks, zero-period probes, bounded windows and explicit partial/index-change outcomes | Table 2-19 literals/TCP, simulator, consumer; [multi-point contracts](MULTI_HISTORY.md); DEC-4.03/04 and physical evidence remain open |
 | 137 / 138 | Table-based day/month index lookup; whole-day values or point-255 timestamps; explicit OP-137/135 indexed paging, mapping recheck and confirmed progress | Tables 2-20/21 literals/TCP, simulator, consumer; [day contracts](DAY_HISTORY.md); year/point prose ambiguities and physical evidence open |
 | 139 | Command-0 configured inventory; command-1 explicit ordered nonempty points with optional timestamps, bounded period paging and opt-in before/after inventory checks | Table 2-22 independent literals/TCP, simulator, external consumer; [contracts](HISTORY_INFORMATION.md); firmware/geometry/physical limits remain open |
+| 166 / 181 | Schema-aware contiguous/arbitrary writes, conservative budgets, 12 audited fields and explicit partial/uncertain outcomes; no automatic replay | Independent literals/TCP, simulator state checks, consumer and [write contracts](WRITES.md) |
 | 167 | Typed contiguous parameter reads | Echo/range/width checks and TCP integration |
 | 180 | Typed arbitrary TLP reads | Echo/count/width/response-budget checks and TCP integration |
 | 224 / 225 | Stable SRBX notifications, opt-in bounded idle polling, explicit consumed-index acknowledgement and staged outcomes | Chapter 6 literals, independent TCP/lifecycle cases, simulator pending comparisons and [contracts](LOGS.md) |
@@ -43,7 +44,7 @@ the sections used by the implementation and fixtures.
 | Supervision | Login/readiness restoration, queue bound, deadlines, heartbeat, cancellation/shutdown | etherbird-backed integration suite |
 | Managed extensions | Immutable setup strategies, typed operations, exclusive workflows, terminal auth, owned generation state and checked handles | External fixtures, packaged consumer, README/usage doctests and [release evidence](RELEASE.md) |
 | Protocol profiles | Explicit applicability/capabilities, replaceable clock/configuration codecs, contextual operations, tighter budgets and source correlation | Independent TCP cases in tests/profiles_schema.rs; OP-105 provisional occurrence presets are explicit; no hardware evidence |
-| Schema providers/catalog | Caller identity, ordered overrides, access/location bounds, generation-bound discovery, bounded opcode-180 batches and confirmed progress; 202 PT-91/95/101/102/103/104/105/109/136/139 entries | Independent TCP fixture for every catalog entry, discovery_catalog example and [manifest](CATALOG.md); no complete PT conformance or typed writes |
+| Schema providers/catalog | Caller identity, ordered overrides, access/location bounds, generation-bound discovery, bounded opcode-180 batches and confirmed progress; 332 PT-91/95/101/102/103/104/105/106/107/108/109/136/139 entries | Independent TCP fixture for every catalog entry, discovery_catalog example and [manifest](CATALOG.md); no complete PT conformance; write scope is separately audited |
 
 Table 2-3 is used for the clock year representation instead of the older illustration
 in Figure 1-2. Error offsets are retained as raw bytes; their meaning depends on the
@@ -72,7 +73,8 @@ This does not resolve DEC-3 mappings or DEC-8 firmware discovery.
 | Service | Opcodes / scope | Status |
 | --- | --- | --- |
 | I/O layout and user-defined point discovery | 50, 100 | Typed selectors and command 11 implemented; automatic firmware/layout applicability and DEC-3 hardware evidence outstanding |
-| Set clock / parameter writes | 8, 166, 181 | Raw unicast exchange only; write codecs and partial-write semantics outstanding |
+| Contiguous and arbitrary parameter writes | 166, 181 | Implemented framework and 12 audited fields; additional writable schemas/constraints remain open. Separate bounded packing, opt-in schemas and explicit batch outcomes; [contracts](WRITES.md), tests/writes.rs and tests/arbitrary_writes.rs |
+| Set clock | 8 | Raw unicast exchange only; typed codec outstanding |
 | Configurable tables | 10, 11 | Raw unicast exchange only; typed codecs outstanding |
 | Enhanced login/session key and logout | Additional forms of 17 | Not implemented |
 | Store and forward / broadcast | 24 / no-reply operations | Unsupported by request API |
@@ -81,11 +83,11 @@ This does not resolve DEC-3 mappings or DEC-8 firmware discovery.
 | File transfers | 203 | Raw unicast exchange only; file lifecycle/chunking outstanding |
 | Peer network tunnel | 205 | Raw unicast exchange only; typed tunneled exchange outstanding |
 | SRBX workflow | 224 / 225 | Explicit consumed-checkpoint acknowledgement and bounded idle polling implemented; ingestion completeness/identity are caller contracts; durable delivery/physical evidence remain open |
-| Parameter schema catalog | Device/firmware point dictionaries | 202-entry built-in slice, including all PT-136 read widths; remaining metadata/parameters/rows outstanding |
+| Parameter schema catalog | Device/firmware point dictionaries | 332-entry built-in slice, including all PT-136 read widths; remaining metadata/parameters/rows outstanding |
 | Physical interoperability | Ethernet / serial controller | No hardware tests performed |
 
-The Chapter 3 inventory contains 62 point-type tables: ten have partial built-in
-coverage and 52 remain open. None is claimed fully conformant. The 202 delivered
+The Chapter 3 inventory contains 62 point-type tables: thirteen have partial built-in
+coverage and 49 remain open. None is claimed fully conformant. The 332 delivered
 parameters are a read-oriented subset; full closure includes remaining metadata,
 write conditions, variants and applicability evidence. See the
 [schema inventory](SCHEMA_WORK_PLAN.md) for the per-table status.
@@ -104,14 +106,14 @@ completion criteria, including transport regressions, hardware evidence and rele
    managed slice, API review and alpha onboarding are implemented; see
    [release evidence](RELEASE.md) for completed release checks and outstanding
    physical-validation limits.
-2. Expand the [catalog](CATALOG.md), beyond the delivered PT-102/104/105 read fields; establish remaining firmware/layout
+2. Expand the [catalog](CATALOG.md), beyond the delivered PT-101–108 read fields; establish remaining firmware/layout
    applicability and supported discovery/setup policies without guessing identity.
 3. Expand schema-backed parameter models and read-only history services; establish
    durable alarm-ingestion and controller-identity policies beyond the explicit SRBX APIs,
    each starting with independently specified wire fixtures.
 4. Implement built-in enhanced authentication only after its procedure is established;
    known device procedures may be user-supplied through the authentication seam.
-5. Add write/file/routing operations with explicit side-effect and session-lifetime
+5. Extend writable coverage and implement file/routing operations with explicit side-effect and session-lifetime
    semantics, and no implicit operation replay.
 6. Validate physical Ethernet and serial communication as described in HARDWARE.md;
    hardware and CI validation can proceed alongside the software milestones.
@@ -119,3 +121,12 @@ completion criteria, including transport regressions, hardware evidence and rele
 Each service needs a documented request/response shape, positive and malformed
 fixtures, simulator dispatch, TCP integration, and a recorded hardware-validation
 status. Passing a frame round trip alone is insufficient.
+
+PT-106/107 now have all 61 read fields, optional temperature unit/sensor/calibration
+labels, alarm masks and version gates; [temperature contracts](TEMPERATURE.md)
+record source caveats and the independent TCP/simulator/package evidence. No
+temperature write is enabled.
+
+PT-108 now has all 69 read definitions, with an explicit per-location 4088 gate
+for /67, raw module/sensor codes and distinct alarm/status masks. See [MVS and
+polling contracts](MVS.md). Built-in MVS writes remain unavailable.

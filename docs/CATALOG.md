@@ -3,7 +3,7 @@
 Source: [Emerson D301180X012, October 2022](https://www.documentation.emersonprocess.com/groups/public/documents/instruction_manuals/d301180x012.pdf).
 Initial slice reviewed 2026-10-10; PT-136 audited 2026-10-14 against printed
 pp.3-200–201 (PDF pages 259–260), including visual inspection of the disputed row.
-This document records 202 entries as technical metadata, not vendor descriptions.
+This document records 332 entries as technical metadata, not vendor descriptions.
 The foundation slice was audited on 2026-10-14 against printed pp.3-34–37,
 3-44–48 and 3-210–211.
 Input Tables 3-13/3-15 audited on 2026-10-14 against printed pp.3-61–62 and
@@ -14,6 +14,8 @@ and 3-70–71 (PDF pages 122–124 and 129–130), using the publisher PDF text.
 All 27 DO and 17 AO read fields are accounted for; physical evidence remains none.
 Pulse Table 3-17 audited on 2026-10-15 against printed pp.3-72–74
 (PDF pages 131–133), using the publisher PDF text; all 28 fields accounted for.
+Temperature Tables 3-18/19 audited 2026-10-15 against printed pp.3-75–81
+(PDF pages 134–140), using publisher PDF text; all 61 read fields accounted for.
 No PT row meets the full schema completion contract.
 
 ## Discovery contracts
@@ -88,8 +90,8 @@ provider policy `src/catalog.rs`;
 literal fixture `catalog_literal` in `examples/support/discovery_fixture.rs`;
 independent TCP evidence `every_catalog_row_reads_independent_literal_values_over_tcp`
 in `tests/discovery.rs`; actual serial evidence **none**; hardware evidence **none**.
-Access is source metadata; this release only reads. Numeric constraints are metadata
-for later writes and never filter observed read values. Fixed input units and enum/bit meanings are optional `CatalogEntry.metadata`
+Access is source metadata; write permission uses a separate opt-in audit. Numeric
+constraints never filter observed read values. Fixed input units and enum/bit meanings are optional `CatalogEntry.metadata`
 annotations. Defaults and unspecified units are not guessed; dynamic units tags
 remain strings and bit fields remain raw bytes.
 
@@ -438,7 +440,8 @@ Known ranges: /2, /8 and /20–22 are 0–1; /3 is 0.05–43200 seconds;
 10 printable ASCII bytes. /9 excludes zero; its `numeric_range` stays None
 because a single inclusive interval cannot express that domain. `write_caveat`
 records the actual constraint. Other floats have no invented numeric bound.
-Ranges are metadata for future writes and never filter observed read values.
+Ranges constrain separately opted-in writes and never filter observed read values.
+For PT-105 only tag fields /0–1 are currently writable.
 
 /2 and /20–22 label disabled/enabled. /7 labels EU per second/minute/hour/day;
 /8 labels EU per pulse or pulses per EU; /11 labels rate, accumulator with maximum
@@ -452,5 +455,186 @@ The client does not calculate rate, conversion, contract-day boundaries, totals
 or rollover. In particular /4 and /6 are UINT32 counts while /24–26 are FLOAT
 values. A read does not make a multi-field snapshot atomic or establish durable
 pulse accounting across resets/reconnects. Defaults and update ownership are
-not catalog fields; writes and full PT conformance remain open. Physical and
+not catalog fields; writes beyond tags /0–1 and full PT conformance remain open. Physical and
 actual serial evidence: none.
+
+Writable metadata is separately audited in the [12-field write manifest](WRITES.md#write-specific-schema-and-built-in-manifest).
+PT-101/1 is the complete two-code enumeration; PT-101/2 is a finite bounded FLOAT.
+All enabled I/O tag strings are exact AC10. Read metadata and optional enum labels
+for other fields do not authorize writes. Discovery-derived locations and generations
+remain mandatory for the enabled I/O fields through either OP-166 or OP-181.
+
+## Temperature per-parameter manifest
+
+PT-106/107 add 61 read fields. All require explicit ROC800 identity, reviewed
+firmware 1.00–3.60 and a generation-bound discovery snapshot with the matching
+point type at the physical TLP location. Common evidence for every row:
+`catalog_literal` in `examples/support/discovery_fixture.rs`,
+`every_catalog_row_reads_independent_literal_values_over_tcp` and
+`tests/temperature_catalog.rs`; simulator evidence is
+`simulator_reads_all_temperature_fields_across_layouts`. Implementation: read
+metadata and OP-180 reads; **writes blocked**. Physical and actual serial evidence:
+**none**. All parameters in both tables are inventoried; no reserved slot is omitted.
+Defaults and update ownership are not exposed as schema fields, so PT rows remain
+partial. Source tokens R/W_LOG and R/W_CNDL are retained as caveats alongside coarse
+readable access; they do not establish a write procedure. A dash means no universal
+scalar bound selected, not unrestricted write permission. Source defects and
+module-specific interpretations remain in [DEC-10.08](reference/DECISIONS.md) and
+[temperature contracts](TEMPERATURE.md).
+
+| PT | Parameter / key | Type / bytes | Source access | Numeric metadata | Introduced | Table / printed page |
+| --- | --- | --- | --- | --- | --- | --- |
+| 106 | 0 / `rtd_tag` | Ascii(10) / 10 | R/W | — | 1.00 | Table 3-18, p.3-75 |
+| 106 | 1 / `rtd_units_tag` | Ascii(10) / 10 | R/W | — | 1.00 | Table 3-18, p.3-75 |
+| 106 | 2 / `rtd_scanning` | UInt8 / 1 | R/W_LOG | 0.0–1.0 | 1.00 | Table 3-18, p.3-75 |
+| 106 | 3 / `rtd_scan_period` | Float / 4 | R/W_CNDL | 0.066–43200.0 | 1.00 | Table 3-18, p.3-75 |
+| 106 | 4 / `rtd_scan_time` | Float / 4 | R/O | 0.05–43200.0 | 1.00 | Table 3-18, p.3-75 |
+| 106 | 5 / `rtd_filter` | UInt8 / 1 | R/W_CNDL | 0.0–99.0 | 1.00 | Table 3-18, p.3-75 |
+| 106 | 6 / `rtd_averaging` | UInt8 / 1 | R/W_CNDL | 0.0–1.0 | 1.00 | Table 3-18, p.3-75 |
+| 106 | 7 / `rtd_alpha` | UInt8 / 1 | R/W_LOG | 0.0–1.0 | 1.00 | Table 3-18, p.3-75 |
+| 106 | 8 / `rtd_raw` | UInt16 / 2 | R/O | 0.0–65535.0 | 1.00 | Table 3-18, p.3-75 |
+| 106 | 9 / `rtd_zero_raw` | UInt16 / 2 | R/O | 0.0–65535.0 | 1.00 | Table 3-18, p.3-75 |
+| 106 | 10 / `rtd_midpoint_1_raw` | UInt16 / 2 | R/O | 0.0–65535.0 | 1.00 | Table 3-18, p.3-75 |
+| 106 | 11 / `rtd_midpoint_2_raw` | UInt16 / 2 | R/O | 0.0–65535.0 | 1.00 | Table 3-18, p.3-75 |
+| 106 | 12 / `rtd_midpoint_3_raw` | UInt16 / 2 | R/O | 0.0–65535.0 | 1.00 | Table 3-18, p.3-75 |
+| 106 | 13 / `rtd_span_raw` | UInt16 / 2 | R/O | 0.0–65535.0 | 1.00 | Table 3-18, p.3-76 |
+| 106 | 14 / `rtd_zero_eu` | Float / 4 | R/O | — | 1.00 | Table 3-18, p.3-76 |
+| 106 | 15 / `rtd_midpoint_1_eu` | Float / 4 | R/O | — | 1.00 | Table 3-18, p.3-76 |
+| 106 | 16 / `rtd_midpoint_2_eu` | Float / 4 | R/O | — | 1.00 | Table 3-18, p.3-76 |
+| 106 | 17 / `rtd_midpoint_3_eu` | Float / 4 | R/O | — | 1.00 | Table 3-18, p.3-76 |
+| 106 | 18 / `rtd_span_eu` | Float / 4 | R/O | — | 1.00 | Table 3-18, p.3-76 |
+| 106 | 19 / `rtd_offset` | Float / 4 | R/W | — | 3.00 | Table 3-18, p.3-76 |
+| 106 | 20 / `rtd_set_value` | Float / 4 | R/W | — | 1.00 | Table 3-18, p.3-76 |
+| 106 | 21 / `rtd_manual_value` | Float / 4 | R/O | — | 1.00 | Table 3-18, p.3-76 |
+| 106 | 22 / `rtd_eu` | Float / 4 | R/W | — | 1.00 | Table 3-18, p.3-76 |
+| 106 | 23 / `rtd_clipping` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-18, p.3-76 |
+| 106 | 24 / `rtd_low_low_alarm` | Float / 4 | R/W | — | 1.00 | Table 3-18, p.3-76 |
+| 106 | 25 / `rtd_low_alarm` | Float / 4 | R/W | — | 1.00 | Table 3-18, p.3-76 |
+| 106 | 26 / `rtd_high_alarm` | Float / 4 | R/W | — | 1.00 | Table 3-18, p.3-76 |
+| 106 | 27 / `rtd_high_high_alarm` | Float / 4 | R/W | — | 1.00 | Table 3-18, p.3-76 |
+| 106 | 28 / `rtd_rate_alarm` | Float / 4 | R/W | — | 1.00 | Table 3-18, p.3-76 |
+| 106 | 29 / `rtd_deadband` | Float / 4 | R/W | — | 1.00 | Table 3-18, p.3-77 |
+| 106 | 30 / `rtd_alarming` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-18, p.3-77 |
+| 106 | 31 / `rtd_srbx_clear` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-18, p.3-77 |
+| 106 | 32 / `rtd_srbx_set` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-18, p.3-77 |
+| 106 | 33 / `rtd_alarm_bits` | Binary / 1 | R/O | — | 1.00 | Table 3-18, p.3-77 |
+| 106 | 34 / `rtd_calibration_timer` | Float / 4 | R/O | 0.0–3600.0 | 1.00 | Table 3-18, p.3-78 |
+| 106 | 35 / `rtd_calibration_mode` | UInt8 / 1 | R/W | 0.0–4.0 | 1.00 | Table 3-18, p.3-78 |
+| 106 | 36 / `rtd_calibration_type` | UInt8 / 1 | R/W | 0.0–6.0 | 1.00 | Table 3-18, p.3-78 |
+| 106 | 37 / `rtd_units` | UInt8 / 1 | R/W | 0.0–4.0 | 1.00 | Table 3-18, p.3-78 |
+| 107 | 0 / `tc_tag` | Ascii(10) / 10 | R/W | — | 1.00 | Table 3-19, p.3-79 |
+| 107 | 1 / `tc_units_tag` | Ascii(10) / 10 | R/W | — | 1.00 | Table 3-19, p.3-79 |
+| 107 | 2 / `tc_scanning` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-19, p.3-79 |
+| 107 | 3 / `tc_units` | UInt8 / 1 | R/W | 0.0–3.0 | 1.00 | Table 3-19, p.3-79 |
+| 107 | 4 / `tc_sensor_type` | UInt8 / 1 | R/W | — | 1.00 | Table 3-19, p.3-79 |
+| 107 | 5 / `tc_scan_period` | Float / 4 | R/W | 0.1–43200.0 | 1.00 | Table 3-19, p.3-79 |
+| 107 | 6 / `tc_scan_time` | Float / 4 | R/O | 0.0–43200.0 | 1.00 | Table 3-19, p.3-80 |
+| 107 | 7 / `tc_filter` | UInt8 / 1 | R/W | 0.0–99.0 | 1.00 | Table 3-19, p.3-80 |
+| 107 | 8 / `tc_averaging` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-19, p.3-80 |
+| 107 | 9 / `tc_eu` | Float / 4 | R/W | — | 1.00 | Table 3-19, p.3-80 |
+| 107 | 10 / `tc_low_low_alarm` | Float / 4 | R/W | — | 1.00 | Table 3-19, p.3-80 |
+| 107 | 11 / `tc_low_alarm` | Float / 4 | R/W | — | 1.00 | Table 3-19, p.3-80 |
+| 107 | 12 / `tc_high_alarm` | Float / 4 | R/W | — | 1.00 | Table 3-19, p.3-80 |
+| 107 | 13 / `tc_high_high_alarm` | Float / 4 | R/W | — | 1.00 | Table 3-19, p.3-80 |
+| 107 | 14 / `tc_rate_alarm` | Float / 4 | R/W | — | 1.00 | Table 3-19, p.3-80 |
+| 107 | 15 / `tc_deadband` | Float / 4 | R/W | — | 1.00 | Table 3-19, p.3-80 |
+| 107 | 16 / `tc_alarming` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-19, p.3-80 |
+| 107 | 17 / `tc_srbx_clear` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-19, p.3-80 |
+| 107 | 18 / `tc_srbx_set` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-19, p.3-80 |
+| 107 | 19 / `tc_alarm_bits` | Binary / 1 | R/O | — | 1.00 | Table 3-19, p.3-80 |
+| 107 | 20 / `tc_offset` | Float / 4 | R/W | — | 1.00 | Table 3-19, p.3-81 |
+| 107 | 21 / `tc_failsafe_mode` | UInt8 / 1 | R/W | 0.0–1.0 | 3.50 | Table 3-19, p.3-81 |
+| 107 | 22 / `tc_failsafe_value` | Float / 4 | R/W | — | 3.50 | Table 3-19, p.3-81 |
+
+## PT-108 per-parameter manifest
+
+Table 3-20, October 2022, §3.4.19, printed pp.3-82–89 (PDF pages 141–148),
+text audited 2026-10-15. All 69 field definitions are inventoried. Every row
+uses generation-bound discovered physical PT-108 locations and explicit ROC800
+firmware 1.00–3.60, with the introduction gates below. **/67 additionally requires
+`with_mvs_4088(location)`**, a caller-established 4088 A/B assertion; default
+lookup blocks it. No other subtype is automatically admitted. No PT-108 writes
+are enabled. Numeric metadata is not a read filter; dynamic units are not guessed.
+
+Common evidence: `catalog_literal` in `examples/support/discovery_fixture.rs`,
+all-catalog TCP reads in `tests/discovery.rs`, source metadata/independent TCP and
+simulator tests in `tests/mvs_catalog.rs`, and the extracted package consumer.
+Polling/re-discovery evidence is in `tests/monitoring.rs`. Implementation is read
+metadata and OP-180 access, not calibration/control or a controller emulator.
+Physical and actual serial evidence: **none**. Defaults/update ownership, write
+procedures and applicable hardware evidence remain open. DEC-10.09 and
+[MVS.md](MVS.md) preserve command-range/SP-units defects and subtype conditions.
+A dash means no universal scalar range is selected. BYTE enum labels are absent
+for FLOAT /65; documented float codes are retained in the guide and caveat.
+
+| PT | Parameter / key | Type / bytes | Source access | Numeric metadata | Introduced | Table / printed page |
+| --- | --- | --- | --- | --- | --- | --- |
+| 108 | 0 / `mvs_tag` | Ascii(10) / 10 | R/W | — | 1.00 | Table 3-20, p.3-82 |
+| 108 | 1 / `mvs_sensor_address` | UInt8 / 1 | R/W | 0.0–255.0 | 1.00 | Table 3-20, p.3-82 |
+| 108 | 2 / `mvs_poll_mode` | UInt8 / 1 | R/W | — | 1.00 | Table 3-20, p.3-82 |
+| 108 | 3 / `mvs_units` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-20, p.3-82 |
+| 108 | 4 / `mvs_water_reference` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-20, p.3-82 |
+| 108 | 5 / `mvs_pressure_tap` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-20, p.3-82 |
+| 108 | 6 / `mvs_failure_action` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-20, p.3-82 |
+| 108 | 7 / `mvs_interface_revision` | UInt8 / 1 | R/O | 0.0–255.0 | 1.00 | Table 3-20, p.3-82 |
+| 108 | 8 / `mvs_sensor_voltage` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-82 |
+| 108 | 9 / `mvs_sensor_alarming` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-20, p.3-83 |
+| 108 | 10 / `mvs_sensor_alarm_bits` | Binary / 1 | R/O | — | 1.00 | Table 3-20, p.3-83 |
+| 108 | 11 / `mvs_range_bits` | Binary / 1 | R/O | — | 1.00 | Table 3-20, p.3-83 |
+| 108 | 12 / `mvs_dp_static_effect` | Float / 4 | R/W | — | 1.00 | Table 3-20, p.3-84 |
+| 108 | 13 / `mvs_dp_zero` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-84 |
+| 108 | 14 / `mvs_dp_midpoint_1` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-84 |
+| 108 | 15 / `mvs_dp_midpoint_2` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-84 |
+| 108 | 16 / `mvs_dp_midpoint_3` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-84 |
+| 108 | 17 / `mvs_dp_span` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-84 |
+| 108 | 18 / `mvs_dp_manual` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-84 |
+| 108 | 19 / `mvs_dp` | Float / 4 | R/W | — | 1.00 | Table 3-20, p.3-84 |
+| 108 | 20 / `mvs_dp_reverse` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-84 |
+| 108 | 21 / `mvs_dp_fault` | Float / 4 | R/W | — | 1.00 | Table 3-20, p.3-85 |
+| 108 | 22 / `mvs_dp_low_alarm` | Float / 4 | R/W | — | 1.00 | Table 3-20, p.3-85 |
+| 108 | 23 / `mvs_dp_high_alarm` | Float / 4 | R/W | — | 1.00 | Table 3-20, p.3-85 |
+| 108 | 24 / `mvs_dp_deadband` | Float / 4 | R/W | — | 1.00 | Table 3-20, p.3-85 |
+| 108 | 25 / `mvs_dp_alarming` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-20, p.3-85 |
+| 108 | 26 / `mvs_dp_srbx_clear` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-20, p.3-85 |
+| 108 | 27 / `mvs_dp_srbx_set` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-20, p.3-85 |
+| 108 | 28 / `mvs_dp_alarm_bits` | Binary / 1 | R/O | — | 1.00 | Table 3-20, p.3-85 |
+| 108 | 29 / `mvs_sp_zero` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-86 |
+| 108 | 30 / `mvs_sp_midpoint_1` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-86 |
+| 108 | 31 / `mvs_sp_midpoint_2` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-86 |
+| 108 | 32 / `mvs_sp_midpoint_3` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-86 |
+| 108 | 33 / `mvs_sp_span` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-86 |
+| 108 | 34 / `mvs_sp_manual` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-86 |
+| 108 | 35 / `mvs_sp` | Float / 4 | R/W | — | 1.00 | Table 3-20, p.3-86 |
+| 108 | 36 / `mvs_sp_fault` | Float / 4 | R/W | — | 1.00 | Table 3-20, p.3-86 |
+| 108 | 37 / `mvs_sp_low_alarm` | Float / 4 | R/W | — | 1.00 | Table 3-20, p.3-86 |
+| 108 | 38 / `mvs_sp_high_alarm` | Float / 4 | R/W | — | 1.00 | Table 3-20, p.3-86 |
+| 108 | 39 / `mvs_sp_deadband` | Float / 4 | R/W | — | 1.00 | Table 3-20, p.3-86 |
+| 108 | 40 / `mvs_sp_alarming` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-20, p.3-86 |
+| 108 | 41 / `mvs_sp_srbx_clear` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-20, p.3-86 |
+| 108 | 42 / `mvs_sp_srbx_set` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-20, p.3-86 |
+| 108 | 43 / `mvs_sp_alarm_bits` | Binary / 1 | R/O | — | 1.00 | Table 3-20, p.3-86 |
+| 108 | 44 / `mvs_temperature_zero` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-87 |
+| 108 | 45 / `mvs_temperature_midpoint_1` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-87 |
+| 108 | 46 / `mvs_temperature_midpoint_2` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-87 |
+| 108 | 47 / `mvs_temperature_midpoint_3` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-87 |
+| 108 | 48 / `mvs_temperature_span` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-87 |
+| 108 | 49 / `mvs_temperature_manual` | Float / 4 | R/O | — | 1.00 | Table 3-20, p.3-87 |
+| 108 | 50 / `mvs_temperature` | Float / 4 | R/W | — | 1.00 | Table 3-20, p.3-87 |
+| 108 | 51 / `mvs_temperature_fault` | Float / 4 | R/W | — | 1.00 | Table 3-20, p.3-87 |
+| 108 | 52 / `mvs_temperature_low_alarm` | Float / 4 | R/W | — | 1.00 | Table 3-20, p.3-87 |
+| 108 | 53 / `mvs_temperature_high_alarm` | Float / 4 | R/W | — | 1.00 | Table 3-20, p.3-87 |
+| 108 | 54 / `mvs_temperature_deadband` | Float / 4 | R/W | — | 1.00 | Table 3-20, p.3-87 |
+| 108 | 55 / `mvs_temperature_alarming` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-20, p.3-87 |
+| 108 | 56 / `mvs_temperature_srbx_clear` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-20, p.3-88 |
+| 108 | 57 / `mvs_temperature_srbx_set` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-20, p.3-88 |
+| 108 | 58 / `mvs_temperature_alarm_bits` | Binary / 1 | R/O | — | 1.00 | Table 3-20, p.3-88 |
+| 108 | 59 / `mvs_calibration_command` | UInt8 / 1 | R/W | — | 1.00 | Table 3-20, p.3-88 |
+| 108 | 60 / `mvs_calibration_type` | UInt8 / 1 | R/W | 0.0–7.0 | 1.00 | Table 3-20, p.3-88 |
+| 108 | 61 / `mvs_calibration_set_value` | Float / 4 | R/W | — | 1.00 | Table 3-20, p.3-89 |
+| 108 | 62 / `mvs_sensor_srbx_clear` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-20, p.3-89 |
+| 108 | 63 / `mvs_sensor_srbx_set` | UInt8 / 1 | R/W | 0.0–1.0 | 1.00 | Table 3-20, p.3-89 |
+| 108 | 64 / `mvs_sp_zero_shift` | Float / 4 | R/W | — | 2.02 | Table 3-20, p.3-89 |
+| 108 | 65 / `mvs_module_type` | Float / 4 | R/O | — | 2.02 | Table 3-20, p.3-89 |
+| 108 | 66 / `mvs_temperature_bias` | Float / 4 | R/W | — | 3.20 | Table 3-20, p.3-89 |
+| 108 | 67 / `mvs_config_change_count` | UInt16 / 2 | R/O | 0.0–65535.0 | 3.60 | Table 3-20, p.3-89 |
+| 108 | 68 / `mvs_sensor_type` | UInt8 / 1 | R/O | 0.0–4.0 | 3.60 | Table 3-20, p.3-89 |

@@ -1,4 +1,4 @@
-//! ROC Plus read/SRBX-acknowledgement fixture model and fault-injectable TCP server.
+//! ROC Plus read/write/SRBX fixture model and fault-injectable TCP server.
 //! Uses the same byte-stream seam as client transports, not a mocked Client API.
 //! This is a bounded test fixture, not a full ROC800 emulator.
 use crate::{
@@ -41,6 +41,8 @@ pub struct Model {
     pub clock: Clock,
     pub login: Option<Login>,
     pub parameters: BTreeMap<Tlp, Value>,
+    /// Explicit OP-166 effects, retained across fixture reconnects.
+    pub written_parameters: Arc<Mutex<BTreeMap<Tlp, Value>>>,
 }
 impl Default for Model {
     fn default() -> Self {
@@ -62,10 +64,12 @@ impl Default for Model {
                 points[..5].copy_from_slice(&[0, 1, 2, 3, 4]);
                 points
             },
-            point_types: [91, 95, 101, 102, 103, 104, 105, 109, 136, 139]
-                .into_iter()
-                .map(|point_type| (point_type, crate::PointTypeClassification::Roc))
-                .collect(),
+            point_types: [
+                91, 95, 101, 102, 103, 104, 105, 106, 107, 108, 109, 136, 139,
+            ]
+            .into_iter()
+            .map(|point_type| (point_type, crate::PointTypeClassification::Roc))
+            .collect(),
             configuration: {
                 let mut bytes = vec![0; 215];
                 bytes[0] = 1;
@@ -89,6 +93,7 @@ impl Default for Model {
             },
             login: None,
             parameters: BTreeMap::new(),
+            written_parameters: Arc::default(),
         }
     }
 }
@@ -157,6 +162,86 @@ impl Model {
     }
     pub fn append_event(&mut self, bytes: [u8; 22]) -> Result<u16, Error> {
         append_log(&mut self.event_log, &mut self.event_index, bytes)
+    }
+    // Independent fixture implementation of Tables 2-23/26 and the audited write subset.
+    // Valid tuples apply in order, even if a later tuple fails: a deliberate partial-effect
+    // fixture policy, never a claim about controller atomicity.
+    fn parameter_write(&self, request: &Frame) -> Frame {
+        let reply = |opcode, data| Frame::new(request.source, self.address, opcode, data);
+        let arbitrary = request.opcode == 181;
+        let bytes = &request.data;
+        if bytes.len() < 5 || bytes.len() > if arbitrary { 240 } else { 234 } {
+            return reply(255, vec![6, 5]);
+        }
+        let count = usize::from(bytes[if arbitrary { 0 } else { 2 }]);
+        if count == 0 || (!arbitrary && usize::from(bytes[3]) + count > 256) {
+            return reply(255, vec![6, 5]);
+        }
+        let mut offset = if arbitrary { 1 } else { 4 };
+        let mut errors = Vec::new();
+        for index in 0..count {
+            let tlp = if arbitrary {
+                let Some(tuple) = bytes.get(offset..offset + 3) else {
+                    errors.extend([6, (index + 1) as u8]);
+                    break;
+                };
+                offset += 3;
+                Tlp::new(tuple[0], tuple[1], tuple[2])
+            } else {
+                Tlp::new(bytes[0], bytes[1], bytes[3] + index as u8)
+            };
+            let error_offset = if arbitrary {
+                (index + 1) as u8
+            } else {
+                tlp.parameter
+            };
+            let kind = match (tlp.point_type, tlp.parameter) {
+                (91, 2) if tlp.logical == 0 => Some(crate::DataType::Ascii(20)),
+                (101, 0) | (102..=105, 0..=1)
+                    if self.io_point_types.get(usize::from(tlp.logical))
+                        == Some(&tlp.point_type) =>
+                {
+                    Some(crate::DataType::Ascii(10))
+                }
+                (101, 1) if self.io_point_types.get(usize::from(tlp.logical)) == Some(&101) => {
+                    Some(crate::DataType::UInt8)
+                }
+                (101, 2) if self.io_point_types.get(usize::from(tlp.logical)) == Some(&101) => {
+                    Some(crate::DataType::Float)
+                }
+                _ => None,
+            };
+            let Some(kind) = kind else {
+                // Unsupported width: stop rather than guessing the next tuple boundary.
+                errors.extend([2, error_offset]);
+                break;
+            };
+            let width = kind.width();
+            let Some(raw) = bytes.get(offset..offset + width) else {
+                errors.extend([6, error_offset]);
+                break;
+            };
+            offset += width;
+            let value = Value::decode(kind, raw);
+            match value {
+                Ok(Value::UInt8(v)) if v > 1 => errors.extend([4, error_offset]),
+                Ok(Value::Float(v)) if !v.is_finite() || !(0.0..=43200.0).contains(&v) => {
+                    errors.extend([4, error_offset])
+                }
+                Ok(value) => {
+                    self.written_parameters.lock().unwrap().insert(tlp, value);
+                }
+                Err(_) => errors.extend([4, error_offset]),
+            }
+        }
+        if offset != bytes.len() && errors.is_empty() {
+            errors.extend([6, 5]);
+        }
+        if errors.is_empty() {
+            reply(request.opcode, vec![])
+        } else {
+            reply(255, errors)
+        }
     }
     /// Model-level request dispatch also works over in-memory or serial fixture channels.
     pub fn respond(&self, request: &Frame, authenticated: &mut bool) -> Option<Frame> {
@@ -545,7 +630,14 @@ impl Model {
                 let mut bytes = vec![count];
                 for (i, tlp) in request.data[1..].as_chunks::<3>().0.iter().enumerate() {
                     let key = Tlp::new(tlp[0], tlp[1], tlp[2]);
-                    let Some(value) = self.parameters.get(&key) else {
+                    let value = self
+                        .written_parameters
+                        .lock()
+                        .unwrap()
+                        .get(&key)
+                        .cloned()
+                        .or_else(|| self.parameters.get(&key).cloned());
+                    let Some(value) = value else {
                         return Some(error(2, (i + 1) as u8));
                     };
                     let Ok(value) = value.encode() else {
@@ -560,6 +652,7 @@ impl Model {
                     reply(180, bytes)
                 }
             }
+            166 | 181 => self.parameter_write(request),
             167 => {
                 if request.data.len() != 4 {
                     return Some(error(6, 5));
@@ -570,8 +663,15 @@ impl Model {
                 }
                 let mut bytes = request.data.clone();
                 for p in u16::from(start)..u16::from(start) + u16::from(count) {
-                    let Some(value) = self.parameters.get(&Tlp::new(point_type, logical, p as u8))
-                    else {
+                    let key = Tlp::new(point_type, logical, p as u8);
+                    let value = self
+                        .written_parameters
+                        .lock()
+                        .unwrap()
+                        .get(&key)
+                        .cloned()
+                        .or_else(|| self.parameters.get(&key).cloned());
+                    let Some(value) = value else {
                         return Some(error(2, p as u8));
                     };
                     let Ok(value) = value.encode() else {

@@ -6,7 +6,8 @@ Implemented behavior belongs in [coverage](COVERAGE.md), executable evidence in
 
 ## Current handoff — 2026-10-15
 
-The current version is **0.1.3**. The implemented history services now include:
+The manifest remains **0.1.3**; current development adds unreleased features
+to the completed 0.1.3 history baseline. The implemented history services include:
 
 - OP-105/108 metadata and OP-135 single-point reads.
 - [OP-136 multi-point reads](MULTI_HISTORY.md), with time-major rows and bounded paging.
@@ -19,10 +20,18 @@ These build on managed extensions, explicit profiles/codecs, discovery, the
 polling/acknowledgement. Coverage and feature contracts describe the exact limits;
 this roadmap tracks remaining acceptance.
 
-Local checks pass 217 all-feature/all-target tests, 19 doctests, strict Clippy,
-formatting, rustdoc, all eleven fixture examples, package verification and the
-extracted consumer. Hosted 0.1.3 CI and release-commit publication gates remain
-pending. Physical-controller and actual serial exchanges remain unvalidated.
+Unreleased development now adds [OP-166/181 writes](WRITES.md), with a 12-field
+source-audited writable subset, explicit partial/uncertain outcomes and no replay.
+PT-106/107 temperature and PT-108 multi-variable sensor reads now extend the
+catalog to 332 entries; see [temperature scope](TEMPERATURE.md) and
+[MVS/caller-driven polling contracts](MVS.md). Current development verification passed
+243 all-feature/all-target tests, the default-feature gate and 22 doctests;
+[release evidence](RELEASE.md) records the checks. The dated 0.1.3 history
+evidence remains in that record.
+Strict Clippy, formatting, rustdoc, offline package verification and the extracted
+consumer also passed for current development. Hosted CI for the final release
+commit, version/changelog finalization and publication gates remain pending.
+Physical-controller and actual serial exchanges remain unvalidated.
 [Release evidence](RELEASE.md) owns validation/publication provenance, including the
 preceding 0.1.2 release; historical counts and commit details are retained there.
 
@@ -67,12 +76,12 @@ Hardware and cross-platform validation can proceed alongside software developmen
 
 | Milestone | Remaining scope | Dependencies |
 | --- | --- | --- |
-| M0-E: extension platform | Open EXT-1/2/3 acceptance: protected discovery, authentication/logout, identity/cache policy, framing evidence and write planning | Managed contracts; source-backed procedures |
+| M0-E: extension platform | Open EXT-1/2/3 acceptance: protected discovery, authentication/logout, identity/cache policy, framing evidence and broader write-schema constraints | Managed contracts; source-backed procedures |
 | M0: discovery/security foundations | Remaining CORE-1/2/3 and OP-6/7/17/50/100 variants/applicability; DEC-1/2/3/8 evidence | Explicit profiles and readiness strategies |
 | M1: parameter access | Remaining PT batches, firmware/layout applicability and discovery/bootstrap policies | Schema metadata and explicit device context |
 | M2: logs/SRBX | Stronger durable continuity evidence and remaining applicability/schema coverage | Identity, retention and index semantics |
 | M3: history | OP-206, history PT batch; remaining OP-105/135–139 interpretation/applicability evidence | History geometry, time/schema models; DEC-4/5 |
-| M4: configuration/writes | OP-8/10/11/166/181, PT-99 and writable schemas | Access/budget validation and explicit uncertain outcomes |
+| M4: configuration/writes | OP-8/10/11, PT-99 and writable schemas beyond the delivered OP-166/181 subset | Access/budget validation and explicit uncertain outcomes |
 | M5: files | OP-203 forms and lifecycle | Exclusive workflows, handle lifetime and uncertain outcomes; DEC-5 |
 | M6: remote/shared channels | OP-24/205, broadcast CORE-1 and network schemas | Framing/address/reader contracts; DEC-1/5/9 |
 | M7: release/conformance | Candidate gates, remaining EXT acceptance and declared scope; continued full-baseline work | Applicable software and interoperability evidence |
@@ -129,7 +138,8 @@ limitation on compatibility claims. No milestone permits automatic side-effect r
 
 ## P2: writes, files and remote services
 
-- [ ] Implement OP-8/166/181/11 and schema-aware write planning: access/constraints,
+- [ ] Extend the implemented OP-166/181 framework and 12-field writable subset;
+  implement OP-8/11 and remaining schema constraints: access/constraints,
   request budgets, partial results, uncertain remote effects and explicit no-replay
   behavior. Test failure before send, after effect and before acknowledgement.
 - [ ] Implement OP-203 file command variants, handles, chunking, size limits and
@@ -194,19 +204,25 @@ separate release action, not implied by completing this backlog.
 
 ## Recommended next slice
 
-**Implement schema-aware contiguous parameter writes (OP-166)** for source-unambiguous
-parameters. Establish request/access/value budgets, explicit acknowledgement versus
-unknown remote outcome, partial progress and no-replay semantics before exposing
-side effects. Use independent before-send/after-effect/lost-ack fixtures, simulator
-state checks and external-consumer evidence. Broader OP-181 writes can follow the
-same outcome contracts.
+**Prepare the current feature set for release:** finalize the candidate version
+and changelog, review the complete diff/package, and run hosted checks and the
+clean-commit publication dry-run. Publication remains a separate release action.
+
+After that release, **expand the audited writable catalog** beyond the delivered OP-166/181
+[12-field subset](WRITES.md). Keep access/value constraints, conservative budgets,
+explicit partial/uncertain outcomes and no automatic replay. Prioritize fields
+with unambiguous source constraints; extend schema validation before admitting
+cross-field or noncontiguous-enumeration fields. Add independent literals,
+simulator state checks and external-consumer evidence with each subset.
 
 OP-139 configured inventory and selected-point reads are implemented within the
 [declared scope](HISTORY_INFORMATION.md). Continue transaction OP-206 when its
 wire ambiguities have adequate evidence; complete remaining history schemas and
 firmware/channel validation alongside parameter work.
 
-**PT-106/107 temperature I/O catalog reads** are a useful independent alternative.
+**PT-106/107 temperature I/O reads are implemented** in the [declared subset](TEMPERATURE.md).
+PT-108 reads and finite caller-driven polling are now implemented in the
+[MVS subset](MVS.md); further schema work can target PT-109 completion or PT-110.
 A Unix pseudo-terminal SerialConnector fixture is another focused validation slice.
 Protected authentication/logout and identity/cache policy remain extension priorities
 when adequate source evidence is available.

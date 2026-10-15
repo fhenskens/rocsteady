@@ -194,8 +194,8 @@ applicability. ParameterSchema supplies DataType (and therefore width), Access,
 optional logical bounds and optional numeric bounds. Missing metadata is never guessed.
 ReadOnly/ReadWrite are readable; WriteOnly and unresolved Conditional fail locally.
 Logical bounds are enforced; numeric bounds are write metadata, not a read-value filter.
-The built-in Roc800Catalog covers 202 parameters, including clock, port and module fields; schema-aware
-writes and complete PT conformance remain unavailable. PT-101/102/103/104/105 have all read
+The built-in Roc800Catalog covers 332 parameters, including clock, port and module fields; schema-aware
+writes use a separate opt-in contract with a twelve-field built-in subset; complete PT conformance remains open. PT-101–108 have all read
 widths plus optional CatalogMetadata enum/bit/unit annotations. Unknown values
 remain raw; source write caveats do not alter read planning or establish write access. See [CATALOG.md](CATALOG.md).
 
@@ -290,7 +290,6 @@ with no extra task/lifecycle latch. It reports bounded notifications and lag wit
 automatic ingestion/acknowledgement. Caller identity/complete consumption remain
 required; an empty acknowledgement does not prove SRBX cleared. See LOGS.md.
 
-
 ## History metadata codec selection
 
 `read_min_max` uses the profile's decoder and a raw occurrence default.
@@ -301,7 +300,6 @@ replacement uses ProtocolProfile::decode_min_max; ordered tag/index replacement
 uses decode_history_tags. Client, Session and ManagedContext expose the same
 methods. Known request/reply budgets precede admission; decoding stays under
 exchange retirement. See [history contracts and preset evidence](HISTORY_METADATA.md).
-
 
 ## Single-point history
 
@@ -354,3 +352,13 @@ uses the public geometry policy seam for all points. Optional inventory checks
 observe membership and before/after changes without claiming atomicity or cached
 identity. All outcomes retain cancellation retirement, bounded budgets and no
 implicit replay/resume. See [contracts and evidence](HISTORY_INFORMATION.md).
+
+## Schema-aware writes
+
+`WritePlan` and `Client::write_plan` retain exclusive ownership and explicit
+partial/uncertain outcomes, with no automatic replay. See [write contracts](WRITES.md)
+for provider opt-in, budgets, cancellation and the audited writable manifest.
+
+PT-108/67 requires an explicit discovered-location `with_mvs_4088` assertion;
+[MVS.md](MVS.md) records that conditional read contract and the example-owned
+caller-driven sampling policy. No polling/replay task is added to Client.
