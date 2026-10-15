@@ -50,7 +50,7 @@ and state/secrets stay within the specified lifetime.
 - [x] Keep config-layout status, legacy layout flag and family-specific clock formats distinct.
 - [x] Define profile selection/override when discovery is absent, protected or inconclusive.
 - [x] Reject unsupported capabilities clearly; return unknown raw data where a type can honestly retain it.
-- [ ] Preserve raw occurrence-time/unknown fields when an extension cannot establish their meaning.
+- [x] Preserve raw OP-105 occurrence-time/unknown fields when meaning is uncertain; named provisional codecs and caller replacements use the same public interfaces.
 - [ ] Invalidate profile-derived caches when verified replacement identity/capabilities change.
 - [x] Test wrong echoes/opcodes/addresses, malformed typed replies and profiles with identical-length alternatives.
 - [x] Do not autodetect a format solely because it parses; never trial alternative writes/deletes/logins.
@@ -58,12 +58,16 @@ and state/secrets stay within the specified lifetime.
 Evidence: [profiles_schema tests](../tests/profiles_schema.rs),
 [profile/schema consumer example](../examples/schema_profiles.rs), and
 [contracts](MANAGED_EXTENSIONS.md). DefaultProfile, ClockCodec and ConfigurationCodec
-are named presets for existing verified codec forms, not new disputed firmware
-alternatives. The subsequent discovery slice adds Roc800Profile with explicit I/O
+are named presets for existing verified codec forms. OP-105 now also provides
+RawOccurrenceCodec by default and named provisional CalendarOccurrenceCodec and
+PrefixedEpochOccurrenceCodec through MinMaxCodec<C>; see [scope/evidence](HISTORY_METADATA.md).
+OP-135 adds TableHistoryPolicy defaults, explicit provisional ProseMinuteHistoryPolicy,
+configured geometry and arbitrary consumer HistoryIndexPolicy/ReplyCodec replacements
+with public per-call selection; see [single-point contracts](HISTORY.md). The subsequent discovery slice adds Roc800Profile with explicit I/O
 layouts, contextual opcode-50/100 presets and generation-bound Roc800Catalog snapshots;
 see [CATALOG.md](CATALOG.md). Automatic profile caches remain absent. Device-specific
-interoperability, occurrence-time
-interpretation and routed framing still need their own evidence; these remain open.
+interoperability, occurrence-time interpretation and routed framing still need
+their own evidence; these remain open despite the replaceable provisional codecs.
 
 Acceptance: an external consumer supplies a disputed decoder/profile explicitly.
 The framework continues to reject unsafe/malformed exchanges, retire interrupted
@@ -143,7 +147,10 @@ This policy applies to all ambiguous behavior, not only reply decoding.
 A preset is verified or explicitly provisional, with source references, applicable
 device/firmware, assumptions and independent positive/negative fixtures. Offer
 multiple named presets when each alternative is sufficiently defined to implement
-and test. Selection is explicit; a default requires applicable evidence. Never
+and test. Use sensible supported defaults where evidence permits. Raw lossless decoding
+can be the default when disputed semantic interpretations remain explicit options;
+ordinary callers need not build a custom profile. Interpretation selection is
+explicit; an interpreted default requires applicable evidence. Never
 select by successful parsing alone or trial alternative side-effecting requests.
 No option is required where the missing information prevents an honest codec.
 

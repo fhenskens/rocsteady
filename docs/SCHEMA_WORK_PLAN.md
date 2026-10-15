@@ -8,7 +8,7 @@ See [roadmap](OUTSTANDING_WORK.md) and [service plan](SPEC_WORK_PLAN.md).
 
 The provider boundary is an early deliverable in [EXT-3](EXTENSIBILITY.md).
 The provider API and bounded schema-aware opcode-180 reads are implemented.
-The 130-parameter built-in ROC800 slice covers PT-91/95/101/103/109/136/139
+The 202-parameter built-in ROC800 slice covers PT-91/95/101/102/103/104/105/109/136/139
 entries; see [the source/applicability manifest](CATALOG.md). Full catalog rows
 and schema-aware writes remain separate work.
 Provider extensibility and a particular built-in PT row have separate completion
@@ -21,7 +21,7 @@ layout and enhanced-security fields. These leads do not close catalog rows.
 
 - [x] Define a schema identity including device family, firmware applicability, point type and parameter number; caller identity is explicit and discovery-derived providers are generation-bound.
 - [ ] Model width/type, name, units where documented, access (including conditional access), ranges, defaults, update ownership, enumerations, bit fields and reserved fields.
-  PT-101/103 now have every read width, source access/ranges, fixed units and enum/bit
+  PT-101/102/103/104/105 now have every read width, source access/ranges, fixed units and enum/bit
   annotations. Defaults, update ownership and verified write conditions remain open.
 - [ ] Represent version-introduced/changed/deprecated parameters without selecting a firmware version from opcode 6 revision alone.
 - [ ] Separate known metadata from unspecified metadata; do not invent ranges, defaults or units.
@@ -49,8 +49,8 @@ For each row:
 4. Exercise representative reads and applicable writes over TCP; cross-check all catalog metadata against the source.
 5. Record physical evidence separately, with model/firmware; catalogue completion does not establish hardware compatibility.
 
-Status: seven rows have an explicitly **partial** built-in slice; all other rows
-are open. No complete PT conformance is claimed. Every one of the 130 delivered parameters
+Status: ten rows have an explicitly **partial** built-in slice; all other rows
+are open. No complete PT conformance is claimed. Every one of the 202 delivered parameters
 has an independent literal and TCP read fixture; [CATALOG.md](CATALOG.md) lists
 the exact metadata and remaining omissions.
 “Hardware: none” applies to every row. Introduce separate implementation/test/hardware
@@ -70,10 +70,10 @@ statuses as work lands; never replace them with one ambiguous “supported” fl
 | PT-99 | 99 | Configurable opcode tables | 3.4.10 | Open |
 | PT-100 | 100 | Power control | 3.4.11 | Open |
 | PT-101 | 101 | Discrete inputs | 3.4.12 | Partial: all 0-15 read widths, access/ranges, enums and alarm bits; writes/defaults/ownership remain open |
-| PT-102 | 102 | Discrete outputs | 3.4.13 | Open |
+| PT-102 | 102 | Discrete outputs | 3.4.13 | Partial: all 0-26 read widths, source access/ranges, enums/bits and firmware gates; module timing constraints, writes/defaults/ownership remain open |
 | PT-103 | 103 | Analog inputs | 3.4.14 | Partial: all 0-39 read widths, access/ranges, version gates, enums and alarm bits; calibration write notes unresolved |
-| PT-104 | 104 | Analog outputs | 3.4.15 | Open |
-| PT-105 | 105 | Pulse inputs | 3.4.16 | Open |
+| PT-104 | 104 | Analog outputs | 3.4.15 | Partial: all 0-16 read widths, source access/ranges, enums/bits; failsafe prose, writes/defaults/ownership remain open |
+| PT-105 | 105 | Pulse inputs | 3.4.16 | Partial: all 0-27 read widths, source access/ranges, enums/bits/units; nonzero conversion constraint explicit; writes/defaults/ownership remain open |
 | PT-106 | 106 | RTD | 3.4.17 | Open |
 | PT-107 | 107 | Thermocouple | 3.4.18 | Open |
 | PT-108 | 108 | Multi-variable sensor | 3.4.19 | Open |

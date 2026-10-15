@@ -17,8 +17,12 @@ application-provided byte streams use the same protocol implementation.
   for replacement setup after a transport failure.
 - **Typed reads:** discover configuration, read the clock, and read individual or
   contiguous parameters using types supplied from your device's schema.
-- **Discovery and catalog:** explicit I/O layouts and 130 source-audited ROC800
+- **Discovery and catalog:** explicit I/O layouts and 202 source-audited ROC800
   parameters, with firmware/location checks and optional enum/bit/unit metadata.
+- **Archived samples:** bounded single-point minute/periodic/daily reads, separate timestamp
+  selectors, explicit progress and replaceable index policies.
+- **History metadata:** min/max values with raw occurrence times, selectable provisional codecs,
+  and ordered history tags with a reported periodic index.
 - **Alarm/event monitoring:** typed pages, bounded ring windows and caller-consumed
   checkpoints, plus opt-in idle SRBX polling and explicit alarm acknowledgement.
 - **Restored setup:** legacy login and a clock readiness probe run on every new
@@ -33,7 +37,7 @@ application-provided byte streams use the same protocol implementation.
 - **State and shutdown:** optional heartbeats detect idle failure, state notifications
   report changes, and awaited shutdown cancels/drains work and closes the channel.
 
-Use the current stable Rust toolchain. The documentation patch release is `0.1.1`.
+Use the current stable Rust toolchain. This codebase represents version `0.1.2`.
 All releases below 1.0 are experimental
 and may have incomplete protocol coverage; see the scope below.
 
@@ -52,20 +56,23 @@ for ownership, cancellation and generation lifetimes.
 
 ## Scope and validation
 
-Version 0.1.0 supports configuration discovery, clock/parameter reads, legacy
+Version 0.1.2 supports configuration discovery, clock/parameter reads, legacy
 login and device errors, typed alarm/event retrieval with bounded pages and
 explicit checkpoints, plus opt-in idle SRBX polling and explicit consumed-alarm
 acknowledgement. Acknowledgement changes controller SRBX status; it is never
 automatic. Explicit profiles, contextual codecs, discovery and bounded schema reads
 are covered by the [extension contracts](docs/MANAGED_EXTENSIONS.md).
-The [catalog](docs/CATALOG.md) contains 130 ROC800 parameters, including every discrete-input and analog-input read width, plus clock, port and module fields.
-Remaining catalog tables, enhanced login and typed writes, history, automatic durable alarm delivery, files
+OP-105/108 history metadata and OP-135 single-point history reads include selectable
+policies/codecs and bounded paging; see the [history guide](docs/HISTORY.md).
+The [catalog](docs/CATALOG.md) contains 202 ROC800 parameters, including every discrete/analog input and output read width and every pulse-input read field, plus clock, port and module fields.
+Remaining catalog tables, enhanced login and typed writes, multi-point/other history retrieval, automatic durable alarm delivery, files
 and routing remain unavailable. Raw/custom
 operations can perform side effects; they are not automatically replayed.
 
-Local macOS/stable validation passes 122 all-feature tests, 14 doctests, strict
+Local macOS/stable validation passes 168 all-feature tests, 16 doctests, strict
 Clippy, fixture examples, package verification and an extracted-package consumer.
-The user confirmed stable Windows/Linux/macOS CI passed for release commit
+Hosted CI evidence for 0.1.2 has not yet been recorded; the user confirmed stable Windows/Linux/macOS
+CI passed for the published 0.1.0 release commit
 `2c43da0`. See the release record for the evidence source.
 Physical ROC hardware and actual serial exchanges have not been validated. The simulator
 is a deterministic fault-injection fixture, not a full ROC800 emulator.
@@ -84,6 +91,8 @@ firmware applicability; unknown fields are retained rather than guessed.
 | [Managed extensions](examples/managed_extensions.rs) | Custom setup, a typed operation and a two-exchange workflow against an independent in-memory peer. |
 | [Profiles and schemas](examples/schema_profiles.rs) | Explicit profile/applicability and a user-defined mixed-width schema read in bounded batches over an independent TCP peer. |
 | [Discovery and built-in catalog](examples/discovery_catalog.rs) | Point classifications and I/O discovery, then system/I/O reads using source-audited metadata and physical locations. |
+| [Single-point history](examples/history.rs) | Default sample/timestamp reads, bounded paging, explicit geometry and provisional minute-index choice. |
+| [History metadata](examples/history_metadata.rs) | Default raw occurrences, explicit prebuilt alternatives, consumer decoding and ordered history tags. |
 | [Alarm/event retrieval](examples/log_retrieval.rs) | Independent record fixtures, bounded log pages, caller-confirmed consumption, checkpoint resume, idle polling and explicit acknowledgement. |
 | [Configured TCP device](examples/read_device.rs) | Configuration and clock reads using an explicit endpoint and optional legacy credentials from the environment. |
 | [Serial clock read](examples/serial_read.rs) | A serial connector with an explicit port and baud rate; other line settings must match your channel. |
@@ -108,6 +117,12 @@ cargo run --locked --example discovery_catalog
 
 # Alarm/event windows, checkpoint resume and explicit SRBX handling:
 cargo run --locked --example log_retrieval
+
+# Min/max metadata, selectable occurrence codecs and history tags:
+cargo run --locked --example history_metadata
+
+# Single-point samples, timestamps and bounded ring windows:
+cargo run --locked --example history
 ```
 
 For hardware examples, set `ROC_ENDPOINT` and optionally both `ROC_OPERATOR` and

@@ -12,8 +12,9 @@ use std::{
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[tokio::test]
+// POL-SESSION-MALFORMED: Managed ownership contract. See docs/REQUIREMENTS.md.
 async fn standalone_session_retires_every_malformed_typed_reply() {
-    for opcode in [6, 7, 17, 50, 100, 167, 180] {
+    for opcode in [6, 7, 17, 50, 100, 105, 108, 135, 167, 180] {
         let (stream, mut peer) = tokio::io::duplex(512);
         let responder = tokio::spawn(async move {
             assert_eq!(
@@ -63,6 +64,21 @@ async fn standalone_session_retires_every_malformed_typed_reply() {
                 .read_point_types(rocsteady::PointTypeRequest::new(91, 1).unwrap())
                 .await
                 .map(|_| ()),
+            105 => session
+                .read_min_max(rocsteady::MinMaxRequest::new(0, 7).unwrap())
+                .await
+                .map(|_| ()),
+            108 => session
+                .read_history_tags(rocsteady::HistoryTagsRequest::new(0, vec![7]).unwrap())
+                .await
+                .map(|_| ()),
+            135 => session
+                .read_history(
+                    rocsteady::HistoryRequest::new(0, 7, rocsteady::HistoryKind::Periodic, 0, 1)
+                        .unwrap(),
+                )
+                .await
+                .map(|_| ()),
             167 => session
                 .read_parameter_block(
                     &ParameterBlock::new(103, 0, 0, vec![DataType::UInt8]).unwrap(),
@@ -89,6 +105,7 @@ async fn standalone_session_retires_every_malformed_typed_reply() {
 }
 
 #[tokio::test]
+// POL-SESSION-REJECTION: Managed ownership contract. See docs/REQUIREMENTS.md.
 async fn standalone_typed_device_rejection_keeps_session_usable() {
     let (stream, mut peer) = tokio::io::duplex(512);
     let responder = tokio::spawn(async move {
@@ -287,6 +304,7 @@ async fn tcp_login_clock_and_both_parameter_reads_use_real_wire_channel() {
 }
 
 #[tokio::test]
+// POL-RECOVERY-SETUP: Managed setup contract. See docs/REQUIREMENTS.md.
 async fn failures_return_once_then_new_session_logs_in_before_next_call() {
     for fault in [
         Fault::Disconnect,
@@ -347,6 +365,7 @@ async fn stable_srbx_receiver_routes_interleaved_frames_across_replacement() {
 }
 
 #[tokio::test]
+// POL-CANCELLATION: Managed ownership contract. See docs/REQUIREMENTS.md.
 async fn timeout_or_cancellation_discards_late_response_and_does_not_contaminate_next_call() {
     let (server, client) = fixture().await;
     server.inject(Fault::Delay(Duration::from_millis(300)));
@@ -563,6 +582,7 @@ async fn bounded_queue_rejects_excess_work_and_invalid_requests_do_not_reconnect
 }
 
 #[tokio::test]
+// POL-NO-REPLAY: Managed operation contract. See docs/REQUIREMENTS.md.
 async fn failed_request_is_not_replayed_and_concurrent_calls_are_serialized() {
     let (server, client) = fixture().await;
     // Raw opcode 8 is not a supported simulator operation. Its failed attempt

@@ -1,3 +1,4 @@
+include!("history_literals.rs");
 // Independent wire oracle for Tables 2-12/2-13 and selected Chapter 3 rows.
 // Uses no production frame, CRC, discovery or parameter encoders.
 use std::sync::{
@@ -10,6 +11,16 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 pub struct DiscoveryPeer {
     pub connections: AtomicUsize,
     pub parameter_reads: AtomicUsize,
+    pub history_reads: AtomicUsize,
+    pub sample_reads: AtomicUsize,
+    pub sample_fail_at: AtomicUsize,
+    pub sample_fault: AtomicUsize,
+    pub sample_change_at: AtomicUsize,
+    pub sample_change_index: AtomicUsize,
+    pub sample_short_at: AtomicUsize,
+    pub sample_short_count: AtomicUsize,
+    pub sample_replies: Mutex<std::collections::BTreeMap<usize,Vec<u8>>>,
+    pub history_periodic_index: AtomicUsize,
     pub type_queries: AtomicUsize,
     pub logical_queries: AtomicUsize,
     pub config_queries: AtomicUsize,
@@ -114,6 +125,20 @@ pub fn catalog_literal(point_type: u8, parameter: u8) -> Option<Vec<u8>> {
         (101, 7 | 8) => vec![0, 0x24, 0x74, 0x49], // FLOAT: 1000000.
         (101, 12) => vec![0xff], // Known and unused alarm bits survive.
         (101, 6) => vec![0x04, 0x03, 0x02, 0x01],
+        // Tables 3-14/3-16, pp.3-63–65 and 3-70–71: independent output literals.
+        (102, 0) => b"DO SAMPLE ".to_vec(),
+        (102, 1) | (104, 1) => b"Percent   ".to_vec(),
+        (102, 2) | (104, 2) => vec![2],
+        (102, 3..=5 | 7 | 8 | 10..=13 | 21 | 22 | 24 | 26) => vec![1],
+        (102, 6) | (104, 6) => vec![0xff],
+        (102, 9) => vec![0x04, 0x03, 0x02, 0x01],
+        (102, 14..=17 | 23) => vec![0, 0, 0x80, 0x3f],
+        (102, 18..=20) => vec![0, 0, 0x20, 0xc1],
+        (102, 25) => vec![3], // Documented relay-6-point code exceeds printed range.
+        (104, 0) => b"AO SAMPLE ".to_vec(),
+        (104, 3..=5 | 7) => vec![1],
+        (104, 8 | 9 | 13) => vec![0x34, 0x12],
+        (104, 10..=12 | 14..=16) => vec![0, 0, 0x48, 0x41],
         (103, 0) => b"AI SAMPLE ".to_vec(),
         (103, 1) => b"kPa       ".to_vec(),
         (103, 2) => vec![1],
@@ -130,6 +155,18 @@ pub fn catalog_literal(point_type: u8, parameter: u8) -> Option<Vec<u8>> {
         (103, 7) => vec![0x34, 0x12],
         (103, 21) => vec![0, 0, 0x48, 0x41], // FLOAT: 12.5.
         (103, 32) => vec![0xa5],
+        // Table 3-17, pp.3-72–74. Independent literals, no catalog/encoder oracle.
+        (105, 0) => b"PI SAMPLE ".to_vec(),
+        (105, 1) => b"m3        ".to_vec(),
+        (105, 2 | 8 | 20..=22) => vec![1],
+        (105, 3 | 9) => vec![0, 0, 0x80, 0x3f], // 1.0, FLOAT
+        (105, 4) => vec![0, 0x24, 0xf4, 0], // 16000000, UINT32
+        (105, 5) => vec![23],
+        (105, 6) => vec![0xff, 0xff, 0xff, 0xff],
+        (105, 7) => vec![3],
+        (105, 11) => vec![2],
+        (105, 10 | 12..=19 | 24..=27) => vec![0, 0, 0x48, 0x41], // 12.5, FLOAT
+        (105, 23) => vec![0xff],
         (109, 0) => b"Battery   ".to_vec(),
         (109, 1) => b"Volts     ".to_vec(),
         (109, 4) => vec![0, 0, 0x80, 0x3f],
@@ -215,7 +252,10 @@ impl DiscoveryFixture {
                                 bytes[50] = 1; // Table 2-2 count for PT-91 (offset 19 + 91 - 60).
                                 bytes[60] = 1;
                                 bytes[62] = 1;
-                                bytes[68] = 5; // PT-101/103/109 counts.
+                                bytes[67] = 1; // One DO.
+                                bytes[69] = 1; // One AO.
+                                bytes[64] = 1; // One pulse input (Table 2-2 PT-105).
+                                bytes[68] = 5; // CPU diagnostic count; fixture is not an emulator.
                                 bytes[95] = 1; // PT-136 is a singleton, outside the I/O map.
                                 if stats.change_config_at.load(Ordering::SeqCst) == query {
                                     bytes[6] = 1;
@@ -235,6 +275,9 @@ impl DiscoveryFixture {
                                     bytes[..5].fill(109);
                                     bytes[stride] = 103;
                                     bytes[2 * stride] = 101;
+                                    bytes[3 * stride] = 102;
+                                    bytes[4 * stride] = 104;
+                                    bytes[5 * stride] = 105;
                                     bytes[length - 1] = 200; // Unknown type retained.
                                     if stats.change_type_at.load(Ordering::SeqCst) == query {
                                         bytes[stride] = 104;
@@ -263,7 +306,7 @@ impl DiscoveryFixture {
                                         0..=7 => point_type as u8,
                                         60 => 253,
                                         61 => 42,
-                                        91 | 95 | 101 | 103 | 109 | 136 | 139 => 254,
+                                        91 | 95 | 101 | 102 | 103 | 104 | 105 | 109 | 136 | 139 => 254,
                                         _ => 255,
                                     });
                                 }
@@ -340,6 +383,34 @@ impl DiscoveryFixture {
                                 }
                                 bytes
                             }
+                            105 => {
+                                stats.history_reads.fetch_add(1,Ordering::SeqCst);
+                                let [segment,point]=payload.as_slice() else {panic!("min/max request shape")};
+                                assert!(*segment<=13);
+                                min_max_literal(*segment,*point).to_vec()
+                            }
+                            108 => {
+                                stats.history_reads.fetch_add(1,Ordering::SeqCst);
+                                assert_eq!(payload.len(),2+usize::from(payload[1]));
+                                assert!((1..=20).contains(&payload[1]));
+                                let index=stats.history_periodic_index.load(Ordering::SeqCst) as u16;
+                                let mut bytes=vec![payload[0],payload[1]];bytes.extend(index.to_le_bytes());
+                                for point in &payload[2..] {bytes.push(*point);bytes.extend(*b"FLOW      ");}
+                                bytes
+                            }
+                            135 => {
+                                let query=stats.sample_reads.fetch_add(1,Ordering::SeqCst)+1;
+                                assert_eq!(payload.len(),6);assert!(payload[2]<=4&&payload[5]<=60);
+                                if stats.sample_change_at.load(Ordering::SeqCst)==query {
+                                    stats.history_periodic_index.store(stats.sample_change_index.load(Ordering::SeqCst),Ordering::SeqCst);
+                                }
+                                let count=if stats.sample_short_at.load(Ordering::SeqCst)==query {stats.sample_short_count.load(Ordering::SeqCst) as u8}else{payload[5]};
+                                let response=stats.sample_replies.lock().unwrap().get(&query).cloned().unwrap_or_else(||single_history_literal(payload[0],payload[1],payload[2],stats.history_periodic_index.load(Ordering::SeqCst) as u16,count));
+                                if stats.sample_fail_at.load(Ordering::SeqCst)==query {
+                                    stats.fault_opcode.store(135,Ordering::SeqCst);stats.fault.store(stats.sample_fault.load(Ordering::SeqCst),Ordering::SeqCst);
+                                }
+                                response
+                            }
                             180 => {
                                 stats.parameter_reads.fetch_add(1, Ordering::SeqCst);
                                 assert_eq!(payload.len(), 1 + usize::from(payload[0]) * 3);
@@ -351,6 +422,9 @@ impl DiscoveryFixture {
                                         139 => tlp[1] <= 26,
                                         101 => usize::from(tlp[1]) == 2 * stride,
                                         103 => usize::from(tlp[1]) == stride,
+                                        102 => usize::from(tlp[1]) == 3 * stride,
+                                        104 => usize::from(tlp[1]) == 4 * stride,
+                                        105 => usize::from(tlp[1]) == 5 * stride,
                                         109 => tlp[1] < 5,
                                         _ => false,
                                     };
@@ -387,6 +461,7 @@ impl DiscoveryFixture {
                                 6 => response.push(0),
                                 7 => response[0] ^= 1,
                                 8 => response[2] ^= 1,
+                                9 => response[4] ^= 1,
                                 _ => (),
                             }
                         }

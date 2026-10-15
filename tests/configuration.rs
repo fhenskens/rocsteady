@@ -11,6 +11,7 @@ fn original() -> Vec<u8> {
 }
 
 #[test]
+// REQ-006-ORIGINAL: Table 2-2. See docs/REQUIREMENTS.md.
 fn original_and_pre_120_discovery_have_distinct_available_counts() {
     let bytes = original();
     let value = SystemConfiguration::decode(&bytes).unwrap();
@@ -41,6 +42,7 @@ fn original_and_pre_120_discovery_have_distinct_available_counts() {
 }
 
 #[test]
+// REQ-006-EXTENDED: Table 2-2. See docs/REQUIREMENTS.md.
 fn extended_counts_and_unknown_fields_are_preserved() {
     let mut bytes = original();
     bytes.resize(215, 0);
@@ -80,6 +82,7 @@ fn extended_counts_and_unknown_fields_are_preserved() {
 }
 
 #[test]
+// POL-006-FIRMWARE: DEC-8; configuration contract. See docs/REQUIREMENTS.md.
 fn layout_interpretation_requires_independent_firmware_applicability() {
     for (revision, length) in [(0, 98), (1, 215), (2, 217)] {
         let mut bytes = original();

@@ -1320,4 +1320,726 @@ pub(super) const ENTRIES: &[CatalogEntry] = &[
         (3, 40),
         "3.4.47/Table 3-48, p.3-201"
     ),
+    // Tables 3-14 and 3-16: every output read field; no write codecs.
+    entry!(
+        102,
+        0,
+        "do_tag",
+        DataType::Ascii(10),
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-63"
+    ),
+    entry!(
+        102,
+        1,
+        "do_units_tag",
+        DataType::Ascii(10),
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-63"
+    ),
+    entry!(
+        102,
+        2,
+        "do_scanning_mode",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 2.0)),
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-63"
+    ),
+    entry!(
+        102,
+        3,
+        "do_alarming",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-63"
+    ),
+    entry!(
+        102,
+        4,
+        "do_srbx_on_clear",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-63"
+    ),
+    entry!(
+        102,
+        5,
+        "do_srbx_on_set",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-63"
+    ),
+    entry!(
+        102,
+        6,
+        "do_alarm_code",
+        DataType::Binary,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-63"
+    ),
+    entry!(
+        102,
+        7,
+        "do_failsafe_on_reset",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-64"
+    ),
+    entry!(
+        102,
+        8,
+        "do_auto_output",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-64"
+    ),
+    entry!(
+        102,
+        9,
+        "do_accumulated_value",
+        DataType::UInt32,
+        ReadWrite,
+        Some((0.0, 4294967295.0)),
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-64"
+    ),
+    entry!(
+        102,
+        10,
+        "do_momentary_mode",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-64"
+    ),
+    entry!(
+        102,
+        11,
+        "do_momentary_active",
+        DataType::UInt8,
+        ReadOnly,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-64"
+    ),
+    entry!(
+        102,
+        12,
+        "do_toggle_mode",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-64"
+    ),
+    entry!(
+        102,
+        13,
+        "do_timed_output_mode",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-64"
+    ),
+    entry!(
+        102,
+        14,
+        "do_time_on",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-64"
+    ),
+    entry!(
+        102,
+        15,
+        "do_cycle_time",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-65"
+    ),
+    entry!(
+        102,
+        16,
+        "do_low_reading_time",
+        DataType::Float,
+        ReadWrite,
+        Some((0.0, 43200.0)),
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-65"
+    ),
+    entry!(
+        102,
+        17,
+        "do_high_reading_time",
+        DataType::Float,
+        ReadWrite,
+        Some((0.0, 43200.0)),
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-65"
+    ),
+    entry!(
+        102,
+        18,
+        "do_low_reading_eu",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-65"
+    ),
+    entry!(
+        102,
+        19,
+        "do_high_reading_eu",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-65"
+    ),
+    entry!(
+        102,
+        20,
+        "do_eu_value",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-65"
+    ),
+    entry!(
+        102,
+        21,
+        "do_manual_output",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-65"
+    ),
+    entry!(
+        102,
+        22,
+        "do_failsafe_output",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-65"
+    ),
+    entry!(
+        102,
+        23,
+        "do_max_scan_period",
+        DataType::Float,
+        ReadOnly,
+        Some((0.0, f32::MAX as f64)),
+        (1, 0),
+        "3.4.13/Table 3-14, p.3-65"
+    ),
+    entry!(
+        102,
+        24,
+        "do_physical_output",
+        DataType::UInt8,
+        ReadOnly,
+        Some((0.0, 1.0)),
+        (1, 10),
+        "3.4.13/Table 3-14, p.3-65"
+    ),
+    entry!(
+        102,
+        25,
+        "do_type",
+        DataType::UInt8,
+        ReadOnly,
+        None,
+        (1, 10),
+        "3.4.13/Table 3-14, p.3-65"
+    ),
+    entry!(
+        102,
+        26,
+        "do_invert_output_mode",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (3, 1),
+        "3.4.13/Table 3-14, p.3-65"
+    ),
+    entry!(
+        104,
+        0,
+        "ao_tag",
+        DataType::Ascii(10),
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.15/Table 3-16, p.3-70"
+    ),
+    entry!(
+        104,
+        1,
+        "ao_units_tag",
+        DataType::Ascii(10),
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.15/Table 3-16, p.3-70"
+    ),
+    entry!(
+        104,
+        2,
+        "ao_scanning_mode",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 2.0)),
+        (1, 0),
+        "3.4.15/Table 3-16, p.3-70"
+    ),
+    entry!(
+        104,
+        3,
+        "ao_alarming",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.15/Table 3-16, p.3-70"
+    ),
+    entry!(
+        104,
+        4,
+        "ao_srbx_on_clear",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.15/Table 3-16, p.3-70"
+    ),
+    entry!(
+        104,
+        5,
+        "ao_srbx_on_set",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.15/Table 3-16, p.3-70"
+    ),
+    entry!(
+        104,
+        6,
+        "ao_alarm_code",
+        DataType::Binary,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.15/Table 3-16, p.3-70"
+    ),
+    entry!(
+        104,
+        7,
+        "ao_failsafe_on_reset",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.15/Table 3-16, p.3-71"
+    ),
+    entry!(
+        104,
+        8,
+        "ao_zero_raw",
+        DataType::UInt16,
+        ReadWrite,
+        Some((0.0, 65535.0)),
+        (1, 0),
+        "3.4.15/Table 3-16, p.3-71"
+    ),
+    entry!(
+        104,
+        9,
+        "ao_span_raw",
+        DataType::UInt16,
+        ReadWrite,
+        Some((0.0, 65535.0)),
+        (1, 0),
+        "3.4.15/Table 3-16, p.3-71"
+    ),
+    entry!(
+        104,
+        10,
+        "ao_zero_eu",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.15/Table 3-16, p.3-71"
+    ),
+    entry!(
+        104,
+        11,
+        "ao_span_eu",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.15/Table 3-16, p.3-71"
+    ),
+    entry!(
+        104,
+        12,
+        "ao_auto_value",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.15/Table 3-16, p.3-71"
+    ),
+    entry!(
+        104,
+        13,
+        "ao_raw_da_output",
+        DataType::UInt16,
+        ReadOnly,
+        Some((0.0, 65535.0)),
+        (1, 0),
+        "3.4.15/Table 3-16, p.3-71"
+    ),
+    entry!(
+        104,
+        14,
+        "ao_manual_value",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.15/Table 3-16, p.3-71"
+    ),
+    entry!(
+        104,
+        15,
+        "ao_failsafe_value",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.15/Table 3-16, p.3-71"
+    ),
+    entry!(
+        104,
+        16,
+        "ao_physical_value",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.15/Table 3-16, p.3-71"
+    ),
+    // Table 3-17: every pulse-input read field.
+    entry!(
+        105,
+        0,
+        "pi_tag",
+        DataType::Ascii(10),
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-72"
+    ),
+    entry!(
+        105,
+        1,
+        "pi_units_tag",
+        DataType::Ascii(10),
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-72"
+    ),
+    entry!(
+        105,
+        2,
+        "pi_scanning",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-72"
+    ),
+    entry!(
+        105,
+        3,
+        "pi_scan_period",
+        DataType::Float,
+        ReadWrite,
+        Some((0.05, 43200.0)),
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-72"
+    ),
+    entry!(
+        105,
+        4,
+        "pi_accumulated_value",
+        DataType::UInt32,
+        ReadWrite,
+        Some((0.0, 16000000.0)),
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-72"
+    ),
+    entry!(
+        105,
+        5,
+        "pi_contract_hour",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 23.0)),
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-72"
+    ),
+    entry!(
+        105,
+        6,
+        "pi_pulses_for_day",
+        DataType::UInt32,
+        ReadOnly,
+        Some((0.0, 4294967295.0)),
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-72"
+    ),
+    entry!(
+        105,
+        7,
+        "pi_current_rate_period",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 3.0)),
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-72"
+    ),
+    entry!(
+        105,
+        8,
+        "pi_conversion",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-72"
+    ),
+    entry!(
+        105,
+        9,
+        "pi_conversion_value",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-72"
+    ),
+    entry!(
+        105,
+        10,
+        "pi_current_rate",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-72"
+    ),
+    entry!(
+        105,
+        11,
+        "pi_eu_value_mode",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 2.0)),
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-73"
+    ),
+    entry!(
+        105,
+        12,
+        "pi_rollover_maximum",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-73"
+    ),
+    entry!(
+        105,
+        13,
+        "pi_eu_value",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-73"
+    ),
+    entry!(
+        105,
+        14,
+        "pi_low_low_alarm_eu",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-73"
+    ),
+    entry!(
+        105,
+        15,
+        "pi_low_alarm_eu",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-73"
+    ),
+    entry!(
+        105,
+        16,
+        "pi_high_alarm_eu",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-73"
+    ),
+    entry!(
+        105,
+        17,
+        "pi_high_high_alarm_eu",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-73"
+    ),
+    entry!(
+        105,
+        18,
+        "pi_rate_alarm_eu",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-73"
+    ),
+    entry!(
+        105,
+        19,
+        "pi_alarm_deadband",
+        DataType::Float,
+        ReadWrite,
+        None,
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-73"
+    ),
+    entry!(
+        105,
+        20,
+        "pi_alarming",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-73"
+    ),
+    entry!(
+        105,
+        21,
+        "pi_srbx_on_clear",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-73"
+    ),
+    entry!(
+        105,
+        22,
+        "pi_srbx_on_set",
+        DataType::UInt8,
+        ReadWrite,
+        Some((0.0, 1.0)),
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-73"
+    ),
+    entry!(
+        105,
+        23,
+        "pi_alarm_code",
+        DataType::Binary,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-73"
+    ),
+    entry!(
+        105,
+        24,
+        "pi_today_total",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-74"
+    ),
+    entry!(
+        105,
+        25,
+        "pi_yesterday_total",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-74"
+    ),
+    entry!(
+        105,
+        26,
+        "pi_corrected_accumulation",
+        DataType::Float,
+        ReadOnly,
+        None,
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-74"
+    ),
+    entry!(
+        105,
+        27,
+        "pi_frequency",
+        DataType::Float,
+        ReadOnly,
+        Some((0.0, f32::MAX as f64)),
+        (1, 0),
+        "3.4.16/Table 3-17, p.3-74"
+    ),
 ];

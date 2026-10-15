@@ -9,6 +9,8 @@ cargo run --locked --example managed_extensions
 cargo run --locked --example schema_profiles
 cargo run --locked --example discovery_catalog
 cargo run --locked --example log_retrieval
+cargo run --locked --example history_metadata
+cargo run --locked --example history
 cargo run --locked --features simulator --example authenticated_setup
 cargo run --locked --features simulator --example simulator
 cargo package --locked --allow-dirty --all-features

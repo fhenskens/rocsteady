@@ -156,3 +156,63 @@ fn empty_ack(
         }
     })
 }
+
+pub(crate) fn min_max(
+    request: crate::MinMaxRequest,
+    profile: Arc<dyn ProtocolProfile>,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<crate::MinMaxReply, Error> + Send> {
+    PreparedOperation::new(105, request.payload(), Some(50), move |bytes: &[u8]| {
+        profile.decode_min_max(&request, bytes).map_err(Error::from)
+    })
+}
+pub(crate) fn history_tags(
+    request: crate::HistoryTagsRequest,
+    profile: Arc<dyn ProtocolProfile>,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<crate::HistoryTagsReply, Error> + Send> {
+    PreparedOperation::new(
+        108,
+        request.payload(),
+        Some(request.response_size()),
+        move |bytes: &[u8]| {
+            profile
+                .decode_history_tags(&request, bytes)
+                .map_err(Error::from)
+        },
+    )
+}
+
+pub(crate) fn min_max_with_codec<C: crate::ReplyCodec<crate::MinMaxRequest>>(
+    request: crate::MinMaxRequest,
+    codec: C,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<C::Output, Error> + Send> {
+    PreparedOperation::new(105, request.payload(), Some(50), move |bytes: &[u8]| {
+        codec.decode(&request, bytes).map_err(Error::from)
+    })
+}
+
+pub(crate) fn history(
+    request: crate::HistoryRequest,
+    profile: Arc<dyn ProtocolProfile>,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<crate::HistoryPage, Error> + Send> {
+    PreparedOperation::new(
+        135,
+        request.payload(),
+        Some(request.response_size()),
+        move |bytes: &[u8]| {
+            let page = profile.decode_history(&request, bytes)?;
+            page.validate_for(&request)?;
+            Ok(page)
+        },
+    )
+}
+pub(crate) fn history_with_codec<C: crate::ReplyCodec<crate::HistoryRequest>>(
+    request: crate::HistoryRequest,
+    codec: C,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<C::Output, Error> + Send> {
+    PreparedOperation::new(
+        135,
+        request.payload(),
+        Some(request.response_size()),
+        move |bytes: &[u8]| codec.decode(&request, bytes).map_err(Error::from),
+    )
+}

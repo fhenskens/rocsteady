@@ -11,8 +11,9 @@ same contracts, so callers can replace them with their own implementations.
 
 Start with the [current handoff](OUTSTANDING_WORK.md#current-handoff--2026-10-15)
 and [recommended next slice](OUTSTANDING_WORK.md#recommended-next-slice).
-0.1.1 is published (documentation patch); no feature implementation is in progress. PT-102/104 read
-coverage is recommended next. The handoff distinguishes shipped work, outstanding
+Version 0.1.2 includes all PT-102/104/105 read fields.
+OP-105/108 metadata and OP-135 bounded single-point reads are also implemented
+with usable defaults and selectable policies/codecs. The handoff distinguishes shipped work, outstanding
 full-baseline requirements and software evidence from physical validation.
 
 ## Reading order
@@ -34,11 +35,14 @@ full-baseline requirements and software evidence from physical validation.
 | [Usage](USAGE.md) | Credentials, reads, errors, serial configuration and runnable snippets |
 | [Managed contracts](MANAGED_EXTENSIONS.md) | Public extension ownership, deadlines, cancellation and generation rules |
 | [Coverage](COVERAGE.md) | Current implemented support and limitations |
+| [Requirements](REQUIREMENTS.md) | Stable requirement IDs, executable test evidence and audit limits |
 | [Roadmap](OUTSTANDING_WORK.md) | Delivery order, dependencies and product/release gates |
 | [Extensibility](EXTENSIBILITY.md) | Delivered/planned extension boundaries and external-consumer acceptance |
 | [Service plan](SPEC_WORK_PLAN.md) | Baseline opcode/core inventory and closure criteria |
 | [Schema plan](SCHEMA_WORK_PLAN.md) | Point-type inventory and per-parameter closure criteria |
 | [Catalog](CATALOG.md) | Selected source-audited parameter metadata, discovery policies, per-variant fixtures and explicit firmware/hardware limitations |
+| [Single-point history](HISTORY.md) | OP-135 selectors, bounds/policies, paging and partial progress |
+| [History metadata](HISTORY_METADATA.md) | OP-105/108 contracts, defaults, prebuilt alternatives and evidence |
 | [Logs and SRBX](LOGS.md) | Typed records, bounded paging/checkpoints, explicit acknowledgement outcomes and idle polling |
 | [Architecture](ARCHITECTURE.md) | Existing ownership, recovery and stream behavior |
 | [Release evidence](RELEASE.md) | Publication, version policy, repeatable checks and validation provenance |

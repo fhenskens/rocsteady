@@ -1,5 +1,36 @@
 # Experimental monitoring release checklist
 
+## 0.1.2 I/O and history — 2026-10-15
+
+Version 0.1.2 adds 72 PT-102/104/105 read fields, bringing the catalog to 202 entries,
+and includes requirements-to-tests traceability. Publication and tag verification have not yet been recorded.
+All 27 DO, 17 AO and 28 pulse-input read fields have independent literal/TCP coverage, source
+access/range/version assertions, enum/bit/unit metadata and explicit constraints.
+Tests cover every layout, firmware boundaries, malformed replies, device errors,
+raw unknown values and generation replacement. Simulator values cover every field;
+the discovery example and extracted-package consumer include output and pulse reads.
+Pulse rates, contract-day totals and accumulation remain controller-reported values;
+no local conversion/rollover is inferred. The nonzero conversion constraint is
+recorded explicitly without inventing a numeric interval.
+
+OP-105/108 metadata adds usable raw defaults, named provisional occurrence codecs,
+per-call choices and caller replacements with no format autodetection. Standalone,
+managed/workflow, malformed/device-error, cancellation and budget tests are present.
+The history example is run in CI and the package consumer checks all codec choices.
+HistoryMetadataModel is optional; existing Model struct literals remain compatible.
+
+OP-135 adds all single-point value/timestamp selectors, index-only probes, bounded
+one-generation paging and explicit failure progress. Table minute bounds are the
+default; prose and configured bounds use the same public policy seam. Index movement
+is reported explicitly; no gap-free, automatic-resume or physical claim is made.
+
+Version 0.1.2 validation: 168 all-feature/all-target tests, 16 doctests, strict Clippy,
+formatting, the discovery example, all-feature package verification and an
+extracted-package consumer. These are local software checks; hosted CI and
+physical-controller/serial evidence have not been established for 0.1.2.
+Output writes, full PT completion and DEC-10.07 closure remain open.
+The published-release evidence below is retained with its original scope/counts.
+
 ## Published 0.1.1 documentation patch — 2026-10-15
 
 This patch declares `https://docs.rs/rocsteady` as the package documentation URL,
@@ -46,10 +77,10 @@ below 1.0 are experimental and may have incomplete protocol coverage or unverifi
 hardware compatibility. Breaking API changes use a new minor version; compatible
 additions and fixes use patch releases. The first ordinary release is
 **0.1.0**, following the historical 0.1.0-alpha.1 prerelease. Cargo.toml and
-Cargo.lock now carry the 0.1.1 documentation patch version.
+Cargo.lock now carry version 0.1.2.
 Error and ErrorKind are non-exhaustive; callers must include fallback match arms.
 
-## Current software evidence
+## Published 0.1.0/0.1.1 software evidence
 
 Local macOS ARM64 / stable Rust 1.99 validation passes:
 
@@ -86,9 +117,9 @@ The simulator is a deterministic fixture rather than a complete controller emula
 
 Upstream etherbird's [0.4.2 release CI](https://github.com/fhenskens/etherbird/actions/runs/38539621339)
 and [subsequent cleanup CI](https://github.com/fhenskens/etherbird/actions/runs/38547036690)
-passed seven jobs each. Those runs do not validate this rocsteady candidate.
+passed seven jobs each. Those runs do not validate rocsteady 0.1.2.
 
-## Release gates
+## Published 0.1.0 release gates
 
 - [x] Scope, unsupported services and physical-validation limitations disclosed.
 - [x] Explicit SRBX effects, acknowledgement outcomes, checkpoint limitations and
@@ -120,6 +151,8 @@ cargo run --locked --example managed_extensions
 cargo run --locked --example schema_profiles
 cargo run --locked --example discovery_catalog
 cargo run --locked --example log_retrieval
+cargo run --locked --example history_metadata
+cargo run --locked --example history
 cargo run --locked --features simulator --example authenticated_setup
 cargo run --locked --features simulator --example simulator
 cargo package --locked --allow-dirty --all-features

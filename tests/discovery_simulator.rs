@@ -347,3 +347,200 @@ async fn simulator_reads_all_input_fields_using_explicit_source_typed_values() {
         server.stop().await.unwrap();
     }
 }
+
+// REQ-OUTPUT-SIMULATOR: Tables 3-14/3-16, pp.3-63–65/3-70–71.
+// Explicit model values for every field; no catalog-driven type/value generation.
+#[tokio::test]
+async fn simulator_reads_every_output_field_in_each_layout() {
+    let discrete = [
+        Value::Ascii("DO MODEL  ".into()),
+        Value::Ascii("Percent   ".into()),
+        Value::UInt8(2),
+        Value::UInt8(1),
+        Value::UInt8(1),
+        Value::UInt8(1),
+        Value::Binary(255),
+        Value::UInt8(1),
+        Value::UInt8(1),
+        Value::UInt32(u32::MAX),
+        Value::UInt8(1),
+        Value::UInt8(1),
+        Value::UInt8(1),
+        Value::UInt8(1),
+        Value::Float(0.05),
+        Value::Float(15.0),
+        Value::Float(3.0),
+        Value::Float(12.0),
+        Value::Float(-10.0),
+        Value::Float(100.0),
+        Value::Float(42.5),
+        Value::UInt8(1),
+        Value::UInt8(1),
+        Value::Float(2.0),
+        Value::UInt8(1),
+        Value::UInt8(3),
+        Value::UInt8(1),
+    ];
+    let analog = [
+        Value::Ascii("AO MODEL  ".into()),
+        Value::Ascii("Percent   ".into()),
+        Value::UInt8(2),
+        Value::UInt8(1),
+        Value::UInt8(1),
+        Value::UInt8(1),
+        Value::Binary(255),
+        Value::UInt8(1),
+        Value::UInt16(12584),
+        Value::UInt16(62923),
+        Value::Float(0.0),
+        Value::Float(100.0),
+        Value::Float(42.5),
+        Value::UInt16(32768),
+        Value::Float(12.5),
+        Value::Float(0.0),
+        Value::Float(42.5),
+    ];
+    for (layout, stride) in [
+        (IoLayout::Compatibility160, 16),
+        (IoLayout::Compatibility240, 16),
+        (IoLayout::Expanded224, 8),
+    ] {
+        let mut model = Model::default();
+        model.set_io_layout(layout);
+        model.io_point_types[3 * stride as usize] = 102;
+        model.io_point_types[4 * stride as usize] = 104;
+        let tlps: Vec<_> = (0..27)
+            .map(|p| Tlp::new(102, 3 * stride, p))
+            .chain((0..17).map(|p| Tlp::new(104, 4 * stride, p)))
+            .collect();
+        let expected: Vec<_> = discrete.iter().chain(&analog).cloned().collect();
+        model
+            .parameters
+            .extend(tlps.iter().copied().zip(expected.iter().cloned()));
+        let server = Simulator::bind("127.0.0.1:0".parse().unwrap(), model)
+            .await
+            .unwrap();
+        let client = Client::tcp(
+            server.endpoint().to_string(),
+            ClientConfig {
+                profile: Arc::new(Roc800Profile { layout }),
+                heartbeat_interval: None,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let classifications = client
+            .read_point_types(PointTypeRequest::new(102, 3).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(
+            classifications.classifications()[0],
+            PointTypeClassification::Roc
+        );
+        assert_eq!(
+            classifications.classifications()[2],
+            PointTypeClassification::Roc
+        );
+        let catalog = Roc800Catalog::from_discovery(
+            client
+                .discover_io(FirmwareVersion::new(3, 1).unwrap())
+                .await
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            client
+                .read_schema(&catalog, &catalog.context(), &tlps)
+                .await
+                .unwrap(),
+            expected
+        );
+        client.stop().await;
+        server.stop().await.unwrap();
+    }
+}
+
+// REQ-PI-SIMULATOR: §3.4.16/Table 3-17, pp.3-72–74. Explicit values
+// for all 28 fields; independently exercise UINT32 counts and FLOAT totals/rates.
+#[tokio::test]
+async fn simulator_reads_every_pulse_field_in_each_layout() {
+    let expected = vec![
+        Value::Ascii("PI MODEL  ".into()),
+        Value::Ascii("m3        ".into()),
+        Value::UInt8(1),
+        Value::Float(0.05),
+        Value::UInt32(0),
+        Value::UInt8(23),
+        Value::UInt32(u32::MAX),
+        Value::UInt8(2),
+        Value::UInt8(1),
+        Value::Float(2.0),
+        Value::Float(42.5),
+        Value::UInt8(2),
+        Value::Float(1000.0),
+        Value::Float(42.5),
+        Value::Float(0.0),
+        Value::Float(10.0),
+        Value::Float(100.0),
+        Value::Float(110.0),
+        Value::Float(5.0),
+        Value::Float(2.0),
+        Value::UInt8(1),
+        Value::UInt8(1),
+        Value::UInt8(1),
+        Value::Binary(255),
+        Value::Float(123.0),
+        Value::Float(456.0),
+        Value::Float(999999.0),
+        Value::Float(0.0),
+    ];
+    for (layout, stride) in [
+        (IoLayout::Compatibility160, 16),
+        (IoLayout::Compatibility240, 16),
+        (IoLayout::Expanded224, 8),
+    ] {
+        let mut model = Model::default();
+        model.set_io_layout(layout);
+        model.io_point_types[5 * stride as usize] = 105;
+        let tlps: Vec<_> = (0..28).map(|p| Tlp::new(105, 5 * stride, p)).collect();
+        model
+            .parameters
+            .extend(tlps.iter().copied().zip(expected.iter().cloned()));
+        let server = Simulator::bind("127.0.0.1:0".parse().unwrap(), model)
+            .await
+            .unwrap();
+        let client = Client::tcp(
+            server.endpoint().to_string(),
+            ClientConfig {
+                profile: Arc::new(Roc800Profile { layout }),
+                heartbeat_interval: None,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            client
+                .read_point_types(PointTypeRequest::new(105, 1).unwrap())
+                .await
+                .unwrap()
+                .get(105),
+            Some(PointTypeClassification::Roc)
+        );
+        let catalog = Roc800Catalog::from_discovery(
+            client
+                .discover_io(FirmwareVersion::new(3, 60).unwrap())
+                .await
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            client
+                .read_schema(&catalog, &catalog.context(), &tlps)
+                .await
+                .unwrap(),
+            expected
+        );
+        client.stop().await;
+        server.stop().await.unwrap();
+    }
+}

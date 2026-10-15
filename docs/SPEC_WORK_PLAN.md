@@ -50,11 +50,11 @@ services must have the correct direction; raw request access is not typed covera
 | OP-24 | 2.8; Ch. 7 | Store and forward | Open | None |
 | OP-50 | 2.9 | I/O layout | Partial: both selectors and all three explicit lengths; DEC-3 device applicability remains open | tests/discovery.rs; tests/discovery_simulator.rs; per-variant evidence in CATALOG.md |
 | OP-100 | 2.10 | User-defined information | Implemented command 11; firmware exchanges unverified | tests/discovery.rs; tests/discovery_simulator.rs; per-variant evidence in CATALOG.md |
-| OP-105 | 2.11 | Min/max | Open | None |
-| OP-108 | 2.12 | History tags/index | Open | None |
+| OP-105 | 2.11 | Min/max | Partial: table-offset reply, raw occurrences/default and replaceable provisional codecs; DEC-4.01 open | tests/history_metadata.rs; tests/history_metadata_simulator.rs; HISTORY_METADATA.md |
+| OP-108 | 2.12 | History tags/index | Baseline 1–20-point reads implemented; expanded applicability and continuity not inferred | tests/history_metadata.rs; tests/history_metadata_simulator.rs; HISTORY_METADATA.md |
 | OP-118 | 2.13 | Alarms | Partial: fixed records, bounded pages and explicit checkpoints; continuity/physical limits remain | tests/logs.rs; tests/logs_simulator.rs; LOGS.md |
 | OP-119 | 2.14 | Events | Partial: all enumerated forms/tags, incomplete values retained; continuity/physical limits remain | tests/logs.rs; tests/logs_simulator.rs; LOGS.md |
-| OP-135 | 2.15 | Single history point | Open | None |
+| OP-135 | 2.15 | Single history point | Partial: all selectors, index-only reads and bounded paging; explicit minute policies; DEC-4 applicability/continuity limits remain | tests/history.rs; tests/history_simulator.rs; HISTORY.md |
 | OP-136 | 2.16 | Multiple history points | Open | None |
 | OP-137 | 2.17 | Day indices | Open | None |
 | OP-138 | 2.18 | Day history | Open | None |
@@ -214,18 +214,22 @@ PT-124-145; never silently assume all firmware exposes the same segment range.
 
 ### OP-105 and OP-108: point metadata
 
-- [ ] OP-105 decode archival method/TLP/current value and today/yesterday extrema and occurrence times.
+- [x] OP-105 decode archival method/TLP/current value and today/yesterday extrema, preserving raw occurrence times; explicit replaceable provisional interpretations available.
 - [ ] Resolve conflicting occurrence-time lengths/representations in Table 2-14 (DEC-4).
-- [ ] OP-108 implement ordered point/tag results and common periodic index.
-- [ ] Test count bounds, echoed points, padded tags, unknown archival methods and index changes during reads.
+- [x] OP-108 implement ordered point/tag results and raw common periodic index for the baseline bounded request.
+- [x] Test count bounds, echoed points, padded tags, unknown archival methods and index changes between metadata replies.
+
+See [history metadata contracts](HISTORY_METADATA.md) for exact limits, defaults,
+public replacement seams and the source/evidence of each provisional choice.
 
 ### OP-135: single-point history
 
-- [ ] Implement minute, periodic and daily value selectors.
-- [ ] Implement periodic and daily timestamp selectors.
-- [ ] Validate requested/returned counts and current index; support documented index-only behavior.
-- [ ] Resolve minute-index prose/table discrepancy and distinguish float samples from timestamps.
-- [ ] Test maximum page sizes, missing points, retention boundaries and replacement between pages.
+- [x] Implement minute, periodic and daily value selectors.
+- [x] Implement periodic and daily timestamp selectors.
+- [x] Validate requested/returned counts and selected current-index bounds; support count-zero index-only behavior.
+- [x] Distinguish float samples from timestamps; provide TableHistoryPolicy default, explicitly provisional ProseMinuteHistoryPolicy and public caller policies.
+- [ ] Resolve the underlying minute-index discrepancy with device/firmware evidence (DEC-4.03); software presets do not close it.
+- [x] Test maximum page sizes, missing points, known retention boundaries and interrupted/replaced generations without implicit resume.
 
 ### OP-136: multiple-point history
 

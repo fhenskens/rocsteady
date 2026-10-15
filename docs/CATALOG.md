@@ -3,12 +3,17 @@
 Source: [Emerson D301180X012, October 2022](https://www.documentation.emersonprocess.com/groups/public/documents/instruction_manuals/d301180x012.pdf).
 Initial slice reviewed 2026-10-10; PT-136 audited 2026-10-14 against printed
 pp.3-200–201 (PDF pages 259–260), including visual inspection of the disputed row.
-This document records 130 entries as technical metadata, not vendor descriptions.
+This document records 202 entries as technical metadata, not vendor descriptions.
 The foundation slice was audited on 2026-10-14 against printed pp.3-34–37,
 3-44–48 and 3-210–211.
 Input Tables 3-13/3-15 audited on 2026-10-14 against printed pp.3-61–62 and
 3-66–69 (PDF pages 120–121 and 125–128), including visual inspection of
 calibration access notes and alarm-bit definitions.
+Output Tables 3-14/3-16 audited on 2026-10-15 against printed pp.3-63–65
+and 3-70–71 (PDF pages 122–124 and 129–130), using the publisher PDF text.
+All 27 DO and 17 AO read fields are accounted for; physical evidence remains none.
+Pulse Table 3-17 audited on 2026-10-15 against printed pp.3-72–74
+(PDF pages 131–133), using the publisher PDF text; all 28 fields accounted for.
 No PT row meets the full schema completion contract.
 
 ## Discovery contracts
@@ -295,3 +300,157 @@ malformed replies, budget failures, overrides and stale catalog rejection.
 Run `cargo run --locked --example discovery_catalog` to discover both services and
 read firmware identification, clock year/raw time, CPU load, a port counter, module boot identity, an analog input, a discrete input and battery value
 through the built-in provider, without manually supplying widths.
+
+## Output read catalog — PT-102/104
+
+Every row below has independent literal/TCP evidence in `catalog_literal` and
+`every_catalog_row_reads_independent_literal_values_over_tcp`, plus every-layout
+coverage in `output_all_fields_read_over_tcp_for_every_layout`. Explicit simulator
+values cover all fields in `simulator_reads_every_output_field_in_each_layout`.
+The extracted-package consumer reads DO type/alarms and AO raw/physical values.
+All fields require an I/O snapshot at the matching physical position; logical
+ordinals are converted through `IoPoint::tlp`. No output writes are implemented.
+
+| PT | Parameter | Type / width | Source access | Introduced | Source |
+| --- | --- | --- | --- | --- | --- |
+| 102 | 0 | ASCII / 10 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-63 |
+| 102 | 1 | ASCII / 10 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-63 |
+| 102 | 2 | UInt8 / 1 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-63 |
+| 102 | 3 | UInt8 / 1 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-63 |
+| 102 | 4 | UInt8 / 1 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-63 |
+| 102 | 5 | UInt8 / 1 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-63 |
+| 102 | 6 | Binary / 1 | R/O | 1.00 | 3.4.13, Table 3-14, p.3-63 |
+| 102 | 7 | UInt8 / 1 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-64 |
+| 102 | 8 | UInt8 / 1 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-64 |
+| 102 | 9 | UInt32 / 4 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-64 |
+| 102 | 10 | UInt8 / 1 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-64 |
+| 102 | 11 | UInt8 / 1 | R/O | 1.00 | 3.4.13, Table 3-14, p.3-64 |
+| 102 | 12 | UInt8 / 1 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-64 |
+| 102 | 13 | UInt8 / 1 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-64 |
+| 102 | 14 | Float / 4 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-64 |
+| 102 | 15 | Float / 4 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-65 |
+| 102 | 16 | Float / 4 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-65 |
+| 102 | 17 | Float / 4 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-65 |
+| 102 | 18 | Float / 4 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-65 |
+| 102 | 19 | Float / 4 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-65 |
+| 102 | 20 | Float / 4 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-65 |
+| 102 | 21 | UInt8 / 1 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-65 |
+| 102 | 22 | UInt8 / 1 | R/W | 1.00 | 3.4.13, Table 3-14, p.3-65 |
+| 102 | 23 | Float / 4 | R/O | 1.00 | 3.4.13, Table 3-14, p.3-65 |
+| 102 | 24 | UInt8 / 1 | R/O | 1.10 | 3.4.13, Table 3-14, p.3-65 |
+| 102 | 25 | UInt8 / 1 | R/O | 1.10 | 3.4.13, Table 3-14, p.3-65 |
+| 102 | 26 | UInt8 / 1 | R/W | 3.01 | 3.4.13, Table 3-14, p.3-65 |
+| 104 | 0 | ASCII / 10 | R/W | 1.00 | 3.4.15, Table 3-16, p.3-70 |
+| 104 | 1 | ASCII / 10 | R/W | 1.00 | 3.4.15, Table 3-16, p.3-70 |
+| 104 | 2 | UInt8 / 1 | R/W | 1.00 | 3.4.15, Table 3-16, p.3-70 |
+| 104 | 3 | UInt8 / 1 | R/W | 1.00 | 3.4.15, Table 3-16, p.3-70 |
+| 104 | 4 | UInt8 / 1 | R/W | 1.00 | 3.4.15, Table 3-16, p.3-70 |
+| 104 | 5 | UInt8 / 1 | R/W | 1.00 | 3.4.15, Table 3-16, p.3-70 |
+| 104 | 6 | Binary / 1 | R/O | 1.00 | 3.4.15, Table 3-16, p.3-70 |
+| 104 | 7 | UInt8 / 1 | R/W | 1.00 | 3.4.15, Table 3-16, p.3-71 |
+| 104 | 8 | UInt16 / 2 | R/W | 1.00 | 3.4.15, Table 3-16, p.3-71 |
+| 104 | 9 | UInt16 / 2 | R/W | 1.00 | 3.4.15, Table 3-16, p.3-71 |
+| 104 | 10 | Float / 4 | R/W | 1.00 | 3.4.15, Table 3-16, p.3-71 |
+| 104 | 11 | Float / 4 | R/W | 1.00 | 3.4.15, Table 3-16, p.3-71 |
+| 104 | 12 | Float / 4 | R/W | 1.00 | 3.4.15, Table 3-16, p.3-71 |
+| 104 | 13 | UInt16 / 2 | R/O | 1.00 | 3.4.15, Table 3-16, p.3-71 |
+| 104 | 14 | Float / 4 | R/W | 1.00 | 3.4.15, Table 3-16, p.3-71 |
+| 104 | 15 | Float / 4 | R/W | 1.00 | 3.4.15, Table 3-16, p.3-71 |
+| 104 | 16 | Float / 4 | R/O | 1.00 | 3.4.15, Table 3-16, p.3-71 |
+
+DO /24–25 require 1.10; /26 requires 3.01. Other output fields require 1.00.
+Scanning /2 exposes disabled/automatic/manual; /3–5 expose disabled/enabled.
+Reset /7 exposes last-value/failsafe-value. DO /8, /21–22, /24 are off/on;
+/10–13 are disabled/enabled; /25 labels relay=0, solid-state=1, relay-6-point=3;
+/26 labels normal/inverted. Unknown values are retained without a label.
+
+DO alarm /6 defines bit 5 scanning-manual and bit 7 scanning-disabled (unused
+mask 0x5f). AO /6 additionally defines bit 6 point-fail (unused mask 0x1f).
+Every raw byte, including unused bits, is preserved. DO /14–17 and /23 have
+fixed seconds units. The /1 engineering-units tags remain device strings.
+
+Numeric ranges are metadata, never filters on read values. DO /2 is 0–2,
+/9 is 0–4294967295, /16–17 are 0–43200, /23 is zero through positive finite
+f32 maximum; other documented boolean fields are 0–1. AO /2 is 0–2;
+/8–9 and /13 are 0–65535; boolean fields are 0–1. Engineering floats have
+no invented numeric constraints. Three special DO constraints remain explicit:
+
+- /14 has module-dependent limits: DO 0.002–43200 seconds, DOR 0.05–43200.
+  No universal range is selected without module identity.
+- /15 has a strict positive lower bound and inclusive 43200 upper bound.
+  The existing inclusive range pair cannot represent this, so it stays None.
+- /25 prints a 0–1 range but enumerates code 3; the range stays None and code 3
+  retains its documented label.
+
+`write_caveat` records those three constraints, DO /26's ACIO-channel wording,
+and AO /7's nonexistent /22 failsafe reference and mistaken /13 EU reference
+(the table's failsafe-value field is /15 and auto-value field /12). These do not
+change read widths or establish write behavior; see DEC-10.07. Defaults and
+update ownership are not yet catalog fields. Full PT conformance remains open.
+
+## Pulse-input read catalog — PT-105
+
+Source: §3.4.16, Table 3-17, pp.3-72–74. Every field has independent bytes in
+`catalog_literal`, independent typed values and TCP reads in `tests/discovery.rs`
+and `tests/pulse_catalog.rs`, and explicit model values in
+`simulator_reads_every_pulse_field_in_each_layout`. Requirement IDs appear beside
+the tests and in [the requirements index](REQUIREMENTS.md). The example and
+extracted-package consumer read counts, rates, alarm bits and contract-day totals.
+Every field requires an explicitly selected ROC800 firmware in the reviewed
+1.00–3.60 window and a matching discovered physical position. All are introduced
+in 1.00; logical ordinal zero is not the wire physical location. The tests cover
+1.00 and 3.60 applicability and all three layouts where applicable.
+
+| PT | Parameter | Type / width | Source access | Introduced | Source |
+| --- | --- | --- | --- | --- | --- |
+| 105 | 0 | ASCII / 10 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-72 |
+| 105 | 1 | ASCII / 10 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-72 |
+| 105 | 2 | UInt8 / 1 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-72 |
+| 105 | 3 | Float / 4 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-72 |
+| 105 | 4 | UInt32 / 4 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-72 |
+| 105 | 5 | UInt8 / 1 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-72 |
+| 105 | 6 | UInt32 / 4 | R/O | 1.00 | 3.4.16, Table 3-17, p.3-72 |
+| 105 | 7 | UInt8 / 1 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-72 |
+| 105 | 8 | UInt8 / 1 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-72 |
+| 105 | 9 | Float / 4 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-72 |
+| 105 | 10 | Float / 4 | R/O | 1.00 | 3.4.16, Table 3-17, p.3-72 |
+| 105 | 11 | UInt8 / 1 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-73 |
+| 105 | 12 | Float / 4 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-73 |
+| 105 | 13 | Float / 4 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-73 |
+| 105 | 14 | Float / 4 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-73 |
+| 105 | 15 | Float / 4 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-73 |
+| 105 | 16 | Float / 4 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-73 |
+| 105 | 17 | Float / 4 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-73 |
+| 105 | 18 | Float / 4 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-73 |
+| 105 | 19 | Float / 4 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-73 |
+| 105 | 20 | UInt8 / 1 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-73 |
+| 105 | 21 | UInt8 / 1 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-73 |
+| 105 | 22 | UInt8 / 1 | R/W | 1.00 | 3.4.16, Table 3-17, p.3-73 |
+| 105 | 23 | Binary / 1 | R/O | 1.00 | 3.4.16, Table 3-17, p.3-73 |
+| 105 | 24 | Float / 4 | R/O | 1.00 | 3.4.16, Table 3-17, p.3-74 |
+| 105 | 25 | Float / 4 | R/O | 1.00 | 3.4.16, Table 3-17, p.3-74 |
+| 105 | 26 | Float / 4 | R/O | 1.00 | 3.4.16, Table 3-17, p.3-74 |
+| 105 | 27 | Float / 4 | R/O | 1.00 | 3.4.16, Table 3-17, p.3-74 |
+
+Known ranges: /2, /8 and /20–22 are 0–1; /3 is 0.05–43200 seconds;
+/4 is 0–16000000; /5 is 0–23; /6 is 0–4294967295; /7 is 0–3;
+/11 is 0–2; /27 is zero through positive finite f32 maximum. Strings use
+10 printable ASCII bytes. /9 excludes zero; its `numeric_range` stays None
+because a single inclusive interval cannot express that domain. `write_caveat`
+records the actual constraint. Other floats have no invented numeric bound.
+Ranges are metadata for future writes and never filter observed read values.
+
+/2 and /20–22 label disabled/enabled. /7 labels EU per second/minute/hour/day;
+/8 labels EU per pulse or pulses per EU; /11 labels rate, accumulator with maximum
+rollover, or accumulator with entered rollover. Unknown codes retain raw bytes.
+Alarm /23 defines low, low-low, high, high-high, rate, point-fail and
+scanning-disabled at bits 0, 1, 2, 3, 4, 6 and 7; bit 5 is unused (mask 0x20)
+and is preserved. Fixed units are seconds for /3, pulses for /4 and /6, and
+pulses/second for /27. Engineering units and rate periods remain device context.
+
+The client does not calculate rate, conversion, contract-day boundaries, totals
+or rollover. In particular /4 and /6 are UINT32 counts while /24–26 are FLOAT
+values. A read does not make a multi-field snapshot atomic or establish durable
+pulse accounting across resets/reconnects. Defaults and update ownership are
+not catalog fields; writes and full PT conformance remain open. Physical and
+actual serial evidence: none.

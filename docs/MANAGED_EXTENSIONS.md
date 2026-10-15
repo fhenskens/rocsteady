@@ -191,8 +191,8 @@ applicability. ParameterSchema supplies DataType (and therefore width), Access,
 optional logical bounds and optional numeric bounds. Missing metadata is never guessed.
 ReadOnly/ReadWrite are readable; WriteOnly and unresolved Conditional fail locally.
 Logical bounds are enforced; numeric bounds are write metadata, not a read-value filter.
-The built-in Roc800Catalog covers 130 parameters, including clock, port and module fields; schema-aware
-writes and complete PT conformance remain unavailable. PT-101/103 have all read
+The built-in Roc800Catalog covers 202 parameters, including clock, port and module fields; schema-aware
+writes and complete PT conformance remain unavailable. PT-101/102/103/104/105 have all read
 widths plus optional CatalogMetadata enum/bit/unit annotations. Unknown values
 remain raw; source write caveats do not alter read planning or establish write access. See [CATALOG.md](CATALOG.md).
 
@@ -286,3 +286,27 @@ SrbxPoller reuses existing pool stopped watches and serialized opcode-118 reads,
 with no extra task/lifecycle latch. It reports bounded notifications and lag without
 automatic ingestion/acknowledgement. Caller identity/complete consumption remain
 required; an empty acknowledgement does not prove SRBX cleared. See LOGS.md.
+
+
+## History metadata codec selection
+
+`read_min_max` uses the profile's decoder and a raw occurrence default.
+`read_min_max_with_codec` selects a public contextual codec per call, including
+`MinMaxCodec(CalendarOccurrenceCodec)`, `MinMaxCodec(PrefixedEpochOccurrenceCodec)`
+and `MinMaxCodec` with any caller-owned ReplyCodec<()> output type. Profile-wide
+replacement uses ProtocolProfile::decode_min_max; ordered tag/index replacement
+uses decode_history_tags. Client, Session and ManagedContext expose the same
+methods. Known request/reply budgets precede admission; decoding stays under
+exchange retirement. See [history contracts and preset evidence](HISTORY_METADATA.md).
+
+
+## Single-point history
+
+OP-135 `read_history` and `read_history_with_codec` use the same Session/Client/
+ManagedContext exchange guard. Public HistoryIndexPolicy selects checked immutable
+geometry in each request/range; public ReplyCodec<HistoryRequest> can replace the
+wire decoder. Profiles may override decode_history, while ordinary range operations
+still enforce typed output shape. Range reads hold one generation, obey budgets
+and expose confirmed pages on interruption. HistoryChanged is a healthy observed
+index-change outcome, not a malformed frame or a durable-gap proof.
+See [history contracts and preset evidence](HISTORY.md).

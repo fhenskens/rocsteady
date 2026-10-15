@@ -171,7 +171,7 @@ async fn read_first_analog_input(client: &Client)
 ```
 
 The catalog supplies the parameter type and checks its discovered physical location.
-It covers 130 parameters, including every PT-101/103 read width; [the manifest](CATALOG.md) records source references,
+It covers 202 parameters, including every PT-101/102/103/104/105 read width; [the manifest](CATALOG.md) records source references,
 applicability and omissions. Snapshot-derived catalogs/plans fail with StaleGeneration
 after replacement; rediscover before starting a new attempt. The owning application
 must await client.stop(). Run `cargo run --example discovery_catalog` for a complete
@@ -262,3 +262,59 @@ of guaranteed transitions. Await changed(), then inspect `client.state()`.
 `subscribe_events()` yields bounded SRBX frames found during exchanges/heartbeats.
 Handle broadcast lag explicitly; there is no continuous idle reader or automatic
 alarm-log acknowledgement. Await stop() before leaving your runtime.
+
+## History metadata and occurrence choices
+
+Ordinary calls use built-in codecs. Min/max occurrence times stay lossless raw
+five-byte values by default; calendar and prefixed-epoch interpretations are
+explicitly provisional options. Both use the same public codec interface as
+consumer implementations. See [contracts and evidence](HISTORY_METADATA.md).
+
+```rust,no_run
+use rocsteady::{Client, MinMaxRequest, MinMaxCodec, CalendarOccurrenceCodec,
+    HistoryTagsRequest};
+
+# async fn history(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
+let request = MinMaxRequest::new(0, 7)?;
+let values = client.read_min_max(request).await?; // No custom profile required.
+println!("current: {}, occurrence: {:?}", values.current, values.today.minimum_time);
+// Select only with applicable device knowledge; parsing does not establish applicability.
+let calendar = client.read_min_max_with_codec(request,
+    MinMaxCodec(CalendarOccurrenceCodec)).await?;
+let tags = client.read_history_tags(HistoryTagsRequest::new(0, vec![7, 2])?).await?;
+println!("calendar: {:?}, reported index: {}", calendar.today.minimum_time, tags.periodic_index);
+# Ok(())
+# }
+```
+
+Read several metadata replies inside a workflow when they must retain one
+connection generation. Index changes and controller updates can still occur;
+there is no automatic retry, snapshot, year reconstruction or durable continuity.
+
+## Archived single-point reads
+
+OP-135 reads values or raw timestamp words through default codecs, without a
+custom profile. Default minute indices are 0–59; known capacities, the provisional
+0–60 interpretation, and consumer policies are explicit choices. See
+[history contracts and partial-progress semantics](HISTORY.md).
+
+```rust,no_run
+use rocsteady::{Client, HistoryKind, HistoryRequest, HistoryRange};
+
+# async fn samples(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
+let page = client.read_history(
+    HistoryRequest::new(0, 7, HistoryKind::Periodic, 0, 10)?
+).await?;
+println!("reported index: {}, samples: {:?}", page.current_index, page.samples);
+// The known minute ring splits this window into 58–59, then 0–2.
+let result = client.read_history_range(
+    HistoryRange::new(0, 7, HistoryKind::Minute, 58, 5)?
+).await;
+match result {
+    Ok(progress) => println!("complete: {}, remaining: {}", progress.complete, progress.remaining),
+    Err(error) => println!("confirmed pages: {}, next: {:?}, error: {}",
+        error.progress.pages.len(), error.progress.next_index, error.error),
+}
+# Ok(())
+# }
+```

@@ -82,6 +82,27 @@ pub trait ProtocolProfile: Send + Sync + 'static {
     ) -> Result<crate::EventPage, DecodeError> {
         crate::EventCodec.decode(request, payload)
     }
+    fn decode_history(
+        &self,
+        request: &crate::HistoryRequest,
+        payload: &[u8],
+    ) -> Result<crate::HistoryPage, DecodeError> {
+        crate::HistoryCodec.decode(request, payload)
+    }
+    fn decode_min_max(
+        &self,
+        request: &crate::MinMaxRequest,
+        payload: &[u8],
+    ) -> Result<crate::MinMaxReply, DecodeError> {
+        crate::MinMaxCodec(crate::RawOccurrenceCodec).decode(request, payload)
+    }
+    fn decode_history_tags(
+        &self,
+        request: &crate::HistoryTagsRequest,
+        payload: &[u8],
+    ) -> Result<crate::HistoryTagsReply, DecodeError> {
+        crate::HistoryTagsCodec.decode(request, payload)
+    }
     /// Section 3.2 sequential physical positions. Override explicitly for a known alternative.
     fn io_location(&self, layout: crate::IoLayout, response_index: usize) -> Result<u8, Error> {
         if response_index >= layout.len() {
@@ -131,12 +152,13 @@ impl ProtocolProfile for DefaultProfile {
             name: "roc-plus-read-only",
             applicability: "ordinary unicast; firmware applicability is not automatically discovered",
             assumptions: "explicit addresses and caller-supplied parameter types; no routed framing",
-            evidence: "tests/protocol.rs, tests/configuration.rs, tests/integration.rs, tests/discovery.rs, tests/logs.rs; no hardware evidence",
+            evidence: "tests/protocol.rs, tests/configuration.rs, tests/integration.rs, tests/discovery.rs, tests/logs.rs, tests/history_metadata.rs, tests/history.rs; no hardware evidence",
         }
     }
     fn capability(&self, opcode: u8) -> Capability {
         match opcode {
-            6 | 7 | 17 | 50 | 100 | 118 | 119 | 167 | 180 | 225 => Capability::Verified,
+            6 | 7 | 17 | 50 | 100 | 108 | 135 | 118 | 119 | 167 | 180 | 225 => Capability::Verified,
+            105 => Capability::Provisional, // Raw five-byte occurrence regions; DEC-4.01 remains open.
             24 | 224 | 255 => Capability::Unavailable,
             _ => Capability::UserSupplied,
         }

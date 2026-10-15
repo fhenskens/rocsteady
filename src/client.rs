@@ -447,6 +447,52 @@ impl Client {
         ))
         .await
     }
+    /// Table 2-18: one bounded OP-135 page or zero-count current-index probe.
+    pub async fn read_history(
+        &self,
+        request: crate::HistoryRequest,
+    ) -> Result<crate::HistoryPage, etherbird::Error<Error>> {
+        self.execute_prepared(crate::operations::history(request, self.profile.clone()))
+            .await
+    }
+    /// Select a prebuilt or consumer contextual codec without changing transport ownership.
+    pub async fn read_history_with_codec<C: crate::ReplyCodec<crate::HistoryRequest>>(
+        &self,
+        request: crate::HistoryRequest,
+        codec: C,
+    ) -> Result<C::Output, etherbird::Error<Error>> {
+        self.execute_prepared(crate::operations::history_with_codec(request, codec))
+            .await
+    }
+    /// Read bounded min/max metadata; occurrence bytes stay raw unless a profile selects a codec.
+    pub async fn read_min_max(
+        &self,
+        request: crate::MinMaxRequest,
+    ) -> Result<crate::MinMaxReply, etherbird::Error<Error>> {
+        self.execute_prepared(crate::operations::min_max(request, self.profile.clone()))
+            .await
+    }
+    /// Explicit per-call codec selection through the same interface as caller implementations.
+    /// Preparation uses the baseline 50-byte reply budget; other payload sizes require a custom operation.
+    pub async fn read_min_max_with_codec<C: crate::ReplyCodec<crate::MinMaxRequest>>(
+        &self,
+        request: crate::MinMaxRequest,
+        codec: C,
+    ) -> Result<C::Output, etherbird::Error<Error>> {
+        self.execute_prepared(crate::operations::min_max_with_codec(request, codec))
+            .await
+    }
+    /// Read 1–20 ordered history tags and the reported periodic index, without inferred continuity.
+    pub async fn read_history_tags(
+        &self,
+        request: crate::HistoryTagsRequest,
+    ) -> Result<crate::HistoryTagsReply, etherbird::Error<Error>> {
+        self.execute_prepared(crate::operations::history_tags(
+            request,
+            self.profile.clone(),
+        ))
+        .await
+    }
     pub async fn read_clock(&self) -> Result<Clock, etherbird::Error<Error>> {
         self.execute_prepared(crate::operations::clock(self.profile.clone()))
             .await

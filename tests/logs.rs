@@ -38,6 +38,7 @@ fn client(peer: &DiscoveryFixture) -> Client {
     .unwrap()
 }
 #[test]
+// REQ-118-RECORDS: Table 2-16. See docs/REQUIREMENTS.md.
 fn table_2_16_alarm_variants_flags_reason_and_float_widths_are_literal() {
     for i in 0..6 {
         let bytes = alarm_literal(i);
@@ -110,6 +111,7 @@ fn table_2_16_alarm_variants_flags_reason_and_float_widths_are_literal() {
     assert!(AlarmRecord::decode(&[0; 24]).is_err());
 }
 #[test]
+// REQ-119-RECORDS: Table 2-17. See docs/REQUIREMENTS.md.
 fn table_2_17_all_eight_event_kinds_and_unknown_kind_preserve_spare_bytes() {
     for i in 0..9 {
         let bytes = event_literal(i);
@@ -203,6 +205,7 @@ fn table_2_17_all_eight_event_kinds_and_unknown_kind_preserve_spare_bytes() {
     assert!(EventRecord::decode(&[0; 23]).is_err());
 }
 #[test]
+// REQ-119-TAGS: §2.14. See docs/REQUIREMENTS.md.
 fn event_specific_tags_decode_old_new_and_overlaps_without_inventing_large_values() {
     let cases = [
         (0, vec![255], Value::Binary(255)),
@@ -297,6 +300,7 @@ fn event_specific_tags_decode_old_new_and_overlaps_without_inventing_large_value
     }
 }
 #[test]
+// REQ-LOG-HEADERS: §§2.13–2.14. See docs/REQUIREMENTS.md.
 fn page_headers_record_limits_and_checkpoints_are_strict() {
     for (start, count) in [(450, 0), (65535, 1), (0, 11), (449, 2)] {
         assert!(LogRequest::new(start, count).is_err());
@@ -495,6 +499,7 @@ async fn checkpoint_resume_checks_raw_anchor_including_nan_and_observes_growth()
     client.stop().await;
 }
 #[tokio::test]
+// POL-LOG-CONTINUITY: Log contract. See docs/REQUIREMENTS.md.
 async fn overwritten_or_changed_anchor_reports_gap_without_retiring_healthy_connection() {
     for change_during in [false, true] {
         let peer = fixture().await;
@@ -524,6 +529,7 @@ async fn overwritten_or_changed_anchor_reports_gap_without_retiring_healthy_conn
     }
 }
 #[tokio::test]
+// POL-LOG-PROGRESS: Log contract. See docs/REQUIREMENTS.md.
 async fn interrupted_second_page_returns_confirmed_progress_and_explicit_resume_after_reconnect() {
     let peer = fixture().await;
     let client = client(&peer);

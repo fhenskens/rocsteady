@@ -28,6 +28,8 @@ pub enum Error {
     CapabilityUnavailable(&'static str),
     #[error("discovery changed: {0}; obtain a fresh snapshot")]
     DiscoveryChanged(&'static str),
+    #[error("history continuity changed: {0}; choose an explicit new read window")]
+    HistoryChanged(&'static str),
     #[error("log continuity changed: {0}; choose an explicit new read window")]
     LogChanged(&'static str),
     #[error("remote handle belongs to generation {expected}, current generation is {actual}")]
@@ -54,6 +56,7 @@ pub enum ErrorKind {
     Authentication,
     DiscoveryChanged,
     LogChanged,
+    HistoryChanged,
 }
 impl Error {
     pub fn kind(&self) -> ErrorKind {
@@ -70,6 +73,7 @@ impl Error {
             Self::Authentication(_) => ErrorKind::Authentication,
             Self::DiscoveryChanged(_) => ErrorKind::DiscoveryChanged,
             Self::LogChanged(_) => ErrorKind::LogChanged,
+            Self::HistoryChanged(_) => ErrorKind::HistoryChanged,
         }
     }
     pub(crate) fn preserves_connection(&self) -> bool {
@@ -79,6 +83,7 @@ impl Error {
                 | ErrorKind::DeviceRejection
                 | ErrorKind::DiscoveryChanged
                 | ErrorKind::LogChanged
+                | ErrorKind::HistoryChanged
         )
     }
 }

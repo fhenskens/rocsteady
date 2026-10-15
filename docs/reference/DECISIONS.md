@@ -1,7 +1,8 @@
 # Current specification decision register
 
-Updated: 2026-10-14. Initial evidence baseline: public research reviewed 2026-10-08;
+Updated: 2026-10-15. Initial evidence baseline: public research reviewed 2026-10-08;
 PT-136 Table 3-48 and PT-103 Table 3-15 visually audited 2026-10-14 for DEC-10.05/06.
+PT-102/104 Tables 3-14/3-16 text audited 2026-10-15 for DEC-10.07.
 This register introduces no physical validation. All DEC
 parents remain open. It is the current delivery index; historical findings remain
 in [first-pass research](AMBIGUITIES.md), [second-pass research](SECOND_PASS.md)
@@ -102,10 +103,10 @@ Evidence: [search assessment](SEARCH_RECORD.md#dec-4--occurrence-times-clock-and
 
 | ID | Subquestion | Current conclusion | Delivery disposition | Evidence needed to close |
 | --- | --- | --- | --- | --- |
-| DEC-4.01 | Opcode 105 five calendar bytes versus extra byte + epoch time | Competing candidates; neither controller-verified | User extension: EXT-2/4 | Known occurrence date/time raw bytes with firmware identity |
+| DEC-4.01 | Opcode 105 five calendar bytes versus extra byte + epoch time | Competing candidates; neither controller-verified | RawOccurrenceCodec default; CalendarOccurrenceCodec / PrefixedEpochOccurrenceCodec explicitly provisional through MinMaxCodec and public ReplyCodec; profile or per-call replacement | Known occurrence date/time raw bytes with firmware identity; independent software fixtures do not close this row |
 | DEC-4.02 | Clock year/leap-year disagreement | Family difference/copy-forward illustration; table-based current choice retained | Retained default | Applicable clock vectors; do not import old-family encoding |
-| DEC-4.03 | Minute index 0-59 versus prose 0-60 | S21 documents 60 values, supporting 0-59 as candidate | User extension: EXT-2/4 | Per-opcode boundary/zero-count behavior; capacity alone not a command definition |
-| DEC-4.04 | Expanded segment ranges | Hardware capability known, service applicability incomplete | User extension: EXT-2/3 | Per-opcode/firmware segment acceptance matrix |
+| DEC-4.03 | Minute index 0-59 versus prose 0-60 | S21 documents 60 values, supporting 0-59 as candidate | OP-135 TableHistoryPolicy default (0–59), explicit provisional ProseMinuteHistoryPolicy (0–60 as 61 slots), ConfiguredHistoryPolicy and public HistoryIndexPolicy; replaceable HistoryCodec | Physical OP-135 index 59/60 and zero-count exchanges with firmware identity; other opcodes audited separately |
+| DEC-4.04 | Expanded segment ranges | Hardware capability known, service applicability incomplete | OP-135 explicit caller geometry through HistoryIndexPolicy/ConfiguredHistoryPolicy; OP-105/108 request overrides; no automatic expanded-firmware preset | Per-opcode/firmware segment acceptance matrix; caller assertions do not establish conformance |
 | DEC-4.05 | Timezone/year reconstruction | Not established by absent fields | Documented direction | Explicit semantics in target manual or leave raw/unqualified |
 
 ## DEC-5 — command/layout variants
@@ -192,6 +193,8 @@ Evidence: [search assessment](SEARCH_RECORD.md#dec-10--widths-conditional-access
 | DEC-10.05 | PT-136/17 DST end-week range 1-56 versus /12 start-week range 1-6 | October 2022 Table 3-48 visually confirms the discrepancy; UInt8 read width/access/version are clear, constraint left unspecified | User extension: EXT-3; built-in raw read available | Applicable erratum or model/firmware evidence establishing valid week values; never substitute a guessed range |
 | DEC-10.06 | PT-103/19, /34, /35 write access | Table 3-15 columns say R/W but visually audited row notes suggest R/O for external ROC Plus; read widths are unambiguous | Built-in read metadata with explicit write caveat; writes deferred | Applicable erratum or controller/firmware evidence establishing external write access |
 
+| DEC-10.07 | PT-102 timing/type constraints and PT-104 failsafe prose | Tables 3-14/3-16 text audited 2026-10-15: DO /14 module-dependent bounds, /15 open lower bound, /25 range 0–1 vs code 3, /26 ACIO wording; AO /7 cites nonexistent /22 and misidentifies /13 | Built-in raw reads and explicit metadata caveats; no universal DO /14–15 or /25 numeric range; writes deferred | Applicable errata/model and module/firmware evidence before write behavior or full table conformance |
+
 ## Managed extension delivery evidence (2026-10-09)
 
 The EXT-1/4/5 ownership boundary is now implemented; see
@@ -199,7 +202,8 @@ The EXT-1/4/5 ownership boundary is now implemented; see
 through `SetupStrategy`, and ordinary unicast multi-exchange procedures through
 `Workflow`/`ManagedContext`, with typed codecs through `Operation`. This makes
 these seams available without resolving any DEC-2 authentication algorithm or
-DEC-4/5/6 payload/remote-outcome ambiguity. No preset is promoted and all DEC rows
+DEC-4/5/6 payload/remote-outcome ambiguity. OP-105 provisional presets are now
+implemented without promoting either interpretation to a verified default; all DEC rows
 remain open. Ordinary-unicast profiles and read schema providers were subsequently
 delivered; see the current contracts/catalog for their exact scope. Routing, broader
 framing and schema/write conformance retain their framework/evidence prerequisites.

@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.1.2 — 2026-10-15
+
+- Add all 27 PT-102 discrete-output and 17 PT-104 analog-output read fields;
+  the ROC800 catalog includes explicit firmware gates,
+  source access/ranges, enum/alarm-bit/unit metadata and unresolved-source caveats.
+- Add all 28 PT-105 pulse-input read fields with counts, rates, contract-day totals,
+  mode/units/alarm metadata and an explicit nonzero-conversion constraint. The
+  catalog now contains 202 parameters; values are reported without local conversion.
+- Add independent literal/TCP requirements tests, all-layout simulator values,
+  discovery example output reads and public extracted-package consumer checks.
+- Add OP-105 min/max and OP-108 history-tag/index reads to Client, Session and
+  workflows. Default to lossless raw occurrence bytes; provide named provisional
+  calendar/prefixed-epoch codecs, per-call selection and public profile/codec overrides.
+  Include independent requirements/TCP/lifecycle tests, simulator, example and
+  extracted-package consumer coverage; no timestamp autodetection.
+- Add OP-135 single-point history values and timestamps, count-zero probes,
+  bounded one-generation paging, explicit progress/short reads and index-change
+  outcomes. Default to table minute bounds; provide selectable provisional prose
+  bounds, configured geometry and caller policy/codec replacements. Include
+  independent requirements/TCP/lifecycle tests, simulator, example and consumer.
+- Link implemented requirements to spec-referenced assertions; strengthen exact
+  parameter budgets, echoed field validation, weekday and published frame tests.
+
+Output writes, full point-table conformance and physical interoperability remain open.
+
 ## 0.1.1 — 2026-10-15
 
 - Declare the docs.rs documentation URL in crate metadata and build hosted API

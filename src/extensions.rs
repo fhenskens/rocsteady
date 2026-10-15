@@ -72,6 +72,58 @@ impl ManagedContext<'_> {
         ))
         .await
     }
+    /// Table 2-18: one bounded OP-135 page or zero-count current-index probe.
+    pub async fn read_history(
+        &mut self,
+        request: crate::HistoryRequest,
+    ) -> Result<crate::HistoryPage, Error> {
+        self.exchange_operation(crate::operations::history(
+            request,
+            self.session.profile.clone(),
+        ))
+        .await
+    }
+    /// Select a prebuilt or consumer contextual codec without changing transport ownership.
+    pub async fn read_history_with_codec<C: crate::ReplyCodec<crate::HistoryRequest>>(
+        &mut self,
+        request: crate::HistoryRequest,
+        codec: C,
+    ) -> Result<C::Output, Error> {
+        self.exchange_operation(crate::operations::history_with_codec(request, codec))
+            .await
+    }
+    /// Read bounded min/max metadata; occurrence bytes stay raw unless a profile selects a codec.
+    pub async fn read_min_max(
+        &mut self,
+        request: crate::MinMaxRequest,
+    ) -> Result<crate::MinMaxReply, Error> {
+        self.exchange_operation(crate::operations::min_max(
+            request,
+            self.session.profile.clone(),
+        ))
+        .await
+    }
+    /// Explicit per-call codec selection through the same interface as caller implementations.
+    /// Preparation uses the baseline 50-byte reply budget; other payload sizes require a custom operation.
+    pub async fn read_min_max_with_codec<C: crate::ReplyCodec<crate::MinMaxRequest>>(
+        &mut self,
+        request: crate::MinMaxRequest,
+        codec: C,
+    ) -> Result<C::Output, Error> {
+        self.exchange_operation(crate::operations::min_max_with_codec(request, codec))
+            .await
+    }
+    /// Read 1–20 ordered history tags and the reported periodic index, without inferred continuity.
+    pub async fn read_history_tags(
+        &mut self,
+        request: crate::HistoryTagsRequest,
+    ) -> Result<crate::HistoryTagsReply, Error> {
+        self.exchange_operation(crate::operations::history_tags(
+            request,
+            self.session.profile.clone(),
+        ))
+        .await
+    }
     pub async fn read_clock(&mut self) -> Result<crate::Clock, Error> {
         self.exchange_operation(crate::operations::clock(self.session.profile.clone()))
             .await

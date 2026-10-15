@@ -12,6 +12,8 @@ mod configuration;
 mod discovery;
 mod error;
 mod extensions;
+mod history;
+mod history_metadata;
 mod logs;
 mod operations;
 mod profile;
@@ -33,6 +35,16 @@ pub use discovery::{
 };
 pub use error::{AuthenticationFailure, DecodeError, Error, ErrorKind};
 pub use etherbird::ResourceState;
+pub use history::{
+    ConfiguredHistoryPolicy, HistoryBounds, HistoryCodec, HistoryContinuity, HistoryIndexPolicy,
+    HistoryKind, HistoryPage, HistoryRange, HistoryReadError, HistoryReadProgress, HistoryRequest,
+    HistorySamples, ProseMinuteHistoryPolicy, TableHistoryPolicy,
+};
+pub use history_metadata::{
+    ArchivalMethod, CalendarOccurrenceCodec, HistoryExtrema, HistoryTag, HistoryTagsCodec,
+    HistoryTagsReply, HistoryTagsRequest, MinMaxCodec, MinMaxReply, MinMaxRequest, OccurrenceTime,
+    PrefixedEpochOccurrenceCodec, RawOccurrenceCodec,
+};
 pub use logs::{
     AlarmCodec, AlarmData, AlarmPage, AlarmReason, AlarmRecord, EventCodec, EventData,
     EventDataType, EventPage, EventRecord, LOG_CAPACITY, LogCheckpoint, LogPage, LogReadError,

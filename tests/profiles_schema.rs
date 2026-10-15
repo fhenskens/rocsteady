@@ -58,6 +58,7 @@ async fn mixed_width_reads_preserve_duplicates_and_split_over_tcp() {
     client.stop().await;
 }
 #[tokio::test]
+// POL-SCHEMA-PROGRESS: Schema read contract. See docs/REQUIREMENTS.md.
 async fn failed_second_batch_reports_confirmed_progress_without_resume() {
     let fixture = ProfileFixture::start().await;
     let client = client(&fixture, Arc::new(FixtureProfile));
@@ -250,6 +251,7 @@ impl ReplyCodec<u16> for ContextCodec {
     }
 }
 #[tokio::test]
+// POL-PROFILE-CODEC: Profile contract. See docs/REQUIREMENTS.md.
 async fn contextual_codec_is_replaceable_and_decode_failure_retires() {
     let fixture = ProfileFixture::start().await;
     let client = client(&fixture, Arc::new(FixtureProfile));
@@ -357,6 +359,7 @@ impl ProtocolProfile for Limits {
     }
 }
 #[test]
+// POL-SCHEMA-BUDGET: Schema read contract. See docs/REQUIREMENTS.md.
 fn planning_obeys_each_budget_and_framework_ceiling() {
     for limits in [
         PayloadLimits {

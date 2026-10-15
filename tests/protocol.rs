@@ -12,6 +12,7 @@ fn device() -> Address {
 }
 
 #[test]
+// REQ-CRC-VECTOR: Ch.4. See docs/REQUIREMENTS.md.
 fn crc_matches_manual_chapter_four_vector() {
     // D301180X012, October 2022, p. 4-1: independent published vector.
     let message = [1, 2, 1, 0, 17, 3, b'M', b'O', b'C'];
@@ -21,6 +22,7 @@ fn crc_matches_manual_chapter_four_vector() {
 }
 
 #[test]
+// REQ-SRBX-WIRE: Ch.6. See docs/REQUIREMENTS.md.
 fn published_srbx_and_ack_vectors_decode_and_encode_exactly() {
     // Chapter 6, p. 6-1: literals do not use the production encoder as oracle.
     for bytes in [
@@ -33,6 +35,7 @@ fn published_srbx_and_ack_vectors_decode_and_encode_exactly() {
 }
 
 #[test]
+// REQ-FRAME-LENGTH: §1.2. See docs/REQUIREMENTS.md.
 fn frame_length_and_crc_failures_are_rejected() {
     let valid = [1, 0, 1, 2, 224, 0, 232, 45];
     for n in 0..valid.len() {
@@ -68,6 +71,7 @@ fn frame_lengths_are_bounded_by_the_wire_length_field() {
 }
 
 #[test]
+// REQ-007-FIELDS: Table 2-3. See docs/REQUIREMENTS.md.
 fn clock_uses_uint16_year_not_obsolete_leap_year_byte() {
     // Table 2-3, p. 2-11 takes precedence over outdated Figure 1-2 illustration.
     let clock = Clock::decode(&[59, 58, 23, 29, 2, 0xe8, 0x07, 5]).unwrap();
@@ -83,6 +87,7 @@ fn clock_uses_uint16_year_not_obsolete_leap_year_byte() {
 }
 
 #[test]
+// REQ-017-LEGACY: Table 2-7. See docs/REQUIREMENTS.md.
 fn legacy_login_packs_password_little_endian_and_optional_access() {
     let basic = Login::new(*b"ABC", 0x1234, None).unwrap();
     assert_eq!(basic.payload(), [b'A', b'B', b'C', 0x34, 0x12]);
@@ -95,6 +100,7 @@ fn legacy_login_packs_password_little_endian_and_optional_access() {
 }
 
 #[test]
+// REQ-180-REQUEST: Table 2-25. See docs/REQUIREMENTS.md.
 fn opcode_180_request_has_count_and_ordered_tlps() {
     let params = [
         Parameter::new(Tlp::new(103, 16, 3), DataType::Float),
@@ -111,6 +117,7 @@ fn opcode_180_request_has_count_and_ordered_tlps() {
 }
 
 #[test]
+// REQ-180-VALUES: Table 2-25. See docs/REQUIREMENTS.md.
 fn opcode_180_response_echoes_tlp_before_each_value() {
     let params = [
         Parameter::new(Tlp::new(103, 16, 3), DataType::Float),
@@ -133,6 +140,7 @@ fn opcode_180_response_echoes_tlp_before_each_value() {
 }
 
 #[test]
+// REQ-167-REQUEST: Table 2-24. See docs/REQUIREMENTS.md.
 fn opcode_167_validates_count_range_and_echoed_block_header() {
     let block = ParameterBlock::new(136, 0, 5, vec![DataType::UInt16, DataType::UInt8]).unwrap();
     assert_eq!(block.payload(), [136, 0, 2, 5]);
@@ -206,6 +214,7 @@ fn mixed_width_parameter_decoders_preserve_truncation_and_ascii_errors() {
 }
 
 #[test]
+// REQ-255-PAIRS: §2.29. See docs/REQUIREMENTS.md.
 fn error_response_preserves_all_codes_and_offsets_including_unknown_codes() {
     assert_eq!(
         DeviceError::decode(&[2, 9, 250, 12]).unwrap(),
@@ -226,6 +235,7 @@ fn error_response_preserves_all_codes_and_offsets_including_unknown_codes() {
 }
 
 #[test]
+// REQ-TYPES: §3.4 table types; Ch.5. See docs/REQUIREMENTS.md.
 fn all_supported_data_types_decode_independent_literals() {
     let cases = [
         (DataType::Binary, vec![0xa5], Value::Binary(0xa5)),
@@ -267,4 +277,117 @@ fn all_supported_data_types_decode_independent_literals() {
         assert!(Value::decode(kind, &bytes[..bytes.len() - 1]).is_err());
     }
     assert!(Value::decode(DataType::Ascii(1), &[0xff]).is_err());
+}
+
+// REQ-167-BUDGET: Table 2-24 (p.2-37) allows 1..=230 value bytes,
+// separately from its four-byte echoed header. Exercise both sides of the limit.
+#[test]
+fn req_167_budget_accepts_230_value_bytes_and_rejects_231() {
+    let block = ParameterBlock::new(103, 16, 0, vec![DataType::UInt8; 230]).unwrap();
+    assert_eq!(block.payload(), [103, 16, 230, 0]);
+    let mut reply = vec![103, 16, 230, 0];
+    reply.extend(0..230);
+    let expected: Vec<_> = (0..230).map(Value::UInt8).collect();
+    assert_eq!(block.decode(&reply).unwrap(), expected);
+    assert!(ParameterBlock::new(103, 16, 0, vec![DataType::UInt8; 231]).is_err());
+    // The last representable parameter is valid; wrapping past it is not.
+    let last = ParameterBlock::new(103, 16, 255, vec![DataType::UInt8]).unwrap();
+    assert_eq!(
+        last.decode(&[103, 16, 1, 255, 42]).unwrap(),
+        [Value::UInt8(42)]
+    );
+    assert!(ParameterBlock::new(103, 16, 255, vec![DataType::UInt8; 2]).is_err());
+}
+
+// REQ-167-ECHO: all four reply fields in Table 2-24 identify the requested block.
+#[test]
+fn req_167_echo_rejects_each_wrong_header_field() {
+    let block = ParameterBlock::new(136, 0, 5, vec![DataType::UInt16, DataType::UInt8]).unwrap();
+    let reply = [136, 0, 2, 5, 0xe8, 7, 5];
+    for offset in 0..4 {
+        let mut wrong = reply;
+        wrong[offset] ^= 1;
+        assert!(
+            block.decode(&wrong).is_err(),
+            "accepted wrong header byte {offset}"
+        );
+    }
+}
+
+// REQ-180-BUDGET: section 2.22 limits the response to 240 bytes, including
+// the count and each TLP. One ASCII(236) value gives exactly 1 + 3 + 236.
+#[test]
+fn req_180_budget_counts_header_and_tlp_in_240_bytes() {
+    let parameters = [Parameter::new(Tlp::new(200, 1, 5), DataType::Ascii(236))];
+    assert_eq!(parameter_request(&parameters).unwrap(), [1, 200, 1, 5]);
+    let mut reply = vec![1, 200, 1, 5];
+    reply.extend([b'A'; 236]);
+    assert_eq!(reply.len(), 240);
+    assert_eq!(
+        decode_parameters(&parameters, &reply).unwrap(),
+        [Value::Ascii("A".repeat(236))]
+    );
+    let oversized = [Parameter::new(Tlp::new(200, 1, 5), DataType::Ascii(237))];
+    assert!(parameter_request(&oversized).is_err());
+}
+
+// REQ-180-ECHO: Table 2-25 repeats count then (TLP,value) in request order.
+#[test]
+fn req_180_echo_rejects_count_and_each_tlp_component_in_each_position() {
+    let parameters = [
+        Parameter::new(Tlp::new(103, 16, 3), DataType::Float),
+        Parameter::new(Tlp::new(136, 0, 5), DataType::UInt16),
+    ];
+    let reply = [2, 103, 16, 3, 0, 0, 0x48, 0x41, 136, 0, 5, 0xe8, 7];
+    for offset in [0, 1, 2, 3, 8, 9, 10] {
+        let mut wrong = reply;
+        wrong[offset] ^= 1;
+        assert!(
+            decode_parameters(&parameters, &wrong).is_err(),
+            "accepted wrong echo byte {offset}"
+        );
+    }
+    let reversed = [2, 136, 0, 5, 0xe8, 7, 103, 16, 3, 0, 0, 0x48, 0x41];
+    assert!(decode_parameters(&parameters, &reversed).is_err());
+}
+
+// REQ-007-WEEKDAY: Table 2-3 explicitly defines weekday values 1..=7.
+// Do not infer consistency with the calendar: these are separately reported fields.
+#[test]
+fn req_007_weekday_accepts_all_seven_values_and_rejects_other_bytes() {
+    for weekday in 0..=255 {
+        let bytes = [0, 0, 0, 1, 1, 0xe8, 7, weekday];
+        let result = Clock::decode(&bytes);
+        if (1..=7).contains(&weekday) {
+            let clock = result.unwrap();
+            assert_eq!(clock.weekday, weekday);
+            assert_eq!(clock.encode().unwrap(), bytes);
+        } else {
+            assert!(result.is_err(), "accepted weekday {weekday}");
+        }
+    }
+}
+
+// REQ-FRAME-CRC: section 1.2 fixes offsets and Chapter 6 supplies these bytes.
+// Check fields against the literal, rather than only decoding/re-encoding it.
+#[test]
+fn req_frame_crc_published_ack_has_exact_addresses_payload_and_checksum_order() {
+    let bytes = [1, 2, 1, 0, 225, 2, 7, 0, 118, 17];
+    let frame = Frame::decode(&bytes, CrcMode::Required).unwrap();
+    assert_eq!(frame.destination, Address::new(1, 2));
+    assert_eq!(frame.source, Address::new(1, 0));
+    assert_eq!(frame.opcode, 225);
+    assert_eq!(frame.data, [7, 0]);
+    assert_eq!(
+        Frame::new(Address::new(1, 2), Address::new(1, 0), 225, vec![7, 0])
+            .encode()
+            .unwrap(),
+        bytes
+    );
+    let mut swapped = bytes;
+    swapped.swap(8, 9);
+    assert!(Frame::decode(&swapped, CrcMode::Required).is_err());
+    // Compatibility mode ignores the checksum, never the declared length.
+    swapped[5] = 3;
+    assert!(Frame::decode(&swapped, CrcMode::Ignore).is_err());
 }

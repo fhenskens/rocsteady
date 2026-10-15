@@ -28,7 +28,7 @@ use entries::ENTRIES;
 /// PT-91/136 use logical zero, PT-95 uses port ordinals 0-5 (Ethernet is 1),
 /// and PT-139 uses module ordinals 0-26. Static port/module metadata establishes
 /// addressing and read widths, not installation, module mode or authorization.
-/// The controller can reject a read. PT-101/103/109 require discovered physical positions.
+/// The controller can reject a read. PT-101/102/103/104/105/109 require discovered physical positions.
 pub struct Roc800Catalog {
     firmware: FirmwareVersion,
     io: Option<IoSnapshot>,

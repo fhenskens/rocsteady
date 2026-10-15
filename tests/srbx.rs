@@ -54,6 +54,7 @@ async fn idle_signals(peer: &DiscoveryFixture, count: usize) {
     .unwrap();
 }
 #[tokio::test]
+// REQ-225-CONSUMED: Ch.6; §2.28. See docs/REQUIREMENTS.md.
 async fn chapter_6_consumed_index_seven_is_acknowledged_with_published_request_bytes() {
     let peer = fixture().await;
     let client = make_client(&peer);
@@ -87,6 +88,7 @@ async fn chapter_6_consumed_index_seven_is_acknowledged_with_published_request_b
     client.stop().await;
 }
 #[tokio::test]
+// REQ-225-PENDING: Ch.6. See docs/REQUIREMENTS.md.
 async fn new_alarm_before_ack_leaves_pending_and_does_not_jump_to_unconsumed_index() {
     let peer = fixture().await;
     let client = make_client(&peer);
@@ -101,6 +103,7 @@ async fn new_alarm_before_ack_leaves_pending_and_does_not_jump_to_unconsumed_ind
     client.stop().await;
 }
 #[tokio::test]
+// POL-225-ANCHOR: SRBX contract. See docs/REQUIREMENTS.md.
 async fn changed_or_missing_consumed_anchor_never_sends_ack_and_keeps_connection() {
     for missing in [false, true] {
         let peer = fixture().await;
@@ -245,6 +248,7 @@ async fn stop_during_send_reports_uncertainty_and_never_replays_effect() {
     assert_eq!(peer.peer.acknowledgements.load(Ordering::SeqCst), 1);
 }
 #[tokio::test]
+// POL-224-IDLE: SRBX contract. See docs/REQUIREMENTS.md.
 async fn idle_polling_receives_repeated_signals_and_missed_signal_still_reports_index_growth() {
     let peer = fixture().await;
     let client = make_client(&peer);

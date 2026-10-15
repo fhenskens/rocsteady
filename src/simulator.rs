@@ -62,7 +62,7 @@ impl Default for Model {
                 points[..5].copy_from_slice(&[0, 1, 2, 3, 4]);
                 points
             },
-            point_types: [91, 95, 101, 103, 109, 136, 139]
+            point_types: [91, 95, 101, 102, 103, 104, 105, 109, 136, 139]
                 .into_iter()
                 .map(|point_type| (point_type, crate::PointTypeClassification::Roc))
                 .collect(),
@@ -92,6 +92,34 @@ impl Default for Model {
         }
     }
 }
+/// Optional fixture data for OP-105/108, supplied with Simulator::bind_with_history.
+/// Kept separate so existing public Model struct literals remain compatible.
+#[derive(Debug, Clone)]
+pub struct HistoryMetadataModel {
+    /// Explicit Table 2-14 reply bodies (48 bytes after segment/point echoes).
+    pub history_min_max: BTreeMap<(u8, u8), [u8; 48]>,
+    pub history_tags: BTreeMap<(u8, u8), [u8; 10]>,
+    pub history_periodic_indices: BTreeMap<u8, u16>,
+    /// Fixture applicability only; these limits are not firmware discovery.
+    pub history_max_segment: u8,
+    pub history_max_point: u8,
+    /// Explicit OP-135 words indexed by (segment, point, selector), not codec-generated values.
+    pub history_samples: BTreeMap<(u8, u8, u8), Vec<[u8; 4]>>,
+    pub history_sample_indices: BTreeMap<(u8, u8), u16>,
+}
+impl Default for HistoryMetadataModel {
+    fn default() -> Self {
+        Self {
+            history_min_max: BTreeMap::new(),
+            history_tags: BTreeMap::new(),
+            history_periodic_indices: BTreeMap::new(),
+            history_max_segment: 10,
+            history_max_point: 199,
+            history_samples: BTreeMap::new(),
+            history_sample_indices: BTreeMap::new(),
+        }
+    }
+}
 impl Model {
     /// Reset fixture I/O to five CPU diagnostics and absent field modules in an explicit layout.
     pub fn set_io_layout(&mut self, layout: crate::IoLayout) {
@@ -114,6 +142,15 @@ impl Model {
     }
     /// Model-level request dispatch also works over in-memory or serial fixture channels.
     pub fn respond(&self, request: &Frame, authenticated: &mut bool) -> Option<Frame> {
+        self.respond_with_history(request, authenticated, &HistoryMetadataModel::default())
+    }
+    /// Serve explicit metadata fixtures through the same authentication/address checks.
+    pub fn respond_with_history(
+        &self,
+        request: &Frame,
+        authenticated: &mut bool,
+        history: &HistoryMetadataModel,
+    ) -> Option<Frame> {
         if request.destination != self.address || request.source.unit == 0 {
             return None;
         }
@@ -146,6 +183,84 @@ impl Model {
                 } else {
                     reply(225, vec![])
                 }
+            }
+            105 => {
+                let [segment, point] = request.data.as_slice() else {
+                    return Some(error(6, 5));
+                };
+                if *segment > history.history_max_segment {
+                    return Some(error(14, 6));
+                }
+                if let Some(body) = history.history_min_max.get(&(*segment, *point)) {
+                    let mut bytes = vec![*segment, *point];
+                    bytes.extend(body);
+                    reply(105, bytes)
+                } else {
+                    error(14, 7)
+                }
+            }
+            108 => {
+                let Some((&segment, rest)) = request.data.split_first() else {
+                    return Some(error(6, 5));
+                };
+                let Some((&count, points)) = rest.split_first() else {
+                    return Some(error(6, 5));
+                };
+                if segment > history.history_max_segment
+                    || !(1..=20).contains(&count)
+                    || points.len() != usize::from(count)
+                {
+                    return Some(error(14, 6));
+                }
+                let Some(index) = history.history_periodic_indices.get(&segment) else {
+                    return Some(error(14, 6));
+                };
+                let mut bytes = vec![segment, count];
+                bytes.extend(index.to_le_bytes());
+                for point in points {
+                    if *point > history.history_max_point {
+                        return Some(error(14, 7));
+                    }
+                    let Some(tag) = history.history_tags.get(&(segment, *point)) else {
+                        return Some(error(14, 7));
+                    };
+                    bytes.push(*point);
+                    bytes.extend(tag);
+                }
+                reply(108, bytes)
+            }
+            135 => {
+                let [segment, point, kind, low, high, count] = request.data.as_slice() else {
+                    return Some(error(6, 5));
+                };
+                if *segment > history.history_max_segment
+                    || *point > history.history_max_point
+                    || *kind > 4
+                    || *count > 60
+                {
+                    return Some(error(14, 6));
+                }
+                let Some(words) = history.history_samples.get(&(*segment, *point, *kind)) else {
+                    return Some(error(14, 7));
+                };
+                let Some(current) = history.history_sample_indices.get(&(*segment, *kind)) else {
+                    return Some(error(14, 8));
+                };
+                let start = usize::from(u16::from_le_bytes([*low, *high]));
+                if start >= words.len()
+                    || words.len() > 65536
+                    || usize::from(*current) >= words.len()
+                {
+                    return Some(error(14, 9));
+                }
+                let n = usize::from(*count).min(words.len() - start);
+                let mut bytes = vec![*segment, *point];
+                bytes.extend(current.to_le_bytes());
+                bytes.push(n as u8);
+                for word in &words[start..start + n] {
+                    bytes.extend(word);
+                }
+                reply(135, bytes)
             }
             118 => match log_response(&request.data, self.alarm_index, &self.alarm_log) {
                 Ok(data) => reply(118, data),
@@ -288,6 +403,7 @@ pub struct SrbxStatus {
     pub signals_sent: usize,
 }
 struct Control {
+    history: HistoryMetadataModel,
     srbx: Mutex<SrbxStatus>,
     signals: broadcast::Sender<()>,
     faults: Mutex<VecDeque<Fault>>,
@@ -298,6 +414,7 @@ struct Control {
 impl Control {
     fn new(model: &Model) -> Self {
         Self {
+            history: HistoryMetadataModel::default(),
             srbx: Mutex::new(SrbxStatus {
                 current_alarm_index: model.alarm_index,
                 pending: model.initial_srbx_pending,
@@ -329,10 +446,20 @@ pub struct Simulator {
 }
 impl Simulator {
     pub async fn bind(endpoint: SocketAddr, model: Model) -> Result<Self, Error> {
+        Self::bind_with_history(endpoint, model, HistoryMetadataModel::default()).await
+    }
+    pub async fn bind_with_history(
+        endpoint: SocketAddr,
+        model: Model,
+        history: HistoryMetadataModel,
+    ) -> Result<Self, Error> {
         let listener = TcpListener::bind(endpoint).await?;
         let endpoint = listener.local_addr()?;
         let model = Arc::new(model);
-        let control = Arc::new(Control::new(&model));
+        let control = Arc::new(Control {
+            history,
+            ..Control::new(&model)
+        });
         let (stopping, receiver) = watch::channel(false);
         let shared_model = model.clone();
         let shared_control = control.clone();
@@ -473,7 +600,9 @@ async fn serve<S: ByteStream + ?Sized>(
             }
         };
         control.requests.fetch_add(1, Ordering::SeqCst);
-        let Some(mut response) = model.respond(&request, &mut authenticated) else {
+        let Some(mut response) =
+            model.respond_with_history(&request, &mut authenticated, &control.history)
+        else {
             continue;
         };
         if request.opcode == 17 && response.opcode == 17 {
