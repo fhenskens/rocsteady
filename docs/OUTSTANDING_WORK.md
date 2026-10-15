@@ -6,8 +6,8 @@ Implemented behavior belongs in [coverage](COVERAGE.md), executable evidence in
 
 ## Current handoff — 2026-10-15
 
-The manifest remains **0.1.3**; current development adds unreleased features
-to the completed 0.1.3 history baseline. The implemented history services include:
+The **0.1.3 release candidate** combines history, audited writes, temperature/MVS
+reads and caller-driven polling. The implemented history services include:
 
 - OP-105/108 metadata and OP-135 single-point reads.
 - [OP-136 multi-point reads](MULTI_HISTORY.md), with time-major rows and bounded paging.
@@ -20,7 +20,7 @@ These build on managed extensions, explicit profiles/codecs, discovery, the
 polling/acknowledgement. Coverage and feature contracts describe the exact limits;
 this roadmap tracks remaining acceptance.
 
-Unreleased development now adds [OP-166/181 writes](WRITES.md), with a 12-field
+Version 0.1.3 also includes [OP-166/181 writes](WRITES.md), with a 12-field
 source-audited writable subset, explicit partial/uncertain outcomes and no replay.
 PT-106/107 temperature and PT-108 multi-variable sensor reads now extend the
 catalog to 332 entries; see [temperature scope](TEMPERATURE.md) and
@@ -29,8 +29,8 @@ catalog to 332 entries; see [temperature scope](TEMPERATURE.md) and
 [release evidence](RELEASE.md) records the checks. The dated 0.1.3 history
 evidence remains in that record.
 Strict Clippy, formatting, rustdoc, offline package verification and the extracted
-consumer also passed for current development. Hosted CI for the final release
-commit, version/changelog finalization and publication gates remain pending.
+consumer also passed. Version/changelog preparation is complete; hosted CI for
+the final release commit, clean publication checks and publication remain pending.
 Physical-controller and actual serial exchanges remain unvalidated.
 [Release evidence](RELEASE.md) owns validation/publication provenance, including the
 preceding 0.1.2 release; historical counts and commit details are retained there.
@@ -207,11 +207,9 @@ in [EXTRACTION.md](EXTRACTION.md); no additional extraction is committed.
 
 ## Recommended next slice
 
-**Prepare the current feature set for release:** finalize the candidate version
-and changelog, review the complete diff/package, and run hosted checks and the
-clean-commit publication dry-run. Publication remains a separate release action.
+**Complete the 0.1.3 release gates** recorded in [RELEASE.md](RELEASE.md).
 
-After that release, **expand the audited writable catalog** beyond the delivered OP-166/181
+Then **expand the audited writable catalog** beyond the delivered OP-166/181
 [12-field subset](WRITES.md). Keep access/value constraints, conservative budgets,
 explicit partial/uncertain outcomes and no automatic replay. Prioritize fields
 with unambiguous source constraints; extend schema validation before admitting

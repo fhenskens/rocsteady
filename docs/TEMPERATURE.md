@@ -2,9 +2,8 @@
 
 Source: Emerson D301180X012, October 2022, §§3.4.17–18, Tables 3-18/19,
 printed pp.3-75–81 (PDF pages 134–140). Text audited 2026-10-15. The
-unreleased catalog adds all 38 PT-106 RTD and 23 PT-107 thermocouple read fields,
-with 263 entries at that slice; the subsequent [PT-108 slice](MVS.md) brings
-the current total to 332. Physical-controller and actual serial
+0.1.3 catalog includes all 38 PT-106 RTD and 23 PT-107 thermocouple read fields.
+Together with the [PT-108 fields](MVS.md), the catalog contains 332 definitions. Physical-controller and actual serial
 validation remain outstanding. No full PT conformance claim is made.
 
 Use `Client::discover_io` with independently established firmware and an explicitly

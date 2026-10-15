@@ -11,14 +11,13 @@ same contracts, so callers can replace them with their own implementations.
 
 Start with the [current handoff](OUTSTANDING_WORK.md#current-handoff--2026-10-15)
 and [recommended next slice](OUTSTANDING_WORK.md#recommended-next-slice).
-The current checkout retains the completed 0.1.3 history baseline and adds
-unreleased OP-166/181 writes (12 audited fields), PT-106/107/108 reads
-(332 total catalog definitions) and finite caller-driven polling. The manifest
-still declares 0.1.3; these additions require the checkout until released.
+Version 0.1.3 includes history services, OP-166/181 writes (12 audited fields),
+PT-106/107/108 reads (332 total catalog definitions), finite caller-driven polling
+and registry etherbird 0.4.3 adapter helpers.
 [Write contracts](WRITES.md), [temperature contracts](TEMPERATURE.md) and
 [MVS/polling contracts](MVS.md) record outcomes, firmware and applicability limits.
 The handoff separates implementation, remaining baseline acceptance and physical
-validation; the next slice is release preparation.
+validation; release status is recorded in [RELEASE.md](RELEASE.md).
 
 ## Reading order
 

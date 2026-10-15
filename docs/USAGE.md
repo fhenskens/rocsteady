@@ -1,8 +1,7 @@
 # Using the experimental monitoring client
 
-This guide describes the current checkout, including unreleased additions to the
-0.1.3 history baseline. The package manifest still declares 0.1.3; new features
-require this checkout until released. All releases below 1.0 are experimental.
+This guide describes version 0.1.3, including history reads, schema-aware writes,
+temperature/MVS reads and caller-driven polling. All releases below 1.0 are experimental.
 Built-ins include configuration/clock/parameter reads, legacy login, explicit
 profiles, discovery, schema-backed catalog reads, history metadata and
 indexed/day/selected history reads, alarm/event retrieval and opt-in SRBX

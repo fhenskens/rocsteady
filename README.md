@@ -48,10 +48,9 @@ application-provided byte streams use the same protocol implementation.
 - **State and shutdown:** optional heartbeats detect idle failure, state notifications
   report changes, and awaited shutdown cancels/drains work and closes the channel.
 
-Use the current stable Rust toolchain. The manifest remains at `0.1.3`; this
-checkout includes unreleased schema writes, temperature/MVS reads and polling
-examples beyond the completed 0.1.3 history baseline. Those additions require
-this checkout until released.
+Use the current stable Rust toolchain. Version `0.1.3` includes bounded history
+reads, schema-aware writes, temperature/MVS reads and caller-driven polling,
+using registry etherbird 0.4.3 for lifecycle supervision and adapter helpers.
 All releases below 1.0 are experimental
 and may have incomplete protocol coverage; see the scope below.
 

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.3 — 2026-10-15
+
 - Adopt etherbird 0.4.3 generation-bound values and interrupted-scope guards,
   retaining rocsteady's public handle API, live-state checks, explicit outcomes
   and no automatic replay. Document further shared-library extraction candidates.
@@ -23,8 +25,6 @@
 - Enable 12 source-audited writable fields: station name, selected I/O tags,
   DI scanning and input filter. Other fields remain blocked pending write audits.
   Add separate OP-181 budgets, literal/TCP, simulator and package-consumer evidence.
-
-## 0.1.3
 
 - Add OP-139 configured-point inventory and selected minute/periodic/daily reads
   with optional timestamps, preserved point order/duplicates, independent budgets

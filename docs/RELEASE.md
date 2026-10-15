@@ -1,5 +1,27 @@
 # Experimental monitoring release checklist
 
+## 0.1.3 release candidate — 2026-10-15
+
+This release combines the completed OP-136–139 history work with schema-aware
+OP-166/181 writes (12 audited fields), all PT-106/107/108 read definitions
+(332 catalog entries), finite caller-driven polling and registry etherbird 0.4.3
+adapter helpers. The changelog groups all additions under 0.1.3; earlier dated
+development evidence below preserves its original scope and unreleased status
+at the time it was recorded.
+
+Local registry-based checks passed 244 all-feature/all-target tests, the default
+feature gate, 22 doctests, strict Clippy, formatting, rustdoc, fixture examples,
+package verification and the extracted external consumer. Hosted CI includes the
+write/read-back example and bounded disconnect/re-discovery monitoring demo.
+The final release commit must pass stable Linux/macOS/Windows CI and the clean
+publication dry-run before publishing. Publication, pushed tag and downloaded
+registry-package checksum/VCS provenance are separate verification steps.
+
+Physical-controller and actual serial exchanges remain unvalidated. Full OP/PT
+conformance, disputed source interpretations, broader write constraints and
+controller partial-commit/error-offset behavior remain open. No automatic replay,
+resume, temperature conversion or durable controller identity is introduced.
+
 ## Etherbird 0.4.3 registry adoption — 2026-10-15
 
 The current checkout adopts registry etherbird 0.4.3 and its opaque generation

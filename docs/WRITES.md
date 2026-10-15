@@ -3,7 +3,7 @@
 OP-166 and OP-181 follow D301180X012 October 2022 §§2.20/2.23,
 Tables 2-23/26, printed pp.2-37–39. Both services return an empty acknowledgement.
 Software fixtures verify their fields; physical-controller interoperability remains
-unvalidated. Version remains 0.1.3; these additions are unreleased.
+unvalidated. Both services and the audited writable subset are included in 0.1.3.
 
 ## Planning and request budgets
 

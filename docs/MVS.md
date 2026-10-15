@@ -2,9 +2,9 @@
 
 Source: Emerson D301180X012, October 2022, §3.4.19/Table 3-20, printed
 pp.3-82–89 (PDF pages 141–148). Text audited 2026-10-15. PT-108 adds all
-69 read-field definitions, bringing the catalog to 332 entries. This is an
-unreleased read-only slice; the existing twelve-field writable subset and
-completed 0.1.3 history work are retained. Physical-controller/serial validation
+69 read-field definitions, bringing the 0.1.3 catalog to 332 entries. MVS access
+is read-only; the separate twelve-field writable subset and history services
+are included in the same release. Physical-controller/serial validation
 and full point-type conformance remain outstanding.
 
 ## Read contract and applicability
