@@ -1,6 +1,6 @@
 # Experimental monitoring release checklist
 
-## 0.2.0 — 2026-10-16
+## Published 0.2.0 — 2026-10-16
 
 This release adds PT-101 write settings, clock setting, transaction retrieval and
 configurable-table access. See the [changelog](../CHANGELOG.md#020--2026-10-16),
@@ -15,9 +15,25 @@ strict all-feature/all-target Clippy, rustdoc with warnings denied, all 16 fixtu
 examples, offline package verification and the extracted-package consumer. The
 reviewed 127-file payload contains no build output, secrets or vendor manuals.
 The [dated session journal](reference/SESSION_2026_10_16.md) preserves the original
-scope, timing and test-count checkpoints. Exact release-commit hosted CI and
-publication evidence is recorded after the release gates complete; earlier
-published-release evidence below does not establish 0.2.0 validation.
+scope, timing and test-count checkpoints.
+
+Release commit `7118d9986ab2b9910174f5d4e654ba978e1602aa` passed
+[all three hosted stable Linux/macOS/Windows jobs](https://github.com/fhenskens/rocsteady/actions/runs/38906701797)
+and clean-commit `cargo publish --dry-run --locked --all-features`. The reviewed
+127-file package was published to [crates.io](https://crates.io/crates/rocsteady/0.2.0).
+The downloaded archive's SHA-256 is
+`77ae5959416eea07334053075273bff6dc58dd82e4a6e00bfb3db763020fbebf`;
+it matches the clean publication archive byte-for-byte, and its VCS metadata
+identifies that exact commit without a dirty flag. The pushed annotated `v0.2.0`
+tag targets the same commit, and the
+[GitHub release](https://github.com/fhenskens/rocsteady/releases/tag/v0.2.0)
+is published as an ordinary experimental release.
+
+An independent consumer using registry `rocsteady = "=0.2.0"`, with no source-path
+override, passed the packaged public API checks. Its checksum matches the verified
+archive and its dependency versions match the reviewed Cargo.lock. Publication,
+tag and registry-consumer verification completed 2026-10-16. No hardware claim
+is added; the source-defined scope and provisional interpretations above remain.
 
 ## Published 0.1.3 — 2026-10-15
 
