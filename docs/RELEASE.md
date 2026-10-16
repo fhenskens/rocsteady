@@ -1,5 +1,24 @@
 # Experimental monitoring release checklist
 
+## 0.2.0 — 2026-10-16
+
+This release adds PT-101 write settings, clock setting, transaction retrieval and
+configurable-table access. See the [changelog](../CHANGELOG.md#020--2026-10-16),
+[migration notes](../README.md#migrating-from-013) and [requirements](REQUIREMENTS.md).
+The public simulator struct additions require a minor version under this project's
+pre-1.0 policy. The generic catalog retains 332 entries and 18 audited writable fields;
+PT-99 has separate typed definition reads. Hardware validation remains deferred.
+
+Local macOS/stable release checks passed 285 all-feature/all-target tests, 231
+default-feature tests plus 25 doctests, 25 explicit all-feature doctests, formatting,
+strict all-feature/all-target Clippy, rustdoc with warnings denied, all 16 fixture
+examples, offline package verification and the extracted-package consumer. The
+reviewed 127-file payload contains no build output, secrets or vendor manuals.
+The [dated session journal](reference/SESSION_2026_10_16.md) preserves the original
+scope, timing and test-count checkpoints. Exact release-commit hosted CI and
+publication evidence is recorded after the release gates complete; earlier
+published-release evidence below does not establish 0.2.0 validation.
+
 ## Published 0.1.3 — 2026-10-15
 
 This release combines the completed OP-136–139 history work with schema-aware
@@ -265,7 +284,7 @@ below 1.0 are experimental and may have incomplete protocol coverage or unverifi
 hardware compatibility. Breaking API changes use a new minor version; compatible
 additions and fixes use patch releases. The first ordinary release is
 **0.1.0**, following the historical 0.1.0-alpha.1 prerelease. Cargo.toml and
-Cargo.lock carry the current version, 0.1.3. Each release requires its own
+Cargo.lock carry the current version, 0.2.0. Each release requires its own
 validation and publication evidence; dated records retain their original versions.
 Error and ErrorKind are non-exhaustive; callers must include fallback match arms.
 
@@ -340,6 +359,9 @@ cargo run --locked --example managed_extensions
 cargo run --locked --example schema_profiles
 cargo run --locked --example discovery_catalog
 cargo run --locked --features simulator --example parameter_writes
+cargo run --locked --features simulator --example clock_set
+cargo run --locked --features simulator --example transactions
+cargo run --locked --features simulator --example configurable_tables
 cargo run --locked --example temperature_monitoring -- 3 100 --demo-reconnect
 cargo run --locked --example log_retrieval
 cargo run --locked --example history_metadata

@@ -1,12 +1,20 @@
 # Current specification decision register
 
-Updated: 2026-10-15. Initial evidence baseline: public research reviewed 2026-10-08;
+Updated: 2026-10-16. Initial evidence baseline: public research reviewed 2026-10-08;
 PT-136 Table 3-48 and PT-103 Table 3-15 visually audited 2026-10-14 for DEC-10.05/06.
 PT-102/104 Tables 3-14/3-16 text audited 2026-10-15 for DEC-10.07.
 This register introduces no physical validation. All DEC
 parents remain open. It is the current delivery index; historical findings remain
 in [first-pass research](AMBIGUITIES.md), [second-pass research](SECOND_PASS.md)
 and the [systematic search ledger](SEARCH_RECORD.md).
+
+## Current scope and renewed research — 2026-10-16
+
+Hardware validation is deferred by project-owner instruction; it is outside the
+current software-completion gate. Preserve the physical evidence column/status
+for later testers. Documentary ambiguity remains active research and cannot be
+resolved merely by excluding hardware. The [follow-up pass](FOLLOW_UP_2026_10_16.md)
+records new primary-source inspections, limits and [prepared questions](DEFINITION_REQUEST.md).
 
 ## Status and disposition rules
 
@@ -72,7 +80,7 @@ Evidence: [search assessment](SEARCH_RECORD.md#dec-2--enhanced-security-and-boot
 | DEC-2.02 | ROC800 key lifetime/refresh after reconnect | Related-family timing clue only | User extension: EXT-1 | ROC800-specific procedure/capture; avoid cross-family deadline inference |
 | DEC-2.03 | Firmware capability versus opt-in versus port security | Documented distinctions | Documented direction | Firmware-aware identification and permitted bootstrap reads |
 | DEC-2.04 | Discovery before authentication | S23 says I/O-map access can be restricted; not a universal rule | User extension: EXT-1 | Per-opcode access matrix; ROCLINK/developer initialization workflow |
-| DEC-2.05 | Inactivity/session expiration | Driver guidance exists; comprehensive ROC800 refresh rules unverified | User extension: EXT-1 | Applicable firmware security/session documentation |
+| DEC-2.05 | Inactivity/session expiration | ROCLINK February 2024 p.3-8 distinguishes message-refreshed TCP security timeout, configurable inactivity and keep-alive; key expiry/serial rules remain unresolved | Documented TCP direction; user extension: EXT-1 | Applicable key/session procedure and firmware applicability; no universal refresh inference |
 | DEC-2.06 | Legacy/enhanced logout restoration | Field layouts exist; managed-client semantics remain a design task | Deferred framework | Verify device session consequences separately from client policy |
 
 ## DEC-3 — layout status and physical mapping
@@ -122,9 +130,9 @@ Evidence: [search assessment](SEARCH_RECORD.md#dec-5--commandlayout-variants) an
 | DEC-5.02 | DEC-5b directory request/response command numbers | Distinct directions supported; newer response 64 clue | User extension: EXT-2/4 | Old/new paired requests/replies and firmware |
 | DEC-5.03 | DEC-5b filename counts, continuation inputs and EOF | Unresolved | User extension: EXT-2/4 | Paging documentation or verified multi-page directory sequence |
 | DEC-5.04 | DEC-5c commissioned response index width and following offsets | Parser chooses four bytes; vendor conflict persists | User extension: EXT-2/4 | Known-target response with exact bytes or erratum |
-| DEC-5.05 | DEC-5d transaction request offset location | Sequential two-byte field is implementation clue | User extension: EXT-2/4 | Correct request layout from vendor/capture |
-| DEC-5.06 | DEC-5d mandatory TLP versus tagged type/value framing | Implementation clue only | User extension: EXT-2/4 | Multi-field transaction bytes establishing boundaries |
-| DEC-5.07 | DEC-5d split fields/unknown tags/continuation | No complete applicable behavior established | User extension: EXT-2/4 | Multi-page transaction transcript and supported type vocabulary |
+| DEC-5.05 | DEC-5d transaction request offset location | Table 2-29 visually rechecked: frame offset 10; typed request implemented | Table-backed built-in request; physical verification open | Applicable controller transcript/erratum |
+| DEC-5.06 | DEC-5d mandatory TLP versus tagged type/value framing | Contradictory table repetition text remains unresolved | Raw default; explicit TaggedValues/TlpTaggedValues provisional choices; custom Operation/Workflow | Multi-field transaction bytes establishing boundaries |
+| DEC-5.07 | DEC-5d split fields/unknown tags/continuation | Table vocabulary implemented; raw reassembly handles arbitrary splits; unknown widths rejected | Bounded software policy; custom Operation/Workflow; physical semantics open | Applicable multi-page transcript and retention/overwrite evidence |
 
 ## DEC-6 — errors and partial commits
 
@@ -177,7 +185,7 @@ Evidence: [search assessment](SEARCH_RECORD.md#dec-9--broadcast-direct-connect-a
 | DEC-9.01 | Broadcast no-reply/group behavior | Basics documented | Deferred framework | Per-opcode applicability and sending semantics |
 | DEC-9.02 | Direct-connect requests/reply address identity | Both serial and Ethernet driver defaults found; response identity unknown | User extension: EXT-2 | Captured direct/configured addressing pairs |
 | DEC-9.03 | Shared serial-bus arbitration/unsolicited collisions | No applicable complete rule located | Deferred framework | Serial modem/driver docs and ROC800 collision behavior |
-| DEC-9.04 | Unsolicited source identity and routing | Configured SRBX host guidance; reader/correlation policy still open | Deferred framework | Multi-device bus traces or precise vendor receive rules |
+| DEC-9.04 | Unsolicited source identity and routing | ROCLINK February 2024 p.3-8 excludes SRBX over TCP; configured host guidance does not prove TCP applicability | Tested transport handling retained; channel applicability explicitly qualified; bus framework open | Applicable supplementary channel definitions; future multi-device tester evidence |
 
 ## DEC-10 — widths, conditional access and schema applicability
 
@@ -233,9 +241,10 @@ request policy, not a resolved device boundary (DEC-1.03). No alternate packing
 preset is justified by this wording. Custom managed `Operation` remains available
 with applicable evidence and framework limits.
 
-`SchemaProvider::lookup_write` now admits the 12-field manifest in WRITES.md,
-including existing PT-91/2 and eleven R/W User I/O fields. Tables 3-13..17 tags,
-DI scanning /1 and bounded filter /2 were text-audited; discovered physical
+`SchemaProvider::lookup_write` now admits the 18-field manifest in WRITES.md,
+including existing PT-91/2 and seventeen R/W User I/O fields. Tables 3-13..17 tags,
+DI scanning /1 and bounded filter /2 were text-audited. The 2026-10-16
+text/visual audit adds DI /4–5, /9–11 and /13; discovered physical
 locations and explicit firmware gates remain. Conditional and disputed fields stay
 blocked; DEC-10.05/06/07 remain open. Independent TCP literals and simulator
 fixtures cover the declared framework. DEC-6.02/03 stay open: OP-255 offsets

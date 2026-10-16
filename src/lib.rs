@@ -1,7 +1,8 @@
 //! Async ROC Plus client with etherbird recovery.
 //!
 //! Experimental APIs cover discovery, schema-backed parameter reads and writes, alarm/event logs,
-//! single/multi-point, day-oriented and selected history, legacy login and device errors.
+//! single/multi-point, day-oriented and selected history, clock setting, configurable
+//! tables, raw transaction retrieval, legacy login and device errors.
 //! Opt-in SRBX polling and explicit consumed-alarm
 //! acknowledgement support monitoring; acknowledgement changes controller status.
 //! No operation is automatically replayed. Physical interoperability is unverified.
@@ -9,6 +10,8 @@
 //! See the packaged docs/COVERAGE.md and docs/LOGS.md for scope and contracts.
 mod catalog;
 mod client;
+mod clock_set;
+mod configurable_tables;
 mod configuration;
 mod day_history;
 mod discovery;
@@ -27,11 +30,19 @@ mod session;
 #[cfg(feature = "simulator")]
 pub mod simulator;
 mod srbx;
+mod transactions;
 pub mod transport;
 mod writes;
+pub use transactions::{
+    TransactionDataPage, TransactionDataRequest, TransactionEntry, TransactionField,
+    TransactionFieldLayout, TransactionInventoryError, TransactionInventoryProgress,
+    TransactionListPage, TransactionListRequest, TransactionReadError, TransactionReadProgress,
+    TransactionSegment, TransactionValue, decode_transaction_fields,
+};
 
 pub use catalog::{BitMeaning, CatalogEntry, CatalogMetadata, EnumMeaning, Roc800Catalog};
 pub use client::{Client, ClientConfig};
+pub use clock_set::{ClockSet, ClockSetError};
 pub use configuration::{LogicalCompatibility, SystemConfiguration, SystemMode};
 pub use discovery::{
     FirmwareVersion, IoDiscovery, IoLayout, IoPoint, IoPointCodec, IoPointReply, IoPointRequest,
@@ -111,3 +122,16 @@ pub mod temperature_guide {}
 
 #[doc = include_str!("../docs/MVS.md")]
 pub mod mvs_guide {}
+
+#[doc = include_str!("../docs/CLOCK_SET.md")]
+pub mod clock_set_guide {}
+#[doc = include_str!("../docs/TRANSACTIONS.md")]
+pub mod transaction_guide {}
+
+pub use configurable_tables::{
+    ConfigurableTable, ConfigurableTableDefinition, TableDefinitionRequest, TableReadBatch,
+    TableReadError, TableReadPlan, TableReadProgress, TableReadReply, TableRevision,
+};
+
+#[doc = include_str!("../docs/CONFIGURABLE_TABLES.md")]
+pub mod configurable_table_guide {}

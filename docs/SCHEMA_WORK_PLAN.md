@@ -22,7 +22,7 @@ layout and enhanced-security fields. These leads do not close catalog rows.
 - [x] Define a schema identity including device family, firmware applicability, point type and parameter number; caller identity is explicit and discovery-derived providers are generation-bound.
 - [ ] Model width/type, name, units where documented, access (including conditional access), ranges, defaults, update ownership, enumerations, bit fields and reserved fields.
   PT-101–108 now have every read definition, source access/ranges, fixed units and enum/bit
-  annotations. Defaults, update ownership and write conditions beyond the [12-field subset](WRITES.md) remain open.
+  annotations. Defaults, update ownership and write conditions beyond the [18-field subset](WRITES.md) remain open.
 - [ ] Represent version-introduced/changed/deprecated parameters without selecting a firmware version from opcode 6 revision alone.
 - [ ] Separate known metadata from unspecified metadata; do not invent ranges, defaults or units.
 - [ ] Model logical versus physical location rules from sections 3.1-3.2; validate against opcode 50 discovery.
@@ -49,8 +49,9 @@ For each row:
 4. Exercise representative reads and applicable writes over TCP; cross-check all catalog metadata against the source.
 5. Record physical evidence separately, with model/firmware; catalogue completion does not establish hardware compatibility.
 
-Status: thirteen rows have an explicitly **partial** built-in slice; all other rows
-are open. No complete PT conformance is claimed. Every one of the 332 delivered parameters
+Status: thirteen rows have an explicitly **partial** built-in catalog slice;
+PT-99 additionally has typed definition reads outside the catalog. Fourteen rows
+are partial and 48 remain open. No complete PT conformance is claimed. Every one of the 332 delivered parameters
 has an independent literal and TCP read fixture; [CATALOG.md](CATALOG.md) lists
 the exact metadata and remaining omissions.
 “Hardware: none” applies to every row. Introduce separate implementation/test/hardware
@@ -67,9 +68,9 @@ statuses as work lands; never replace them with one ambiguous “supported” fl
 | PT-96 | 96 | FST | 3.4.7 | Open |
 | PT-97 | 97 | FST register tags | 3.4.8 | Open |
 | PT-98 | 98 | Soft points | 3.4.9 | Open |
-| PT-99 | 99 | Configurable opcode tables | 3.4.10 | Open |
+| PT-99 | 99 | Configurable opcode tables | 3.4.10 | Partial: typed revision and all 44 raw TLP definition reads; OP-10/11 mapped access with schema/generation checks; configuration writes and richer catalog metadata remain open |
 | PT-100 | 100 | Power control | 3.4.11 | Open |
-| PT-101 | 101 | Discrete inputs | 3.4.12 | Partial: all 0-15 read widths, access/ranges, enums and alarm bits; writes 0–2 enabled; other writes/defaults/ownership remain open |
+| PT-101 | 101 | Discrete inputs | 3.4.12 | Partial: all 0-15 read widths, access/ranges, enums and alarm bits; User configuration writes 0–2, 4–5, 9–11, 13 enabled; Both-updated writes/defaults/ownership remain open |
 | PT-102 | 102 | Discrete outputs | 3.4.13 | Partial: all 0-26 read widths, source access/ranges, enums/bits and firmware gates; module timing constraints, tag writes 0–1 enabled; other writes/defaults/ownership remain open |
 | PT-103 | 103 | Analog inputs | 3.4.14 | Partial: all 0-39 read widths, access/ranges, version gates, enums and alarm bits; tag writes 0–1 enabled; calibration write notes unresolved |
 | PT-104 | 104 | Analog outputs | 3.4.15 | Partial: all 0-16 read widths, source access/ranges, enums/bits; failsafe prose, tag writes 0–1 enabled; other writes/defaults/ownership remain open |
@@ -137,7 +138,7 @@ Modbus, DS800, user programs and wireless networks. It does not implement those
 other protocols themselves or undocumented ROC services.
 
 The [write manifest](WRITES.md#write-specific-schema-and-built-in-manifest)
-records the 12 enabled fields and remaining constraints.
+records the 18 enabled fields and remaining constraints.
 
 PT-106/107 per-field source metadata and caveats are recorded in [CATALOG.md](CATALOG.md)
 and [temperature contracts](TEMPERATURE.md); DEC-10.08 remains open.

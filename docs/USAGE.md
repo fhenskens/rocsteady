@@ -1,17 +1,22 @@
 # Using the experimental monitoring client
 
-This guide describes version 0.1.3, including history reads, schema-aware writes,
-temperature/MVS reads and caller-driven polling. All releases below 1.0 are experimental.
-Built-ins include configuration/clock/parameter reads, legacy login, explicit
-profiles, discovery, schema-backed catalog reads, history metadata and
-indexed/day/selected history reads, alarm/event retrieval and opt-in SRBX
-polling/acknowledgement. Acknowledgement explicitly changes controller status.
+This guide describes version 0.2.0. All releases below 1.0 are experimental.
+The client supports configuration/clock/parameter reads, schema-aware writes,
+discovery, history reads, alarm/event retrieval, opt-in SRBX polling/acknowledgement
+and caller-driven monitoring. Acknowledgement explicitly changes controller status.
+
+Version 0.2.0 also provides [clock setting](CLOCK_SET.md),
+[transaction inventory/raw retrieval](TRANSACTIONS.md) and
+[configurable-table discovery and mapped reads/writes](CONFIGURABLE_TABLES.md).
+Those guides contain runnable examples, explicit outcomes and applicability limits.
+Transaction field decoding remains an explicitly selected provisional interpretation.
 
 Configure addresses, credentials, firmware applicability and parameter types from
 the actual controller. Physical device/serial compatibility remains unverified.
-Enhanced authentication, typed parameter writes, transactions, files and routing
-remain unavailable. The extension fixture is not an enhanced-security implementation.
-See [coverage](COVERAGE.md) and [log/SRBX contracts](LOGS.md) for exact limitations.
+Enhanced authentication, file transfer and routing remain unavailable as typed
+services. The fixture does not implement enhanced-security authentication.
+See [coverage](COVERAGE.md) for exact scope and [migration notes](../README.md#migrating-from-013)
+for the simulator struct changes in 0.2.0.
 
 ## Credentials and TCP
 
@@ -427,7 +432,7 @@ See [contracts and evidence](HISTORY_INFORMATION.md) and the runnable
 ## Parameter writes and monitoring
 
 Use `WritePlan` and `Client::write_plan` for schema-aware OP-166/181 writes.
-See the [write guide](WRITES.md) for the 12-field manifest, runnable example
+See the [write guide](WRITES.md) for the 18-field manifest, runnable example
 and handling of partial/uncertain outcomes without automatic replay.
 
 For RTD and thermocouple monitoring, use the [temperature read guide](TEMPERATURE.md)

@@ -2,7 +2,7 @@
 
 Source: Emerson D301180X012, October 2022, §§3.4.17–18, Tables 3-18/19,
 printed pp.3-75–81 (PDF pages 134–140). Text audited 2026-10-15. The
-0.1.3 catalog includes all 38 PT-106 RTD and 23 PT-107 thermocouple read fields.
+0.2.0 catalog includes all 38 PT-106 RTD and 23 PT-107 thermocouple read fields.
 Together with the [PT-108 fields](MVS.md), the catalog contains 332 definitions. Physical-controller and actual serial
 validation remain outstanding. No full PT conformance claim is made.
 
@@ -39,7 +39,7 @@ firmware, tag text or a presumed default.
 ## Source caveats and write restrictions
 
 Every PT-106/107 write is blocked by `Roc800Catalog::lookup_write`, including tags.
-The existing twelve-field OP-166/181 writable subset is unchanged. An R/W source
+The current eighteen-field OP-166/181 writable subset excludes temperature fields. An R/W source
 column or readable calibration field does not authorize a write.
 
 - PT-106/2 and /7 use `R/W_LOG`; /3, /5 and /6 use `R/W_CNDL`. Coarse readable

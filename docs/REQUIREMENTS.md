@@ -219,10 +219,10 @@ Named requirements can be selected with Cargo's filter, for example
 | --- | --- | --- | --- |
 | REQ-181-REQUEST / REQ-181-ACK | §2.23/Table 2-26, p.2-39 | Count and ordered cross-point TLP/value tuples, mixed widths, duplicates and empty acknowledgement | [req_181_mixed_width_literals_preserve_cross_point_order_and_duplicates](../tests/arbitrary_writes.rs) |
 | POL-181-BUDGET | Library policy; Table 2-26 packing; DEC-1.03 | Conservative 240-byte total request payload, 236-byte indivisible value, count/TLP overhead, tighter limits and 256-input splitting | [req_181_budget_counts_tlps_values_and_count_independently_of_166](../tests/arbitrary_writes.rs) |
-| REQ-WRITE-CATALOG | Tables 3-5/13–17, pp.3-34/61/63/66/70/72 | Independent TCP literals and explicit metadata for all 12 fields, all layouts; numeric/enum/ASCII bounds, wrong/absent physical locations and disputed fields rejected before send | [req_write_catalog_literals_and_local_constraints_cover_all_audited_fields](../tests/arbitrary_writes.rs) |
+| REQ-WRITE-CATALOG | Tables 3-5/13–17, pp.3-34/61/63/66/70/72 | Independent TCP literals and explicit metadata for all 18 fields, all layouts; numeric/enum/ASCII bounds, wrong/absent physical locations and disputed fields rejected before send | [req_write_catalog_literals_and_local_constraints_cover_all_audited_fields](../tests/arbitrary_writes.rs), [req_write_simulator_updates_each_audited_field_with_both_services](../tests/arbitrary_writes.rs) |
 | POL-181-PROGRESS | Table 2-26; DEC-6; managed write contract | Both opcodes retain acknowledged prefix, uncertain/device-error batch and unattempted tail after loss, malformed reply, raw multiple errors or deadline | [pol_write_progress_lost_ack_and_device_errors_never_replay](../tests/writes.rs) |
 | POL-181-NO-REPLAY | Managed write contract | Lost acknowledgement retains first effect, later batch never sends; replacement serves explicit read with no additional write | [pol_181_lost_ack_recovery_retains_effects_without_replay_or_resume](../tests/arbitrary_writes.rs) |
-| REQ-181-SIMULATOR | Tables 2-23/26, declared write manifest | Both services change all 12 fields with explicit read-back, 1.00/3.60 firmware identities and all layouts | [req_write_simulator_updates_each_audited_field_with_both_services](../tests/arbitrary_writes.rs) |
+| REQ-181-SIMULATOR | Tables 2-23/26, declared write manifest | Both services change all 18 fields with explicit read-back, 1.00/3.60 firmware identities and all layouts | [req_write_simulator_updates_each_audited_field_with_both_services](../tests/arbitrary_writes.rs) |
 | POL-181-PARTIAL-DEVICE | Deliberate simulator policy; DEC-6 remains open | Preserve earlier effect after later unsupported/read-only tuple; reject zero count, truncated header/value and trailing bytes | [req_181_simulator_reports_partial_effect_and_rejects_malformed_tuples](../tests/arbitrary_writes.rs) |
 | POL-181-PACKAGE | Public write contract | Execute cross-point writes, outcomes and explicit read-back through extracted package | [package consumer](../scripts/package-consumer.rs) |
 
@@ -276,3 +276,119 @@ These are library ownership policies, not additional ROC wire requirements.
 | --- | --- | --- | --- |
 | POL-EXT-GENERATION-IDENTITY | Managed extension contract; etherbird 0.4.3 opaque generation binding | A handle from another client fails locally without sending or reconnecting; numeric reporting and live-state checks remain | [generation_bound_handles_reject_other_clients_without_io_or_recovery](../tests/extensions.rs), [stale_handle_and_missing_state_fail_locally_without_reconnecting](../tests/extensions.rs) |
 | POL-EXT-SCOPE-RETIREMENT | Managed ownership contract; etherbird 0.4.3 DisconnectOnDrop | Exclusive ownership spans exchanges; abort between steps retires the generation before subsequent work, without replay | [competing_clone_cannot_enter_between_steps_and_cancellation_retires](../tests/extensions.rs), [active_deadline_queued_deadline_and_stop](../tests/extensions.rs) |
+
+## PT-101 configuration write expansion (2026-10-16)
+
+Source: §3.4.12/Table 3-13, printed pp.3-61–62 (text and rendered pages
+re-audited). Six User-updated R/W fields /4–5, /9–11 and /13 expand the
+writable manifest to 18 fields. The original wire/ownership contracts still apply.
+
+| Stable ID | Source | Requirement asserted | Executable test |
+| --- | --- | --- | --- |
+| REQ-DI-WRITE-WIRE | Tables 2-23/26 and 3-13 | Independent OP-166 headers and gap splitting, OP-181 TLP/value literals, little-endian FLOAT and empty acknowledgements, all layouts | [di_configuration_contiguous_literals_and_preflight_boundaries](../tests/arbitrary_writes.rs), [req_write_catalog_literals_and_local_constraints_cover_all_audited_fields](../tests/arbitrary_writes.rs) |
+| REQ-DI-WRITE-BOUNDS | Table 3-13 /4–5, /9–11, /13 | All 256 byte codes per binary setting, exact types, inclusive scan-period bounds and adjacent FLOATs, zero/negative/nonfinite rejection, both planners | [di_configuration_contiguous_literals_and_preflight_boundaries](../tests/arbitrary_writes.rs) |
+| POL-DI-WRITE-PREFLIGHT / POL-DI-WRITE-SCOPE | Explicit catalog write-audit policy; source access/ownership in Table 3-13 | Entire input validated before sending; Both-updated/system-only fields, wrong locations, identity mismatch and missing discovery blocked | [di_configuration_contiguous_literals_and_preflight_boundaries](../tests/arbitrary_writes.rs) |
+| REQ-DI-WRITE-SIMULATOR / POL-DI-SIMULATOR-REJECTION | Table 3-13; explicit simulator policy | Both services enforce independent byte/FLOAT boundaries; rejected fields retain stored value; all 18 fields read back at 1.00/3.60 and all layouts | [di_simulator_enforces_configuration_bounds_without_changing_rejected_fields](../tests/arbitrary_writes.rs), [req_write_simulator_updates_each_audited_field_with_both_services](../tests/arbitrary_writes.rs) |
+| REQ-DI-WRITE-ACK / POL-DI-WRITE-PROGRESS | Tables 2-23/26; managed write contract; DEC-6 | Malformed acknowledgements are uncertain; raw device errors preserved, healthy rejection retains channel, later batches not attempted | [di_configuration_failures_stop_at_first_batch_with_explicit_outcomes](../tests/arbitrary_writes.rs) |
+| POL-DI-WRITE-NO-REPLAY / POL-DI-WRITE-GENERATION | Managed write/generation contract | Lost acknowledgement retains first effect; no later batch or replay on recovery; explicit read-back and stale plan fails before send | [di_configuration_lost_ack_preserves_effect_without_replay](../tests/arbitrary_writes.rs) |
+| REQ-DI-WRITE-PACKAGE | Table 3-13 and public write contract | All six fields written/read back through both services using extracted package | [package consumer](../scripts/package-consumer.rs) |
+
+Physical evidence remains none. Binary validation does not simulate input transitions,
+alarms or SRBX delivery. Existing `POL-WRITE-CANCEL`, `POL-WRITE-BEFORE-SEND`
+and progress/deadline tests cover the unchanged execution framework.
+
+
+## Clock setting (2026-10-16)
+
+Source: §2.4/Table 2-4, p.2-11, text and rendered table re-audited.
+
+| Stable ID | Source | Requirement asserted | Executable test |
+| --- | --- | --- | --- |
+| REQ-008-WIRE / REQ-008-ACK | Table 2-4 | Seven literal request bytes without weekday, little-endian year, empty acknowledgement; independent TCP and standalone retirement | [clock_set_calendar_and_seven_byte_wire_contract](../tests/clock_set.rs), [clock_set_independent_tcp_ack_errors_and_standalone_retirement](../tests/clock_set.rs) |
+| POL-008-CALENDAR | Existing Gregorian read policy | Month/day/time bounds, century leap rules, zero/max year and local invalid-request errors | [clock_set_calendar_and_seven_byte_wire_contract](../tests/clock_set.rs) |
+| POL-008-ERROR | Managed write contract; DEC-6 | Raw multiple rejection codes/offsets, healthy rejection vs malformed acknowledgement retirement and uncertainty | [clock_set_independent_tcp_ack_errors_and_standalone_retirement](../tests/clock_set.rs) |
+| REQ-008-SIMULATOR / POL-008-NO-REPLAY | Table 2-4; explicit fixture/outcome policy | Weekday calculation and explicit read-back, invalid request rejection, effect before lost ack and no replay on recovery | [clock_set_effect_readback_loss_deadline_and_active_cancellation](../tests/clock_set.rs), [clock_set_simulator_rejects_invalid_payload_without_effect](../tests/clock_set.rs), [clock_set_exact_request_budget_and_active_stop_have_explicit_outcomes](../tests/clock_set.rs), [clock_set_simulator_weekday_literals_cover_month_and_century_boundaries](../tests/clock_set.rs) |
+| POL-008-CANCEL / POL-008-BEFORE-SEND | Synchronized write send-gate contract | Active deadline/abort retire channel; queued caller drop and unavailable profile never set clock | [clock_set_effect_readback_loss_deadline_and_active_cancellation](../tests/clock_set.rs), [clock_set_queued_cancellation_and_profile_rejection_never_send](../tests/clock_set.rs), [clock_set_exact_request_budget_and_active_stop_have_explicit_outcomes](../tests/clock_set.rs) |
+
+
+## Transaction inventory and retrieval (2026-10-16)
+
+Source: §2.26/Table 2-29, pp.2-42–43, text and rendered tables re-audited.
+Raw pages are the default; named field layouts remain provisional (DEC-5.05–07).
+
+| Stable ID | Source | Requirement asserted | Executable test |
+| --- | --- | --- | --- |
+| REQ-206-LIST / REQ-206-DATA | Table 2-29 | Independent command/segment/UINT16 offsets, raw description/TIME, count/size/flags, maximum pages, all truncations and exact lengths | [transaction_wire_headers_lengths_flags_and_firmware_are_explicit](../tests/transactions.rs), [transaction_inventory_and_split_record_use_independent_tcp_literals](../tests/transactions.rs), [transaction_standalone_malformed_reply_retires_and_profile_budgets_preflight](../tests/transactions.rs) |
+| REQ-206-TAGS / POL-206-FRAMING | Table 2-29 tag list; explicit interpretation | All 17 tags, signed/unsigned/numeric widths, IEEE payloads, raw fixed strings, both TLP layouts, truncations and unknown widths rejected | [transaction_tags_are_distinct_lossless_and_never_guess_unknown_widths](../tests/transactions.rs) |
+| POL-206-APPLICABILITY / POL-206-PREFLIGHT | Reviewed 3.50–3.60 firmware and budget policy | Independent caller assertion; older/future firmware, unavailable profile and request/minimum-response/page budgets rejected before I/O | [transaction_wire_headers_lengths_flags_and_firmware_are_explicit](../tests/transactions.rs), [transaction_preflight_limits_fail_without_io](../tests/transactions.rs), [transaction_standalone_malformed_reply_retires_and_profile_budgets_preflight](../tests/transactions.rs) |
+| POL-206-ORDER / POL-206-SPLIT | Table 2-29 storage offsets; reassembly policy | Storage order across transaction-number rollover; byte offsets and tags/values split across pages | [transaction_inventory_and_split_record_use_independent_tcp_literals](../tests/transactions.rs), [transaction_simulator_reassembles_split_fields_and_retains_storage_order](../tests/transactions.rs) |
+| POL-206-PROGRESS / POL-206-NO-REPLAY | Managed retrieval contract | Confirmed prefix and next cursor survive malformed/disconnected/device-error second pages; no continuation after replacement | [transaction_failed_second_pages_preserve_confirmed_prefix_without_replay](../tests/transactions.rs), [transaction_semantic_second_page_failures_keep_prefix_and_classify_retirement](../tests/transactions.rs) |
+| POL-206-NO-PROGRESS / POL-206-BOUNDS / POL-206-METADATA | Bounded retrieval contract | Empty continuation, offset overflow, changed metadata, payload under/overrun and exhausted page limits stop explicitly | [transaction_wire_headers_lengths_flags_and_firmware_are_explicit](../tests/transactions.rs), [transaction_budgets_metadata_changes_and_offsets_are_bounded](../tests/transactions.rs), [transaction_simulator_handles_empty_and_maximum_sized_records](../tests/transactions.rs), [transaction_semantic_second_page_failures_keep_prefix_and_classify_retirement](../tests/transactions.rs) |
+| POL-206-OWNERSHIP / POL-206-CANCEL / POL-206-RETIREMENT | Managed ownership contract | Queued clone cannot interleave; active deadline, abort and awaited stop retain prefix without resume; standalone malformed replies retire | [transaction_workflow_keeps_exclusive_ownership_between_pages](../tests/transactions.rs), [transaction_deadline_and_cancellation_keep_prefix_and_never_resume](../tests/transactions.rs), [transaction_standalone_malformed_reply_retires_and_profile_budgets_preflight](../tests/transactions.rs) |
+| REQ-206-SIMULATOR | Table 2-29; explicit raw fixture policy | All tags, deliberate splits, storage order, missing-record errors, empty record and 65,535-byte maximum | [transaction_simulator_reassembles_split_fields_and_retains_storage_order](../tests/transactions.rs), [transaction_simulator_handles_empty_and_maximum_sized_records](../tests/transactions.rs) |
+| REQ-008-PACKAGE / REQ-206-PACKAGE | Tables 2-4/29 and public contracts | Clock set/read-back, both transaction commands, raw reassembly and explicit field decoding through extracted package | [package consumer](../scripts/package-consumer.rs) |
+
+Source interpretations, software evidence and physical compatibility remain separate.
+
+
+## Configurable tables (2026-10-16)
+
+Source: §§2.5–6/Tables 2-5/6, p.2-12 and §3.4.10/Table 3-11, pp.3-56–57;
+text and rendered pages audited. The [contract](CONFIGURABLE_TABLES.md) keeps source
+facts, caller metadata, library observation policy and fixture behavior separate.
+
+| Stable ID | Source | Requirement asserted | Executable test |
+| --- | --- | --- | --- |
+| REQ-099-DEFINITION | Table 3-11; Table 2-24 | Exactly 45 parameters, revision FLOAT bits and all 44 raw TLPs; table bounds, independent echo/length literals and all truncations | [table_definition_and_read_wire_literals_and_bounds](../tests/configurable_tables.rs) |
+| REQ-010-WIRE / REQ-010-RANGE / REQ-010-VALUES | Table 2-5 | Zero-based ranges, exact echo/version/value order, mixed widths, scalar/TLP/TIME and IEEE/raw-byte preservation | [table_definition_and_read_wire_literals_and_bounds](../tests/configurable_tables.rs), [table_read_values_keep_scalar_widths_unknown_codes_and_ieee_bits](../tests/configurable_tables.rs), [table_mixed_reads_and_writes_match_independent_literals_and_budgets](../tests/configurable_tables.rs) |
+| REQ-011-WIRE / REQ-011-ACK | Table 2-6 | Three-byte header plus ordered mapped values, no revision/TLP fields, empty acknowledgement and mixed-width independent TCP literals | [table_mixed_reads_and_writes_match_independent_literals_and_budgets](../tests/configurable_tables.rs), [table_write_failures_and_rechecks_retain_acknowledged_prefix_without_replay](../tests/configurable_tables.rs) |
+| POL-TABLE-BUDGET / POL-TABLE-PREFLIGHT | Profile/schema/write-opt-in contract | Request/response headers counted separately, whole-input type/value/access/generation/scope validation and receiving-profile preflight before I/O | [table_mixed_reads_and_writes_match_independent_literals_and_budgets](../tests/configurable_tables.rs), [table_planning_preflight_validates_values_ranges_and_budgets](../tests/configurable_tables.rs), [table_profile_budget_and_invalid_identity_fail_before_connect_or_write](../tests/configurable_tables.rs), [table_target_scope_and_read_schema_constraints_are_preflighted](../tests/configurable_tables.rs) |
+| POL-TABLE-DISCOVERY / POL-TABLE-GENERATION | Opaque generation-bound snapshot contract | Repeated full definitions, no numeric revision ordering, stale/replacement/foreign snapshots fail before table I/O | [table_discovery_changes_and_stale_or_foreign_snapshots_fail_before_table_io](../tests/configurable_tables.rs) |
+| POL-TABLE-CHANGE / POL-TABLE-RETIREMENT | Observed-change and exchange-guard contract | Same-revision map changes and raw version changes distinguished from malformed replies; failed read postcheck preserves confirmed values with incomplete status | [table_changed_mapping_version_and_postcheck_preserve_explicit_read_progress](../tests/configurable_tables.rs), [table_standalone_reply_validation_and_revision_change_connection_rules](../tests/configurable_tables.rs) |
+| POL-TABLE-WRITE-OUTCOME / POL-TABLE-BEFORE-SEND | Synchronized write gate; DEC-6 | Metadata failures before send are NotAttempted; earlier acknowledgements, uncertain/device-error batch and unattempted tail preserved without per-parameter inference | [table_write_failures_and_rechecks_retain_acknowledged_prefix_without_replay](../tests/configurable_tables.rs), [table_write_metadata_failure_before_send_is_not_attempted](../tests/configurable_tables.rs) |
+| POL-TABLE-OWNERSHIP / POL-TABLE-CANCEL | Exclusive workflow and shared write send-gate contract | Competing clone cannot interleave; queued caller drop never writes later; active deadline/abort/stop never resume reads or writes | [table_exclusive_workflow_and_queued_write_cancellation_preserve_send_gate](../tests/configurable_tables.rs), [table_deadlines_abort_and_stop_do_not_resume_or_replay_pending_work](../tests/configurable_tables.rs) |
+| REQ-099-SIMULATOR / REQ-011-SIMULATOR / POL-TABLE-NO-REPLAY | Tables 2-5/6 and 3-11; explicit fixture policy | Mapped state/read-back, slot 43/parameter 44, firmware 1.00/3.60 contexts, invalid request/value rejection, deliberate partial effects and targeted lost acknowledgement | [table_simulator_reads_writes_last_slot_and_retains_effect_after_lost_ack](../tests/configurable_tables.rs), [table_simulator_rejects_malformed_ranges_and_retains_fixture_partial_effects](../tests/configurable_tables.rs), [table_failed_second_read_batch_retains_only_confirmed_prefix_without_replay](../tests/configurable_tables.rs) |
+| REQ-TABLE-PACKAGE | Public table contract | Definition discovery, schema planning, mapped writes and explicit table read-back through extracted package | [package consumer](../scripts/package-consumer.rs) |
+
+
+## Session coverage audit (2026-10-16)
+
+The follow-up audits all delivered slices from this session: the six additional
+PT-101 settings (both write services), OP-8 clock setting, OP-206 inventory/raw
+retrieval and explicitly selected provisional field layouts, and PT-99 definition
+reads with OP-10/11 table access. Existing independent wire, simulator, lifecycle,
+example and extracted-package evidence remains applicable. New assertions close
+target-type boundary, schema access/location, indivisible budget, replacement-read,
+second-batch progress, clock stop/budget/weekday, and transaction second-page
+semantic-consistency gaps. No production behavior changed in this audit.
+
+| Stable ID | Source | Requirement asserted | Executable test |
+| --- | --- | --- | --- |
+| REQ-010-VALIDATE | Table 2-5; Table 2-24 | Standalone malformed definition/data replies retire; changed revision and valid rejection keep the channel usable | [table_standalone_reply_validation_and_revision_change_connection_rules](../tests/configurable_tables.rs) |
+| REQ-099-TARGET-SCOPE | Table 3-11 footnote | Raw codes preserved; both planners admit exactly target types 91–98 and 100–135, with explicit boundary/gap assertions | [table_target_scope_and_read_schema_constraints_are_preflighted](../tests/configurable_tables.rs) |
+| POL-TABLE-READ-PROGRESS | Managed table read contract | Failed second batch retains first batch only; no third batch, postcheck or replay after malformed/rejected/disconnected/changed-version replies | [table_failed_second_read_batch_retains_only_confirmed_prefix_without_replay](../tests/configurable_tables.rs) |
+| POL-008-BUDGET | Profile contract | Seven-byte clock request fits exactly; six-byte budget returns NotAttempted before any connection or effect | [clock_set_exact_request_budget_and_active_stop_have_explicit_outcomes](../tests/clock_set.rs) |
+| POL-REQUIREMENT-TRACEABILITY | Project requirement annotation policy | Every scoped feature test has stable IDs and exact test-name links; indexed links resolve to tests with matching annotations | [session_feature_tests_have_indexed_requirement_annotations](../tests/requirement_traceability.rs), [session_requirement_links_name_existing_tests_and_matching_annotations](../tests/requirement_traceability.rs) |
+
+The traceability guard runs in ordinary `cargo test`, including when testing the
+extracted package, without Python or additional dependencies. Its scope is the
+four named feature suites; add future feature suites explicitly in `tests/requirement_traceability.rs`.
+It checks annotation/navigation integrity, not whether assertions are sufficient
+for semantic coverage. The source-cited assertions remain the evidence.
+
+Scope limits remain recorded in the feature contracts: PT-99 configuration writes
+are unimplemented; transaction field framing remains provisional; OP-11 cannot
+prevent an external map edit racing its precheck; physical validation is deferred.
+No test or annotation claims full vendor-section or hardware conformance.
+
+
+### Test consolidation follow-up (2026-10-16)
+
+Value/range validation and indivisible payload-budget cases now share one discovery
+fixture in `table_planning_preflight_validates_values_ranges_and_budgets`. Inline
+`POL-TABLE-PREFLIGHT` and `POL-TABLE-BUDGET` annotations identify each assertion
+group; named cases identify failures within the combined test. Target-map/schema
+validation uses a separate definition fixture and retains its own test with inline
+source/policy annotations. Receiving-client admission, partial progress, cancellation
+and replacement remain separate failure contracts. All prior assertions and stable
+IDs are retained; the exact test-name index and traceability guard follow the merge.

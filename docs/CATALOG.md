@@ -18,6 +18,11 @@ Temperature Tables 3-18/19 audited 2026-10-15 against printed pp.3-75–81
 (PDF pages 134–140), using publisher PDF text; all 61 read fields accounted for.
 No PT row meets the full schema completion contract.
 
+PT-101 configuration writes were audited 2026-10-16 against Table 3-13,
+printed pp.3-61–62 (text and rendered PDF pages 120–121). All User-updated
+configuration fields /0–2, /4–5, /9–11 and /13 are admitted; Both-updated
+and system-only fields remain blocked. See the [write manifest](WRITES.md).
+
 ## Discovery contracts
 
 Opcode 100 command 11 follows Table 2-13, printed p.2-22. Requests contain command,
@@ -458,7 +463,7 @@ pulse accounting across resets/reconnects. Defaults and update ownership are
 not catalog fields; writes beyond tags /0–1 and full PT conformance remain open. Physical and
 actual serial evidence: none.
 
-Writable metadata is separately audited in the [12-field write manifest](WRITES.md#write-specific-schema-and-built-in-manifest).
+Writable metadata is separately audited in the [18-field write manifest](WRITES.md#write-specific-schema-and-built-in-manifest).
 PT-101/1 is the complete two-code enumeration; PT-101/2 is a finite bounded FLOAT.
 All enabled I/O tag strings are exact AC10. Read metadata and optional enum labels
 for other fields do not authorize writes. Discovery-derived locations and generations
@@ -638,3 +643,22 @@ for FLOAT /65; documented float codes are retained in the guide and caveat.
 | 108 | 66 / `mvs_temperature_bias` | Float / 4 | R/W | — | 3.20 | Table 3-20, p.3-89 |
 | 108 | 67 / `mvs_config_change_count` | UInt16 / 2 | R/O | 0.0–65535.0 | 3.60 | Table 3-20, p.3-89 |
 | 108 | 68 / `mvs_sensor_type` | UInt8 / 1 | R/O | 0.0–4.0 | 3.60 | Table 3-20, p.3-89 |
+
+
+## PT-99 typed definition reads — 2026-10-16
+
+Source: §3.4.10/Table 3-11, printed pp.3-56–57; text and rendered pages audited.
+`TableDefinitionRequest` and generation-bound `ConfigurableTable` discovery read
+all 45 parameters outside the generic ROC800 catalog; its 332-entry count is unchanged.
+
+| Parameters | Type / width | Source access / owner | Source default / version | Delivered scope |
+| --- | --- | --- | --- | --- |
+| 0 | FLOAT / 4 | R/W / User | 0.0 / 1.00 | Exact raw revision bits, no ordering/increment inference |
+| 1–44 | TLP / 3 each | R/W / User | (0,0,0) / 1.00 | All raw slots; zero-based OP-10/11 location is parameter minus one |
+
+Logical/table numbers are 0–15. Full definitions retain unknown raw target TLPs;
+selected built-in plans require configured slots and source-footnote point types
+91–98/100–135, plus provider-established target schemas and applicability. No table
+configuration write is enabled. Richer generic metadata, firmware/channel evidence
+and full PT-99 conformance remain open. See [table contracts](CONFIGURABLE_TABLES.md)
+and the independently annotated definition/operation tests.

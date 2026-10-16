@@ -41,6 +41,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let writes = [
         (ai.tlp(0)?, Value::Ascii("FLOW TAG  ".into())),
         (di.tlp(2)?, Value::Float(0.5)),
+        (di.tlp(4)?, Value::UInt8(1)),  // Invert input interpretation.
+        (di.tlp(5)?, Value::UInt8(0)),  // Disable latching.
+        (di.tlp(9)?, Value::UInt8(1)),  // Permit alarm-log generation.
+        (di.tlp(10)?, Value::UInt8(0)), // Disable SRBX on clear.
+        (di.tlp(11)?, Value::UInt8(1)), // Request SRBX on set; no automatic polling/ack.
+        (di.tlp(13)?, Value::Float(0.125)), // Scan period in seconds.
         (ai.tlp(1)?, Value::Ascii("m3/h      ".into())),
     ];
     let plan = WritePlan::build_arbitrary(&catalog, &catalog.context(), &writes, client.profile())?;

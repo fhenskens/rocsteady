@@ -9,6 +9,9 @@ cargo run --locked --example managed_extensions
 cargo run --locked --example schema_profiles
 cargo run --locked --example discovery_catalog
 cargo run --locked --features simulator --example parameter_writes
+cargo run --locked --features simulator --example clock_set
+cargo run --locked --features simulator --example transactions
+cargo run --locked --features simulator --example configurable_tables
 cargo run --locked --example temperature_monitoring -- 3 1 --demo-reconnect
 cargo run --locked --example log_retrieval
 cargo run --locked --example history_metadata

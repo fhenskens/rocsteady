@@ -2,6 +2,8 @@
 
 ## Research records
 
+- [2026-10-16 development journal](SESSION_2026_10_16.md): historical feature,
+  coverage-audit and consolidation timings/checkpoints for the 0.2.0 release.
 - [Current decision register](DECISIONS.md): start here for current conclusions,
   delivery dispositions, affected work and closure evidence for the tracked subquestions.
   The records below preserve research history and source provenance.
@@ -11,6 +13,10 @@
   research date and source limitations.
 - [Specification ambiguity findings](AMBIGUITIES.md): DEC-1 through DEC-10,
   confidence, implementation implications and remaining evidence requirements.
+- [2026-10-16 definition follow-up](FOLLOW_UP_2026_10_16.md): new ROCLINK,
+  CygNet, ABB and parser-history inspections, hardware scope and concrete next leads.
+- [Prepared definition questions](DEFINITION_REQUEST.md): unsent, focused questions
+  for future authorized vendor/implementation-owner inquiries.
 - [Second research pass](SECOND_PASS.md): older-manual comparisons, pinned parser
   inspection, synthetic-fixture provenance and revised assessments.
 

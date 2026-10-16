@@ -1,40 +1,57 @@
 # Comprehensive implementation roadmap
 
-Status: open; reconciled 2026-10-15. This document tracks remaining work.
+Status: open; reconciled 2026-10-16. This document tracks remaining work.
 Implemented behavior belongs in [coverage](COVERAGE.md), executable evidence in
 [requirements](REQUIREMENTS.md), and delivery history in the [changelog](../CHANGELOG.md).
 
-## Current handoff — 2026-10-15
+## Current completion scope — 2026-10-16
 
-The published **0.1.3 release** combines history, audited writes, temperature/MVS
-reads and caller-driven polling. The implemented history services include:
+Hardware acquisition and physical-controller validation are outside the current
+software-completion scope until hardware or a volunteer tester is available.
+Keep those tasks deferred, with no physical compatibility claim. Continue the
+established source audits, annotated independent wire fixtures, simulator/loopback
+and applicable pseudo-terminal tests, lifecycle checks, docs and package gates.
+Unresolved wire definitions remain active research work; absence of hardware alone
+does not block well-defined software delivery. [Definition follow-up](reference/FOLLOW_UP_2026_10_16.md)
+records the renewed research and [prepared questions](reference/DEFINITION_REQUEST.md).
 
-- OP-105/108 metadata and OP-135 single-point reads.
-- [OP-136 multi-point reads](MULTI_HISTORY.md), with time-major rows and bounded paging.
-- [OP-137/138 day reads](DAY_HISTORY.md), with yearless defaults and explicit indexed fallback.
-- [OP-139 inventory and selected reads](HISTORY_INFORMATION.md), with optional timestamps
-  and inventory checks.
+## Current handoff — 2026-10-16
 
-These build on managed extensions, explicit profiles/codecs, discovery, the
-202-parameter read catalog, schema-backed reads, typed logs and opt-in SRBX
-polling/acknowledgement. Coverage and feature contracts describe the exact limits;
-this roadmap tracks remaining acceptance.
+Version **0.2.0** delivers six additional PT-101 configuration writes (18 audited
+writable fields total), [clock setting](CLOCK_SET.md),
+[transaction inventory/raw retrieval](TRANSACTIONS.md), and
+[PT-99-backed OP-10/11 table access](CONFIGURABLE_TABLES.md). It retains the
+332-entry generic catalog, history services and caller-driven monitoring.
+See [coverage](COVERAGE.md) and feature contracts for exact support, and
+[release evidence](RELEASE.md) for version-specific checks and publication status.
 
-Version 0.1.3 also includes [OP-166/181 writes](WRITES.md), with a 12-field
-source-audited writable subset, explicit partial/uncertain outcomes and no replay.
-PT-106/107 temperature and PT-108 multi-variable sensor reads now extend the
-catalog to 332 entries; see [temperature scope](TEMPERATURE.md) and
-[MVS/caller-driven polling contracts](MVS.md). Release verification passed
-244 all-feature/all-target tests, the default-feature gate and 22 doctests;
-[release evidence](RELEASE.md) records the checks. The dated 0.1.3 history
-evidence remains in that record.
-Strict Clippy, formatting, rustdoc, offline package verification and the extracted
-consumer also passed. Stable Linux/macOS/Windows release-commit CI, the clean
-publication dry-run, crates.io publication, pushed tag and registry artifact/consumer
-checks are verified in [RELEASE.md](RELEASE.md).
-Physical-controller and actual serial exchanges remain unvalidated.
-[Release evidence](RELEASE.md) owns validation/publication provenance, including the
-preceding 0.1.2 release; historical counts and commit details are retained there.
+PT-99 configuration writes remain open. Transaction framing remains provisional;
+OP-11 cannot prevent external map edits racing its precheck. Physical-controller
+and actual serial exchanges remain deferred and unvalidated. Remaining baseline
+and extension acceptance is tracked below; dated development timings are preserved
+in the [session record](reference/SESSION_2026_10_16.md).
+
+## Effort calibration — 2026-10-16
+
+Measured local sessions: PT-101 write expansion about seven minutes; clock-setting
+focused checkpoint 3m 55s; transaction focused checkpoint 9m 45s; combined new-service
+verification checkpoint 16m 25s including shared regression/package checks. Exact
+intervals and validation scope are in the [session record](reference/SESSION_2026_10_16.md).
+The next configurable-table slice reached its focused checkpoint in 16m 50s and
+full regression/consumer checkpoint in 19m 52s, adding OP-10/11 and typed PT-99
+reads. This reinforces the value of reusing existing lifecycle/write contracts;
+remaining catalog and unresolved-definition complexity is still uneven.
+
+Provisional remaining source-defined software implementation/verification estimate:
+**10–30 active hours**, revised from 20–60 after these measurements. This is a
+low-confidence planning range, not a completion promise. The 48 untouched point-type
+tables, fourteen partial rows, three still-open services and remaining variants/core
+acceptance dominate; their complexity is uneven. Existing transport, write outcomes,
+local source material and fixtures made these slices unusually inexpensive.
+Physical validation is excluded from this current software estimate. Definition
+research is active work, separately timed; unknown security/wire procedures still
+have no defensible resolution deadline. The first renewed pass is recorded in
+[the definition follow-up](reference/FOLLOW_UP_2026_10_16.md).
 
 ## Scope and delivery policy
 
@@ -73,7 +90,8 @@ For every selected EXT/CORE/OP/PT slice:
 ## Delivery sequence and dependencies
 
 Milestones describe capability groups; partial delivery does not close the group.
-Hardware and cross-platform validation can proceed alongside software development.
+Cross-platform software validation can proceed alongside implementation; hardware
+validation is deferred under the current scope.
 
 | Milestone | Remaining scope | Dependencies |
 | --- | --- | --- |
@@ -81,8 +99,8 @@ Hardware and cross-platform validation can proceed alongside software developmen
 | M0: discovery/security foundations | Remaining CORE-1/2/3 and OP-6/7/17/50/100 variants/applicability; DEC-1/2/3/8 evidence | Explicit profiles and readiness strategies |
 | M1: parameter access | Remaining PT batches, firmware/layout applicability and discovery/bootstrap policies | Schema metadata and explicit device context |
 | M2: logs/SRBX | Stronger durable continuity evidence and remaining applicability/schema coverage | Identity, retention and index semantics |
-| M3: history | OP-206, history PT batch; remaining OP-105/135–139 interpretation/applicability evidence | History geometry, time/schema models; DEC-4/5 |
-| M4: configuration/writes | OP-8/10/11, PT-99 and writable schemas beyond the delivered OP-166/181 subset | Access/budget validation and explicit uncertain outcomes |
+| M3: history | Transaction interpretation/retention evidence, history PT batch; remaining OP-105/135–139 interpretation/applicability evidence | History geometry, time/schema models; DEC-4/5 |
+| M4: configuration/writes | PT-99 configuration writes, remaining table applicability and writable schemas beyond the delivered OP-166/181 subset | Access/budget validation and explicit uncertain outcomes |
 | M5: files | OP-203 forms and lifecycle | Exclusive workflows, handle lifetime and uncertain outcomes; DEC-5 |
 | M6: remote/shared channels | OP-24/205, broadcast CORE-1 and network schemas | Framing/address/reader contracts; DEC-1/5/9 |
 | M7: release/conformance | Candidate gates, remaining EXT acceptance and declared scope; continued full-baseline work | Applicable software and interoperability evidence |
@@ -124,12 +142,13 @@ limitation on compatibility claims. No milestone permits automatic side-effect r
   keep explicit selection available when discovery is inconclusive.
 - [ ] Improve device-error context while preserving raw codes/offsets and keeping
   local validation distinct from healthy device rejection.
-- [ ] Implement OP-10 configurable table reads, including version/width/range
-  variants, independent fixtures and simulator behavior.
-- [ ] Implement OP-206 transaction commands: record inventory, tagged field widths,
-  offsets/continuation, bounds and retention behavior.
-  Use contextual codecs/policies for unresolved forms and explicit progress for
-  multi-exchange work; see [service packages](SPEC_WORK_PLAN.md).
+- [x] Implement OP-10/11 configurable table reads/mapped writes, including
+  version/width/range validation, independent fixtures and simulator behavior.
+  PT-99 configuration edits and stronger external coordination remain separate work.
+- [ ] Research remaining OP-206 interpretation/retention definitions; physical
+  observations are deferred under the current scope.
+  Raw inventory/data pages, bounded reassembly and explicit provisional field
+  layouts are implemented; see [transactions](TRANSACTIONS.md) and DEC-5.05–07.
 - [ ] Resolve remaining history occurrence-time, minute-index and day/year
   interpretation/applicability questions with source/device evidence. Existing raw defaults,
   provisional alternatives and custom replacements remain usable meanwhile.
@@ -139,8 +158,8 @@ limitation on compatibility claims. No milestone permits automatic side-effect r
 
 ## P2: writes, files and remote services
 
-- [ ] Extend the implemented OP-166/181 framework and 12-field writable subset;
-  implement OP-8/11 and remaining schema constraints: access/constraints,
+- [ ] Extend the implemented OP-166/181 framework and 18-field writable subset;
+  extend remaining schema constraints: access/constraints,
   request budgets, partial results, uncertain remote effects and explicit no-replay
   behavior. Test failure before send, after effect and before acknowledgement.
 - [ ] Implement OP-203 file command variants, handles, chunking, size limits and
@@ -173,7 +192,7 @@ claiming that already-covered cases are implemented.
   admission, leases, recovery and awaited shutdown. Recheck extension contracts on
   upgrades rather than introducing competing lifecycle machinery.
 
-## Physical interoperability
+## Deferred physical interoperability
 
 - [ ] Record available controller model, firmware, security mode, addresses and
   channel configuration; hardware acquisition can run alongside software work.
@@ -188,13 +207,13 @@ claiming that already-covered cases are implemented.
 Maintain current feature contracts and test traceability as each slice lands;
 completed documentation tasks remain in the changelog and release record.
 
-- [ ] Add runnable examples for future transaction, file and routing APIs,
+- [ ] Add runnable examples for future file and routing APIs,
   including explicit recovery/progress and ownership semantics when implemented.
 - [ ] Cross-check every baseline OP/PT/DEC row before claiming full coverage;
   selected catalog manifests and extension seams do not close the baseline.
 For each subsequent release, review final scope/changelog, run hosted stable
 Linux/macOS/Windows checks for the release commit, and verify the reviewed clean
-package and publication dry-run. Completed 0.1.3 publication evidence is in [RELEASE.md](RELEASE.md).
+package and publication dry-run. Version-specific publication evidence is in [RELEASE.md](RELEASE.md).
 - [ ] Backfill GitHub release pages for historical 0.1.0/0.1.1 if desired; their
   crates.io publication/tag evidence is already recorded. The 0.1.2 page is complete.
 - [ ] Record physical evidence before making production compatibility claims.
@@ -209,15 +228,15 @@ in [EXTRACTION.md](EXTRACTION.md); no additional extraction is committed.
 ## Recommended next slice
 
 **Expand the audited writable catalog** beyond the delivered OP-166/181
-[12-field subset](WRITES.md). Keep access/value constraints, conservative budgets,
+[18-field subset](WRITES.md). Keep access/value constraints, conservative budgets,
 explicit partial/uncertain outcomes and no automatic replay. Prioritize fields
 with unambiguous source constraints; extend schema validation before admitting
 cross-field or noncontiguous-enumeration fields. Add independent literals,
 simulator state checks and external-consumer evidence with each subset.
 
 OP-139 configured inventory and selected-point reads are implemented within the
-[declared scope](HISTORY_INFORMATION.md). Continue transaction OP-206 when its
-wire ambiguities have adequate evidence; complete remaining history schemas and
+[declared scope](HISTORY_INFORMATION.md). Continue transaction OP-206 source/device validation; its raw retrieval and
+explicit provisional layouts are implemented. Complete remaining history schemas and
 firmware/channel validation alongside parameter work.
 
 **PT-106/107 temperature I/O reads are implemented** in the [declared subset](TEMPERATURE.md).
@@ -232,6 +251,7 @@ when adequate source evidence is available.
 A scoped extensible release requires the applicable EXT acceptance, useful declared
 built-ins, actionable missing-capability behavior, external-consumer guides and
 software/package gates. Full baseline completion additionally requires the service
-plan gate, all schema rows/manifests and the applicable transport/interoperability
-criteria. Preserve outstanding security, variants, parameters and compatibility
+plan gate, all schema rows/manifests and applicable software transport criteria. Physical interoperability is a separate
+deferred validation objective under the current scope, required for future physical
+compatibility claims. Preserve outstanding security, variants, parameters and compatibility
 limitations in release claims until their own evidence closes them.

@@ -33,8 +33,33 @@ impl WriteBatch {
 pub struct WritePlan {
     batches: Vec<WriteBatch>,
     generation: Option<u64>,
+    table_guard: Option<crate::ConfigurableTable>,
 }
 impl WritePlan {
+    // Shared once-only outcome/send-gate machinery for single state-changing services.
+    pub(crate) fn single(opcode: u8, payload: Vec<u8>) -> Self {
+        Self {
+            batches: vec![WriteBatch { opcode, payload }],
+            generation: None,
+            table_guard: None,
+        }
+    }
+    pub(crate) fn configurable_table(
+        snapshot: crate::ConfigurableTable,
+        payloads: Vec<Vec<u8>>,
+    ) -> Self {
+        Self {
+            batches: payloads
+                .into_iter()
+                .map(|payload| WriteBatch {
+                    opcode: 11,
+                    payload,
+                })
+                .collect(),
+            generation: Some(snapshot.generation()),
+            table_guard: Some(snapshot),
+        }
+    }
     pub fn batches(&self) -> &[WriteBatch] {
         &self.batches
     }
@@ -117,10 +142,11 @@ impl WritePlan {
         Ok(Self {
             batches,
             generation,
+            table_guard: None,
         })
     }
 }
-fn encode_schema_value(
+pub(crate) fn encode_schema_value(
     provider: &dyn SchemaProvider,
     context: &SchemaContext,
     tlp: Tlp,
@@ -210,6 +236,9 @@ impl crate::Workflow for PlannedWrite {
         }
         for (i, batch) in self.plan.batches.into_iter().enumerate() {
             batch.validate(context.profile())?;
+            if let Some(table) = &self.plan.table_guard {
+                table.verify(context).await?;
+            }
             {
                 let mut state = self.state.lock().unwrap();
                 if state.closed {
@@ -248,6 +277,21 @@ impl Client {
                     progress: initial.clone(),
                     error: etherbird::Error::Operation(error),
                 })?;
+        }
+        if let Some(table) = &plan.table_guard {
+            crate::operations::table_definition(
+                crate::TableDefinitionRequest::new(table.definition().table).map_err(|error| {
+                    SchemaWriteError {
+                        progress: initial.clone(),
+                        error: etherbird::Error::Operation(error),
+                    }
+                })?,
+            )
+            .validate(self.profile())
+            .map_err(|error| SchemaWriteError {
+                progress: initial.clone(),
+                error: etherbird::Error::Operation(error),
+            })?;
         }
         let state = Arc::new(Mutex::new(State {
             closed: false,

@@ -314,7 +314,7 @@ impl Client {
         let prepared = crate::operations::custom(operation).map_err(etherbird::Error::Operation)?;
         self.execute_prepared(prepared).await
     }
-    async fn execute_prepared<T, D>(
+    pub(crate) async fn execute_prepared<T, D>(
         &self,
         operation: crate::operations::PreparedOperation<D>,
     ) -> Result<T, etherbird::Error<Error>>

@@ -3,7 +3,8 @@
 OP-166 and OP-181 follow D301180X012 October 2022 §§2.20/2.23,
 Tables 2-23/26, printed pp.2-37–39. Both services return an empty acknowledgement.
 Software fixtures verify their fields; physical-controller interoperability remains
-unvalidated. Both services and the audited writable subset are included in 0.1.3.
+unvalidated. Version 0.2.0 includes both services and all 18 audited fields below,
+including six additional PT-101 configuration settings.
 
 ## Planning and request budgets
 
@@ -50,7 +51,7 @@ plans require the same connection generation. Execution rechecks the receiving
 client's profile before admission and retains one exclusive workflow lease across
 batches. It does not rediscover metadata during a write.
 
-The built-in writable catalog contains **12 fields**, all introduced in 1.00 and
+The built-in writable catalog contains **18 fields**, all introduced in 1.00 and
 limited to the catalog's explicit reviewed firmware window 1.00–3.60. The manifest
 records the source-audited subset, not complete PT write conformance:
 
@@ -60,6 +61,11 @@ records the source-audited subset, not complete PT write conformance:
 | 101 / 0 | Point tag | AC10; every byte 0x20–0x7e | Table 3-13, p.3-61 |
 | 101 / 1 | Scanning | UINT8; 0 disabled, 1 enabled | Table 3-13, p.3-61 |
 | 101 / 2 | Input filter | FLOAT; finite 0–43,200 seconds inclusive | Table 3-13, p.3-61 |
+| 101 / 4 | Invert mode | UINT8; 0 disabled, 1 enabled | Table 3-13, p.3-61 |
+| 101 / 5 | Latch mode | UINT8; 0 disabled, 1 enabled | Table 3-13, p.3-61 |
+| 101 / 9 | Alarming | UINT8; 0 disabled, 1 enabled | Table 3-13, p.3-61 |
+| 101 / 10, 11 | SRBX on clear, SRBX on set | UINT8 each; 0 disabled, 1 enabled | Table 3-13, p.3-62 |
+| 101 / 13 | Scan period | FLOAT; finite 0.004–43,200 seconds inclusive | Table 3-13, p.3-62 |
 | 102 / 0, 1 | Point tag, units tag | AC10 each; every byte 0x20–0x7e | Table 3-14, p.3-63 |
 | 103 / 0, 1 | Point tag, units tag | AC10 each; every byte 0x20–0x7e | Table 3-15, p.3-66 |
 | 104 / 0, 1 | Point tag, units tag | AC10 each; every byte 0x20–0x7e | Table 3-16, p.3-70 |
@@ -74,10 +80,49 @@ it permits device updates again. Filter is the duration for which the input must
 remain ON before the state changes. These APIs set configuration values, not an
 atomic output-control procedure.
 
+### PT-101 configuration audit — 2026-10-16
+
+Table 3-13, printed pp.3-61–62 (PDF pages 120–121), was rechecked in
+text and rendered pages from the publisher's October 2022 PDF. All nine User-updated
+R/W fields are now admitted: /0–2, /4–5, /9–11 and /13. No extra cross-field
+prerequisite is specified for these six new settings. They retain the explicit
+1.00–3.60 firmware and discovered physical-location gates.
+
+Invert mode changes input interpretation; latch mode holds an active transition
+until manually cleared. Alarming permits alarm-log generation, and the SRBX flags
+request notification on alarm clear/set. Writing these flags does not poll, acknowledge
+or subscribe to SRBX. The simulator stores configuration and supports explicit
+read-back; it does not simulate field transitions, latch clearing, timing or generated
+alarms. Setting a flag is not proof of an alarm or notification.
+
+Both-updated /3 (status), /6 (accumulated value), /7–8 (cumulative times) remain
+blocked pending a separate audit of live-value ownership and reconciliation.
+System-only /12 (alarm code), /14 (actual scan time) and /15 (physical status)
+remain unwritable. Enabling latch mode does not add a manual-clear procedure.
+PT-101 full schema conformance, including defaults/ownership metadata and hardware,
+remains open.
+
+`REQ-DI-WRITE-*` and `POL-DI-*` in `tests/arbitrary_writes.rs` cover independent
+OP-166/181 literals, all byte codes, adjacent representable FLOAT bounds, excluded
+fields, preflight applicability, malformed acknowledgements, raw device rejections,
+lost acknowledgements, stale plans and explicit read-back. All 18 fields are exercised
+through both services at 1.00/3.60 and all three layouts. Existing generic write tests
+continue to cover cancellation, deadlines and no-send behavior. The package consumer
+also writes and reads back all six new fields through both services.
+
 Supply exact-length strings including caller-selected padding. No truncation,
 padding, configuration save or read-back is automatic. All other built-in writes
 remain blocked, including disputed calibration, failsafe and module-dependent
 fields (DEC-10.05/06/07). Custom providers do not establish built-in conformance.
+
+## Configurable-table plans
+
+`ConfigurableTable::write_plan` additionally creates OP-11 batches through the same
+`Client::write_plan` outcome/send-gate machinery. It uses discovered PT-99 mappings,
+validates mapped values against separate write opt-in schemas and rechecks the full
+definition before every batch. The 18 audited writable target fields are unchanged.
+See [table contracts](CONFIGURABLE_TABLES.md) for budgets, definition-read failures,
+generation checks and the external-edit race caused by OP-11 having no revision field.
 
 ## Outcomes, interruption and reconciliation
 
@@ -121,6 +166,8 @@ let catalog = Roc800Catalog::from_discovery(io)?;
 let writes = [
     (ai.tlp(0)?, Value::Ascii("FLOW TAG  ".into())),
     (di.tlp(2)?, Value::Float(0.5)),
+    (di.tlp(4)?, Value::UInt8(1)), // Invert mode.
+    (di.tlp(13)?, Value::Float(0.125)), // Scan period in seconds.
     (ai.tlp(1)?, Value::Ascii("m3/h      ".into())),
 ];
 let plan = WritePlan::build_arbitrary(&catalog, &catalog.context(), &writes, client.profile())?;

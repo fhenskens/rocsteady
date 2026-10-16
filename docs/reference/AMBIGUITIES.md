@@ -187,6 +187,14 @@ every value. [S6: transaction parser](https://raw.githubusercontent.com/cisagov/
 
 **Assessment:** implementation clue, not a resolved correction.
 
+**2026-10-16 implementation audit:** rendered Table 2-29 places the request byte
+offset at full-frame position 10. Built-in requests follow that placement. Raw
+inventory/data retrieval, bounded reassembly and separate transaction tags are
+implemented. Because the table's TLP repetition text still conflicts with its row
+labels, field interpretation requires an explicit TaggedValues or TlpTaggedValues
+selection. Neither synthetic fixtures nor selectable interpretations close physical
+applicability, retention or overwrite questions; DEC-5.05–07 remain open accordingly.
+
 **Next evidence:** multi-field and split-page transaction fixtures establishing
 request offset location, data type widths, presence/absence of TLPs and continuation
 boundaries. Reject ambiguous field framing rather than guessing.

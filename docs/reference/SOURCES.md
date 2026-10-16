@@ -18,6 +18,10 @@ checks. Search publication/crawl labels were not treated as document revisions.
 - Log audit (2026-10-14): sections 2.13–2.14, Tables 2-16/17 and all record diagrams, printed pp.2-24–31; count/header budgets, packed flags, text/value boundaries, event-specific tags and old/new storage overlap inspected. Fixed record storage and modulo-index continuity limits are explicit in LOGS.md.
 - SRBX audit (2026-10-14): Table 2-31, p.2-44 and Chapter 6 p.6-1 visually inspected; consumed-index request, empty reply, equality-based pending clearing and published index-7 CRC vector verified. Source does not make delivery durable or confirm pending clearing in the empty reply.
 - Write audit (2026-10-15): §§2.20/2.23, Tables 2-23/26 (pp.2-37–39), and Table 3-5 /2 plus Tables 3-13 /0–2, 3-14 /0–1, 3-15 /0–1, 3-16 /0–1 and 3-17 /0–1 (pp.3-34/61/63/66/70/72), text checked against the publisher PDF. OP-181 prose mislabels the opcode and describes a response-size error despite its empty acknowledgement; the 240-byte request ceiling is explicit library policy, not a source-verified device boundary.
+- Configurable-table audit (2026-10-16): §§2.5–6/Tables 2-5/6, p.2-12 (PDF page 22) and §3.4.10/Table 3-11, pp.3-56–57 (PDF pages 115–116), text and rendered pages inspected. Tables 0–15, slots 0–43, count 1–44/end<=44, FLOAT revision, 44 mapped TLPs and source target-type footnote checked. OP-11 has no revision/TLP fields in its request and returns an empty acknowledgement; no atomic comparison or automatic revision increment inferred.
+- Transaction audit (2026-10-16): §2.26/Table 2-29, pp.2-42–43 (PDF pages 52–53), text and rendered tables inspected. Version 3.50, command-1 metadata/number/TIME pairs, command-2 request offset at frame position 10, message size below its byte, continuation flags and all 17 tag codes checked. TLP repetition wording remains contradictory; raw defaults and explicit provisional layouts do not establish physical semantics (DEC-5.05–07).
+- Clock-set audit (2026-10-16): §2.4/Table 2-4, printed p.2-11 (PDF page 21), text and rendered table inspected. Seven-byte request has UINT16 year and no weekday; response is empty. Gregorian input bounds follow the existing library read policy; device year acceptance and broadcast remain unverified.
+- DI write expansion audit (2026-10-16): §3.4.12/Table 3-13, pp.3-61–62 (PDF pages 120–121), text and rendered pages from the publisher PDF inspected. User-updated /4–5, /9–11 and /13 are R/W, version 1.00; binary ranges are 0–1 and scan period is FLOAT 0.004–43,200 seconds. Both-updated /3, /6–8 and system-only /12, /14–15 stay excluded. No physical behavior inferred.
 - Temperature audit (2026-10-15): §§3.4.17–18, Tables 3-18/19, printed pp.3-75–81 (PDF pages 134–140), text checked against the publisher PDF. All 38 RTD and 23 TC fields inventoried, including access suffixes/calibration notes, offset/failsafe versions, unit-default change, noncontiguous TC sensor codes and copied alarm/failsafe wording (DEC-10.08). No temperature writes or hardware compatibility inferred.
 - MVS audit (2026-10-15): §3.4.19/Table 3-20, printed pp.3-82–89 (PDF pages 141–148), text checked against the publisher PDF. All 69 field definitions inventoried, including source versions, five BIN masks, noncontiguous command/poll codes, FLOAT /65 and UINT8 /68, 4088-only counter context and inconsistent /59 and /64 text (DEC-10.09). No MVS write or physical compatibility inferred.
 - Role: normative baseline and origin of the contradictions; see existing reference section/table map.
@@ -218,3 +222,37 @@ No vendor contact, device operation, or external publication occurred during res
 The exact queries, source inspection ledger, failed retrievals and per-decision
 remaining leads are in [SEARCH_RECORD.md](SEARCH_RECORD.md). Indexed hits not
 inspected are explicitly separate from sources used as evidence.
+
+
+## Definition follow-up — reviewed 2026-10-16
+
+### S25 — ROCLINK 800 user manual
+
+- Publisher: Emerson; D301250X012, February 2024; 542 PDF pages.
+- [Publisher PDF](https://www.emerson.com/is/content/emerson/en/final-control/documents/d301250x012.pdf).
+- Download SHA-256: `9785259167e431fe8212d899851a027ffb6273f1191202710c00c17b362f1e78`.
+- Read: printed pp.3-8, 3-27–29, 3-32–33, 3-35 and 6-13; document-wide key/security term searches.
+- Use: DEC-2.05 TCP timer distinctions and DEC-9.04 TCP SRBX exclusion. No wrapping/key-expiry definition obtained; keep-alive arithmetic discrepancy explicitly retained. Details in [follow-up](FOLLOW_UP_2026_10_16.md).
+
+### S26 — Weatherford CygNet 9.8 ROCPlus documentation
+
+- Publisher: Weatherford/CygNet; live 9.8 documentation, no immutable page revision established.
+- [Release notes](https://softwaredocs.weatherford.com/cygnet/98/Content/Topics/CygNet%20Software/What%27s%20New.htm),
+  [data groups](https://softwaredocs.weatherford.com/cygnet/98/Content/Topics/EIEs%20-%20Remote%20Devices/Emerson%20ROCPlus%20EIE%20Data%20Group%20Usage%20Notes.htm),
+  [UIS parameters](https://softwaredocs.weatherford.com/cygnet/98/Content/Topics/EIEs%20-%20Remote%20Devices/Emerson%20ROCPlus%20EIE%20UIS%20Command%20Component%20Parameters.htm).
+- Read: ROCPlus LoginSec/Logout support, LOGINSEC behavior and transaction configuration/retrieval descriptions. Browser failures were recovered for the data-group page via direct download; Device-page full inspection is not claimed.
+- Use: implementation-owner support/procedure lead; no encryption/wrapping algorithm or disputed transaction wire layout obtained.
+
+### S27 — ABB SCADAvantage file-transfer implementation note
+
+- Publisher: ABB; SCADAvantage 6.0.1, 3CCA2024-003416; July 2024; 56 PDF pages.
+- [Publisher PDF](https://library.e.abb.com/public/be36438c496a44f08ca41eff3564466f/3CCA2024_003416_A_en_SCADAvantage_6_0_1_Release_Notes.pdf).
+- Read: issue 75875 on printed pp.11/29; confirms OP-203 truck-ticketing support, with no command/layout/continuation definition.
+- The bare link failed in the browser; a publisher signed-query variant succeeded. Signed tokens are not treated as permanent document identity.
+
+### S28 — CISA transaction parser history follow-up
+
+- Publisher: cisagov/ICSNPP; GitHub commits API for `analyzer/roc_plus_opcode_206.spicy` and pinned commit `54711b7e92f4b2f71bb500ec99ef8b29a279b73b` (2025-03-04).
+- [Correction diff](https://github.com/cisagov/icsnpp-roc-plus/commit/54711b7e92f4b2f71bb500ec99ef8b29a279b73b).
+- Read: history listing and this exact diff, which is formatting-only despite its correction title. Other commit titles are leads, not inspected layout corrections or device-capture provenance.
+- Use: qualifies L05; no new independent physical layout evidence.

@@ -43,9 +43,9 @@ services must have the correct direction; raw request access is not typed covera
 | --- | --- | --- | --- | --- |
 | OP-6 | 2.2 | Configuration | Partial | tests/configuration.rs; configuration tests in tests/integration.rs |
 | OP-7 | 2.3 | Clock read | Partial | clock literal and independent peer tests |
-| OP-8 | 2.4 | Clock write | Open | None |
-| OP-10 | 2.5 | Table read | Open | None |
-| OP-11 | 2.6 | Table write | Open | None |
+| OP-8 | 2.4 | Clock write | Typed acknowledged unicast implemented; broadcast/physical open | tests/clock_set.rs; CLOCK_SET.md |
+| OP-10 | 2.5 | Table read | Typed mixed-schema batches, bitwise revision checks and generation-bound mapped plans implemented | tests/configurable_tables.rs; CONFIGURABLE_TABLES.md |
+| OP-11 | 2.6 | Table write | Schema-opt-in mapped writes, per-batch definition checks and explicit shared write outcomes implemented | tests/configurable_tables.rs; CONFIGURABLE_TABLES.md |
 | OP-17 | 2.7 | Authentication/logout | Partial | legacy_login_packs_password_little_endian_and_optional_access; login/recovery tests |
 | OP-24 | 2.8; Ch. 7 | Store and forward | Open | None |
 | OP-50 | 2.9 | I/O layout | Partial: both selectors and all three explicit lengths; DEC-3 device applicability remains open | tests/discovery.rs; tests/discovery_simulator.rs; per-variant evidence in CATALOG.md |
@@ -59,13 +59,13 @@ services must have the correct direction; raw request access is not typed covera
 | OP-137 | 2.17 | Day indices | Table-based start/count lookup and raw invalid daily index implemented; DEC-4.05/06 and physical applicability open | tests/day_history.rs; tests/day_history_simulator.rs; DAY_HISTORY.md |
 | OP-138 | 2.18 | Day history | Values/point-255 timestamps and explicit indexed alternative implemented; snapshot/physical limits remain | tests/day_history.rs; tests/day_history_simulator.rs; DAY_HISTORY.md |
 | OP-139 | 2.19 | History information | Command-0 inventory and command-1 nonempty selected lists implemented, both timestamp shapes, bounded ranges and opt-in inventory checks; applicability/physical limits remain | tests/history_information.rs; tests/history_information_simulator.rs; HISTORY_INFORMATION.md |
-| OP-166 | 2.20 | Contiguous writes | Schema-aware bounded batches implemented; 12 audited writable fields; broader applicability remains open | tests/writes.rs; WRITES.md |
+| OP-166 | 2.20 | Contiguous writes | Schema-aware bounded batches implemented; 18 audited writable fields; broader applicability remains open | tests/writes.rs; WRITES.md |
 | OP-167 | 2.21 | Contiguous reads | Partial | opcode_167_validates_count_range_and_echoed_block_header; TCP reads |
 | OP-180 | 2.22 | Arbitrary reads | Partial | opcode_180_request_has_count_and_ordered_tlps; opcode_180_response_echoes_tlp_before_each_value; TCP reads |
 | OP-181 | 2.23 | Arbitrary writes | Schema-aware ordered TLP/value batches implemented; explicit conservative request policy and partial outcomes; physical applicability remains open | tests/arbitrary_writes.rs; tests/writes.rs; WRITES.md |
 | OP-203 | 2.24 | Files | Open | None |
 | OP-205 | 2.25 | Network tunnel | Open | None |
-| OP-206 | 2.26 | Transactions | Open | None |
+| OP-206 | 2.26 | Transactions | Partial: typed raw inventory/data pages, bounded reassembly, explicit provisional field layouts; DEC-5/physical open | tests/transactions.rs; TRANSACTIONS.md |
 | OP-224 | 2.27; Ch. 6 | SRBX signal | Partial: interleaved/stable notifications and explicit bounded idle polling; durable/physical delivery not established | tests/srbx.rs; tests/srbx_simulator.rs; Chapter 6 vector; LOGS.md |
 | OP-225 | 2.28; Ch. 6 | SRBX acknowledgement | Partial: consumed-anchor verification, typed index/empty reply and staged outcomes; caller ingestion/identity and physical evidence remain | tests/srbx.rs; tests/srbx_simulator.rs; Chapter 6 vector; LOGS.md |
 | OP-255 | 2.29 | Device errors | Partial | error_response_preserves_all_codes_and_offsets_including_unknown_codes; rejection tests |
@@ -117,8 +117,8 @@ services must have the correct direction; raw request access is not typed covera
 
 - [x] OP-7 typed read with calendar checks and independent wire evidence.
 - [ ] OP-7 audit year/day-of-week semantics and document the conflicting older illustration.
-- [ ] OP-8 implement its distinct write payload and empty acknowledgement; validate calendar inputs without transmitting a read-only weekday field.
-- [ ] Test boundary calendars, device rejection, successful set/read-back, cancellation and lost acknowledgement with unknown write outcome.
+- [x] OP-8 implement its distinct write payload and empty acknowledgement; validate calendar inputs without transmitting a read-only weekday field.
+- [x] Test boundary calendars, device rejection, successful set/read-back, cancellation and lost acknowledgement with unknown write outcome.
 - [ ] Test broadcast clock setting through CORE-1 separately from acknowledged unicast.
 
 ### OP-17: authentication forms
@@ -164,7 +164,7 @@ the contradictory DEC-3 prose/diagrams. Full catalog rows remain in SCHEMA_WORK_
 
 OP-166/181 now have separately bounded packing, schema-aware planning, empty-ack
 validation, exclusive batch progress and explicit uncertain/device-error outcomes
-with no replay. The built-in writable subset has 12 fields; see
+with no replay. The built-in writable subset has 18 fields; see
 [write contracts and manifest](WRITES.md). Broader parameter constraints and
 physical applicability remain open; software evidence does not resolve DEC-6.
 
@@ -178,11 +178,11 @@ physical applicability remain open; software evidence does not resolve DEC-6.
 
 ### OP-10 and OP-11: configurable tables
 
-- [ ] OP-10 typed selection/range, table version and schema-backed ordered values.
-- [ ] Define cache/version invalidation when table definitions change or a replacement device appears.
-- [ ] OP-11 typed writes using current table metadata and explicit result/outcome semantics.
-- [ ] Integrate PT-99 definitions; preserve version representation rather than treating float versions as ordinary sortable integers.
-- [ ] Test empty/invalid ranges, boundary entries, changed table definitions, variable widths and invalid-table errors.
+- [x] OP-10 typed selection/range, bitwise table version and schema-backed ordered values.
+- [x] Use opaque generation-bound snapshots, compare full definitions/revisions and require explicit rediscovery after changes/replacement; no automatic cache.
+- [x] OP-11 typed mapped writes using checked metadata, separate write opt-in and explicit result/outcome semantics; external edits can race because the request has no revision field.
+- [x] Integrate all 45 PT-99 definition read fields; preserve raw revision bits without ordering. PT-99 configuration writes and richer catalog metadata remain separate.
+- [x] Test empty/invalid ranges, slot 43/parameter 44, changed definitions, mixed widths, budgets, device errors, partial/uncertain effects and lifecycle cases.
 
 ## Logs and spontaneous reporting
 
@@ -278,12 +278,12 @@ and DEC-4 geometry evidence remain open.
 
 ### OP-206: transaction commands
 
-- [ ] Command 1: list transactions, description, payload size, number/date pairs and continuation flag.
-- [ ] Define offset order after rollover without assuming index zero means oldest.
-- [ ] Command 2: read a transaction by number and byte offset with length/continuation validation.
-- [ ] Implement its own type-tag vocabulary for numeric, string, binary, TLP and time fields.
-- [ ] Preserve or explicitly reject unknown type tags whose width cannot be established; never guess the next field boundary.
-- [ ] Handle fields split between pages, vanished/overwritten transactions and no-progress continuation.
+- [x] Command 1: list transactions, description, payload size, number/date pairs and continuation flag.
+- [x] Define storage-offset advancement without assuming index zero means oldest; durable rollover/retention evidence remains open.
+- [x] Command 2: read raw transaction data by number/byte offset with length/continuation validation; explicit caller payload size and bounded reassembly.
+- [x] Implement its own type-tag vocabulary for numeric, raw fixed string, binary, TLP and time fields through explicitly selected provisional layouts.
+- [x] Preserve raw records and explicitly reject unknown type tags whose width cannot be established; never guess the next field boundary.
+- [x] Reassemble split fields, preserve progress on missing-record errors and reject no-progress continuation; same-length overwrites remain undetectable.
 - [ ] Resolve command 2 offset/TLP wording inconsistencies (DEC-5) using independent evidence.
 
 ## Files and remote destinations
@@ -373,6 +373,15 @@ must still be defined before allowing an extension to participate.
 - [ ] DEC-10: audit schema-table inconsistencies and conditional write behavior as each PT row is implemented.
   Include the documented driver correction for PT-177/0 width as a regression lead;
   verify it against the target firmware rather than importing another driver's catalog.
+
+## Current software-completion scope — 2026-10-16
+
+Physical validation is deferred by the project owner until hardware or an external
+tester is available. It does not gate current software completion. Required software
+closure still includes source-audited APIs, simulator behavior, independent positive/
+negative wire fixtures, lifecycle/transport tests, annotated requirements and package
+checks. Unresolved definitions remain active research, tracked in the decision register.
+The full-conformance/physical-compatibility gate below remains a distinct future claim.
 
 ## Full-baseline completion gate
 

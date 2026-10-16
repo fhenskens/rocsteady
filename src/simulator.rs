@@ -39,8 +39,12 @@ pub struct Model {
     pub configuration: SystemConfiguration,
     pub address: Address,
     pub clock: Clock,
+    /// OP-8 effects survive reconnects; fixture clock does not advance with wall time.
+    pub written_clock: Arc<Mutex<Option<Clock>>>,
     pub login: Option<Login>,
     pub parameters: BTreeMap<Tlp, Value>,
+    /// Mutable PT-99 fixtures; configuration edits are test controls, not a write API.
+    pub configurable_tables: Arc<Mutex<BTreeMap<u8, crate::ConfigurableTableDefinition>>>,
     /// Explicit OP-166 effects, retained across fixture reconnects.
     pub written_parameters: Arc<Mutex<BTreeMap<Tlp, Value>>>,
 }
@@ -82,6 +86,7 @@ impl Default for Model {
                 SystemConfiguration::decode(&bytes).expect("valid fixture configuration")
             },
             address: Address::new(1, 2),
+            written_clock: Arc::new(Mutex::new(None)),
             clock: Clock {
                 second: 1,
                 minute: 2,
@@ -93,6 +98,7 @@ impl Default for Model {
             },
             login: None,
             parameters: BTreeMap::new(),
+            configurable_tables: Arc::default(),
             written_parameters: Arc::default(),
         }
     }
@@ -103,8 +109,30 @@ pub struct DayHistoryData {
     pub periodic: Vec<[u8; 4]>,
     pub daily: Vec<[u8; 4]>,
 }
-/// Optional fixture data for OP-105/108/135/136/137/138/139, supplied with Simulator::bind_with_history.
-/// Kept separate so existing public Model struct literals remain compatible.
+/// Table 2-29 fixture. Records are (transaction number, raw creation TIME, raw bytes).
+/// Page sizes are fixture controls; fields may split anywhere. No tag encoder is used.
+#[derive(Debug, Clone)]
+pub struct TransactionSegmentModel {
+    pub description: [u8; 10],
+    pub payload_size: u16,
+    pub records: Vec<(u16, u32, Vec<u8>)>,
+    pub list_page_size: usize,
+    pub data_page_size: usize,
+}
+impl Default for TransactionSegmentModel {
+    fn default() -> Self {
+        Self {
+            description: *b"TX DEFAULT",
+            payload_size: 0,
+            records: Vec::new(),
+            list_page_size: 40,
+            data_page_size: 252,
+        }
+    }
+}
+/// Optional fixture data for OP-105/108/135/136/137/138/139/206, supplied with Simulator::bind_with_history.
+/// Separate optional history/transaction fixture configuration. In 0.2.0, use
+/// `..Default::default()` when constructing fixtures to accept additional fields.
 #[derive(Debug, Clone)]
 pub struct HistoryMetadataModel {
     /// Explicit Table 2-14 reply bodies (48 bytes after segment/point echoes).
@@ -125,6 +153,8 @@ pub struct HistoryMetadataModel {
     /// Explicit command-0 inventory by segment; not inferred from fixture sample keys.
     pub configured_history_points: BTreeMap<u8, Vec<u8>>,
     pub history_sample_indices: BTreeMap<(u8, u8), u16>,
+    /// Explicit transaction storage order and raw records; no rollover/retention simulation.
+    pub transactions: BTreeMap<u8, TransactionSegmentModel>,
 }
 impl Default for HistoryMetadataModel {
     fn default() -> Self {
@@ -136,6 +166,7 @@ impl Default for HistoryMetadataModel {
             history_max_point: 199,
             history_samples: BTreeMap::new(),
             history_sample_indices: BTreeMap::new(),
+            transactions: BTreeMap::new(),
             configured_history_points: BTreeMap::new(),
             day_indices: BTreeMap::new(),
             day_history: BTreeMap::new(),
@@ -144,6 +175,23 @@ impl Default for HistoryMetadataModel {
     }
 }
 impl Model {
+    fn parameter_value(&self, tlp: Tlp) -> Option<Value> {
+        if tlp.point_type == 99 {
+            let tables = self.configurable_tables.lock().unwrap();
+            let table = tables.get(&tlp.logical)?;
+            return match tlp.parameter {
+                0 => Some(Value::Float(table.revision.as_float())),
+                1..=44 => Some(Value::Tlp(table.entries[usize::from(tlp.parameter) - 1])),
+                _ => None,
+            };
+        }
+        self.written_parameters
+            .lock()
+            .unwrap()
+            .get(&tlp)
+            .cloned()
+            .or_else(|| self.parameters.get(&tlp).cloned())
+    }
     /// Reset fixture I/O to five CPU diagnostics and absent field modules in an explicit layout.
     pub fn set_io_layout(&mut self, layout: crate::IoLayout) {
         self.io_layout = layout;
@@ -203,10 +251,14 @@ impl Model {
                 {
                     Some(crate::DataType::Ascii(10))
                 }
-                (101, 1) if self.io_point_types.get(usize::from(tlp.logical)) == Some(&101) => {
+                (101, 1 | 4 | 5 | 9..=11)
+                    if self.io_point_types.get(usize::from(tlp.logical)) == Some(&101) =>
+                {
                     Some(crate::DataType::UInt8)
                 }
-                (101, 2) if self.io_point_types.get(usize::from(tlp.logical)) == Some(&101) => {
+                (101, 2 | 13)
+                    if self.io_point_types.get(usize::from(tlp.logical)) == Some(&101) =>
+                {
                     Some(crate::DataType::Float)
                 }
                 _ => None,
@@ -225,7 +277,13 @@ impl Model {
             let value = Value::decode(kind, raw);
             match value {
                 Ok(Value::UInt8(v)) if v > 1 => errors.extend([4, error_offset]),
-                Ok(Value::Float(v)) if !v.is_finite() || !(0.0..=43200.0).contains(&v) => {
+                // Table 3-13: filter /2 admits zero; scan period /13 starts at
+                // 0.004 seconds. Compare in f64 as the public schema validator does.
+                Ok(Value::Float(v))
+                    if !v.is_finite()
+                        || !(if tlp.parameter == 13 { 0.004 } else { 0.0 }..=43200.0)
+                            .contains(&f64::from(v)) =>
+                {
                     errors.extend([4, error_offset])
                 }
                 Ok(value) => {
@@ -285,6 +343,139 @@ impl Model {
                     error(25, 6)
                 } else {
                     reply(225, vec![])
+                }
+            }
+            10 | 11 => {
+                let b = &request.data;
+                if b.len() < 3 {
+                    return Some(error(6, 5));
+                }
+                let (table, start, count) = (b[0], usize::from(b[1]), usize::from(b[2]));
+                if table > 15 || start > 43 || count == 0 || count > 44 || start + count > 44 {
+                    return Some(error(25, 6));
+                }
+                let definition = self
+                    .configurable_tables
+                    .lock()
+                    .unwrap()
+                    .get(&table)
+                    .cloned();
+                let Some(definition) = definition else {
+                    return Some(error(25, 6));
+                };
+                let entries = &definition.entries[start..start + count];
+                if request.opcode == 10 {
+                    if b.len() != 3 {
+                        return Some(error(5, 5));
+                    }
+                    let mut data = b[..3].to_vec();
+                    data.extend(definition.revision.bits().to_le_bytes());
+                    for tlp in entries {
+                        let Some(value) = self.parameter_value(*tlp) else {
+                            return Some(error(2, 6));
+                        };
+                        let Ok(bytes) = value.encode() else {
+                            return Some(error(4, 6));
+                        };
+                        data.extend(bytes);
+                    }
+                    if data.len() > 255 {
+                        error(5, 5)
+                    } else {
+                        reply(10, data)
+                    }
+                } else {
+                    let mut offset = 3;
+                    let mut errors = Vec::new();
+                    for (i, tlp) in entries.iter().enumerate() {
+                        let kind =
+                            self.parameter_value(*tlp)
+                                .map(|v| v.data_type())
+                                .or_else(|| {
+                                    crate::Roc800Catalog::entry(tlp.point_type, tlp.parameter)
+                                        .map(|e| e.data_type)
+                                });
+                        let Some(kind) = kind else {
+                            errors.extend([2, (start + i) as u8]);
+                            break;
+                        };
+                        let Some(raw) = b.get(offset..offset + kind.width()) else {
+                            errors.extend([6, (start + i) as u8]);
+                            break;
+                        };
+                        offset += kind.width();
+                        let mut data = vec![1, tlp.point_type, tlp.logical, tlp.parameter];
+                        data.extend(raw);
+                        let response = self.parameter_write(&Frame::new(
+                            request.destination,
+                            request.source,
+                            181,
+                            data,
+                        ));
+                        if response.opcode == 255 {
+                            errors.extend([response.data[0], (start + i) as u8]);
+                        }
+                    }
+                    if offset != b.len() && errors.is_empty() {
+                        errors.extend([6, 5]);
+                    }
+                    if errors.is_empty() {
+                        reply(11, vec![])
+                    } else {
+                        reply(255, errors)
+                    }
+                }
+            }
+            206 => {
+                let b = &request.data;
+                if b.len() < 2 {
+                    return Some(error(6, 5));
+                }
+                let Some(segment) = history.transactions.get(&b[1]) else {
+                    return Some(error(14, 7));
+                };
+                match b[0] {
+                    1 if b.len() == 4 => {
+                        let start = usize::from(u16::from_le_bytes([b[2], b[3]]));
+                        if start > segment.records.len() {
+                            return Some(error(14, 8));
+                        }
+                        let count = segment
+                            .list_page_size
+                            .clamp(1, 40)
+                            .min(segment.records.len() - start);
+                        let mut data = vec![
+                            1,
+                            count as u8,
+                            u8::from(start + count < segment.records.len()),
+                        ];
+                        data.extend(segment.description);
+                        data.extend(segment.payload_size.to_le_bytes());
+                        for (number, time, _) in &segment.records[start..start + count] {
+                            data.extend(number.to_le_bytes());
+                            data.extend(time.to_le_bytes());
+                        }
+                        reply(206, data)
+                    }
+                    2 if b.len() == 6 => {
+                        let number = u16::from_le_bytes([b[2], b[3]]);
+                        let offset = usize::from(u16::from_le_bytes([b[4], b[5]]));
+                        let Some((_, _, bytes)) =
+                            segment.records.iter().find(|(n, _, _)| *n == number)
+                        else {
+                            return Some(error(14, 8));
+                        };
+                        if offset > bytes.len() {
+                            return Some(error(14, 10));
+                        }
+                        let end = (offset + segment.data_page_size.clamp(1, 252)).min(bytes.len());
+                        let mut data =
+                            vec![2, (end - offset + 1) as u8, u8::from(end < bytes.len())];
+                        data.extend(&bytes[offset..end]);
+                        reply(206, data)
+                    }
+                    1 | 2 => error(6, 5),
+                    _ => error(4, 6),
                 }
             }
             105 => {
@@ -615,9 +806,35 @@ impl Model {
                 if !request.data.is_empty() {
                     return Some(error(5, 5));
                 }
-                match self.clock.encode() {
+                match self
+                    .written_clock
+                    .lock()
+                    .unwrap()
+                    .unwrap_or(self.clock)
+                    .encode()
+                {
                     Ok(bytes) => reply(7, bytes),
                     Err(_) => error(50, 4),
+                }
+            }
+            8 => {
+                let b = &request.data;
+                if b.len() != 7 {
+                    return Some(error(6, 5));
+                }
+                match crate::ClockSet::new(
+                    u16::from_le_bytes([b[5], b[6]]),
+                    b[4],
+                    b[3],
+                    b[2],
+                    b[1],
+                    b[0],
+                ) {
+                    Ok(value) => {
+                        *self.written_clock.lock().unwrap() = Some(value.simulated_clock());
+                        reply(8, vec![])
+                    }
+                    Err(_) => error(4, 6),
                 }
             }
             180 => {
@@ -630,13 +847,7 @@ impl Model {
                 let mut bytes = vec![count];
                 for (i, tlp) in request.data[1..].as_chunks::<3>().0.iter().enumerate() {
                     let key = Tlp::new(tlp[0], tlp[1], tlp[2]);
-                    let value = self
-                        .written_parameters
-                        .lock()
-                        .unwrap()
-                        .get(&key)
-                        .cloned()
-                        .or_else(|| self.parameters.get(&key).cloned());
+                    let value = self.parameter_value(key);
                     let Some(value) = value else {
                         return Some(error(2, (i + 1) as u8));
                     };
@@ -664,13 +875,7 @@ impl Model {
                 let mut bytes = request.data.clone();
                 for p in u16::from(start)..u16::from(start) + u16::from(count) {
                     let key = Tlp::new(point_type, logical, p as u8);
-                    let value = self
-                        .written_parameters
-                        .lock()
-                        .unwrap()
-                        .get(&key)
-                        .cloned()
-                        .or_else(|| self.parameters.get(&key).cloned());
+                    let value = self.parameter_value(key);
                     let Some(value) = value else {
                         return Some(error(2, p as u8));
                     };
@@ -721,7 +926,7 @@ struct Control {
     history: HistoryMetadataModel,
     srbx: Mutex<SrbxStatus>,
     signals: broadcast::Sender<()>,
-    faults: Mutex<VecDeque<Fault>>,
+    faults: Mutex<VecDeque<(Option<u8>, Fault)>>,
     connections: AtomicUsize,
     logins: AtomicUsize,
     requests: AtomicUsize,
@@ -793,8 +998,17 @@ impl Simulator {
     pub fn model(&self) -> &Model {
         &self.model
     }
+    /// Hold this FIFO fault until the selected request opcode, then apply it
+    /// after model dispatch. Useful when metadata checks precede a state change.
+    pub fn inject_for(&self, opcode: u8, fault: Fault) {
+        self.control
+            .faults
+            .lock()
+            .unwrap()
+            .push_back((Some(opcode), fault));
+    }
     pub fn inject(&self, fault: Fault) {
-        self.control.faults.lock().unwrap().push_back(fault);
+        self.control.faults.lock().unwrap().push_back((None, fault));
     }
     /// Raise/repeat a fixture SRBX and update its current alarm index, including while idle.
     /// Populate the corresponding raw log slot before binding; this does not create a record.
@@ -925,12 +1139,14 @@ async fn serve<S: ByteStream + ?Sized>(
         }
         let fault = {
             let mut faults = control.faults.lock().unwrap();
-            if matches!(faults.front(), Some(Fault::LoseAlarmAcknowledgement))
-                && request.opcode != 225
-            {
+            let waiting = faults.front().is_some_and(|(opcode, fault)| {
+                opcode.is_some_and(|opcode| opcode != request.opcode)
+                    || (matches!(fault, Fault::LoseAlarmAcknowledgement) && request.opcode != 225)
+            });
+            if waiting {
                 None
             } else {
-                faults.pop_front()
+                faults.pop_front().map(|(_, fault)| fault)
             }
         };
         if response.opcode == 118 {

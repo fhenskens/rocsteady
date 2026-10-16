@@ -34,6 +34,9 @@ impl Drop for Peer {
 }
 impl Peer {
     async fn start(layout: IoLayout, expected: Vec<(u8, Vec<u8>)>) -> Self {
+        Self::start_with_fault(layout, expected, 0).await
+    }
+    async fn start_with_fault(layout: IoLayout, expected: Vec<(u8, Vec<u8>)>, fault: u8) -> Self {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap().to_string();
         let expected = Arc::new(Mutex::new(VecDeque::from(expected)));
@@ -52,6 +55,7 @@ impl Peer {
                 let mut request = header.to_vec();
                 request.extend(payload);
                 assert_eq!(crc(&request).to_le_bytes(), body[body.len() - 2..]);
+                let mut response_opcode = header[4];
                 let data = match header[4] {
                     7 => vec![1, 2, 3, 8, 10, 0xea, 7, 5],
                     6 => {
@@ -83,11 +87,18 @@ impl Peer {
                             .pop_front()
                             .expect("unexpected write/replay");
                         assert_eq!((header[4], payload), (next.0, next.1.as_slice()));
-                        vec![]
+                        match fault {
+                            1 => vec![0], // Invalid nonempty write acknowledgement.
+                            2 => {
+                                response_opcode = 255;
+                                vec![4, 1, 2, 2] // Preserve raw codes/offsets without commit inference.
+                            }
+                            _ => vec![],
+                        }
                     }
                     other => panic!("unexpected opcode {other}"),
                 };
-                let mut response = vec![1, 0, 1, 2, header[4], data.len() as u8];
+                let mut response = vec![1, 0, 1, 2, response_opcode, data.len() as u8];
                 response.extend(data);
                 response.extend(crc(&response).to_le_bytes());
                 stream.write_all(&response).await.unwrap();
@@ -289,11 +300,17 @@ fn catalog_writes() -> Vec<(Tlp, Value)> {
     writes.extend([
         (Tlp::new(101, 16, 1), Value::UInt8(0)),
         (Tlp::new(101, 16, 2), Value::Float(1.5)),
+        (Tlp::new(101, 16, 4), Value::UInt8(1)),
+        (Tlp::new(101, 16, 5), Value::UInt8(0)),
+        (Tlp::new(101, 16, 9), Value::UInt8(1)),
+        (Tlp::new(101, 16, 10), Value::UInt8(0)),
+        (Tlp::new(101, 16, 11), Value::UInt8(1)),
+        (Tlp::new(101, 16, 13), Value::Float(0.125)),
     ]);
     writes
 }
 fn literal_catalog_payload() -> Vec<u8> {
-    let mut payload = vec![12, 91, 0, 2];
+    let mut payload = vec![18, 91, 0, 2];
     payload.extend(b"ABCDEFGHIJKLMNOPQRST");
     for (i, pt) in (101..=105).enumerate() {
         payload.extend([pt, 16 + i as u8, 0]);
@@ -304,11 +321,17 @@ fn literal_catalog_payload() -> Vec<u8> {
         }
     }
     payload.extend([101, 16, 1, 0, 101, 16, 2, 0, 0, 0xc0, 0x3f]);
+    // REQ-DI-WRITE-WIRE: Table 3-13 /4–5, /9–11, /13, Table 2-26.
+    // Independent little-endian literal: 0.125 seconds = IEEE FLOAT 0x3e000000.
+    payload.extend([
+        101, 16, 4, 1, 101, 16, 5, 0, 101, 16, 9, 1, 101, 16, 10, 0, 101, 16, 11, 1, 101, 16, 13,
+        0, 0, 0, 0x3e,
+    ]);
     payload
 }
 #[tokio::test]
 async fn req_write_catalog_literals_and_local_constraints_cover_all_audited_fields() {
-    // REQ-WRITE-CATALOG: Tables 3-5/13..17. Twelve fields including existing station name.
+    // REQ-WRITE-CATALOG: Tables 3-5/13..17. Eighteen fields including existing station name.
     for layout in [
         IoLayout::Compatibility160,
         IoLayout::Compatibility240,
@@ -333,8 +356,9 @@ async fn req_write_catalog_literals_and_local_constraints_cover_all_audited_fiel
             assert_eq!(
                 schema.numeric_range,
                 match (tlp.point_type, tlp.parameter) {
-                    (101, 1) => Some((0., 1.)),
+                    (101, 1 | 4 | 5 | 9..=11) => Some((0., 1.)),
                     (101, 2) => Some((0., 43200.)),
+                    (101, 13) => Some((0.004, 43200.)),
                     _ => None,
                 }
             );
@@ -582,4 +606,338 @@ fn req_181_simulator_reports_partial_effect_and_rejects_malformed_tuples() {
             .opcode,
         255
     );
+}
+
+#[tokio::test]
+async fn di_configuration_contiguous_literals_and_preflight_boundaries() {
+    // REQ-DI-WRITE-WIRE: D301180X012 §§2.20/2.23, Tables 2-23/26;
+    // §3.4.12/Table 3-13, pp.3-61–62. Gaps must remain separate OP-166 batches.
+    // POL-DI-WRITE-PREFLIGHT: all values and applicability checked before admission.
+    for layout in [
+        IoLayout::Compatibility160,
+        IoLayout::Compatibility240,
+        IoLayout::Expanded224,
+    ] {
+        let expected = vec![
+            (166, vec![101, 16, 2, 4, 1, 0]),
+            (166, vec![101, 16, 3, 9, 1, 0, 1]),
+            (166, vec![101, 16, 1, 13, 0, 0, 0, 0x3e]),
+        ];
+        let peer = Peer::start(layout, expected.clone()).await;
+        let client = peer.client(layout);
+        let io = client
+            .discover_io(FirmwareVersion::new(3, 60).unwrap())
+            .await
+            .unwrap();
+        let catalog = Roc800Catalog::from_discovery(io).unwrap();
+        let context = catalog.context();
+        let writes = &catalog_writes()[12..];
+        for arbitrary in [false, true] {
+            let build = |values: &[(Tlp, Value)]| {
+                if arbitrary {
+                    WritePlan::build_arbitrary(&catalog, &context, values, client.profile())
+                } else {
+                    WritePlan::build(&catalog, &context, values, client.profile())
+                }
+            };
+            // REQ-DI-WRITE-BOUNDS: each binary setting admits exactly the two
+            // table codes, independently of its readable unknown-code preservation.
+            for parameter in [4, 5, 9, 10, 11] {
+                for raw in 0..=255 {
+                    let result = build(&[(Tlp::new(101, 16, parameter), Value::UInt8(raw))]);
+                    assert_eq!(
+                        result.is_ok(),
+                        raw <= 1,
+                        "parameter {parameter}, value {raw}"
+                    );
+                }
+                assert!(build(&[(Tlp::new(101, 16, parameter), Value::Binary(1))]).is_err());
+            }
+            // REQ-DI-WRITE-BOUNDS: scan-period FLOAT inclusive bounds; immediate
+            // representable neighbors expose rounding errors at the decimal minimum.
+            let minimum = 0.004_f32;
+            let maximum = 43200_f32;
+            for (value, valid) in [
+                (minimum, true),
+                (f32::from_bits(minimum.to_bits() - 1), false),
+                (f32::from_bits(minimum.to_bits() + 1), true),
+                (maximum, true),
+                (f32::from_bits(maximum.to_bits() - 1), true),
+                (f32::from_bits(maximum.to_bits() + 1), false),
+                (0.0, false),
+                (-0.0, false),
+                (-1.0, false),
+                (f32::NAN, false),
+                (f32::INFINITY, false),
+                (f32::NEG_INFINITY, false),
+            ] {
+                assert_eq!(
+                    build(&[(Tlp::new(101, 16, 13), Value::Float(value))]).is_ok(),
+                    valid,
+                    "{value:?}"
+                );
+            }
+            assert!(build(&[(Tlp::new(101, 16, 13), Value::Double(0.125))]).is_err());
+            // POL-DI-WRITE-SCOPE: Both-updated and read-only entries remain blocked,
+            // even with correct source types and otherwise valid values.
+            for (parameter, value) in [
+                (3, Value::UInt8(0)),
+                (6, Value::UInt32(0)),
+                (7, Value::Float(0.0)),
+                (8, Value::Float(0.0)),
+                (12, Value::Binary(0)),
+                (14, Value::Float(0.0)),
+                (15, Value::UInt8(0)),
+            ] {
+                assert!(
+                    build(&[
+                        (writes[0].0, writes[0].1.clone()),
+                        (Tlp::new(101, 16, parameter), value)
+                    ])
+                    .is_err()
+                );
+            }
+            for location in [0, 17, 255] {
+                assert!(build(&[(Tlp::new(101, location, 4), Value::UInt8(1))]).is_err());
+            }
+            let mut wrong_context = context.clone();
+            wrong_context.firmware = Some("1.00".into());
+            assert!(catalog.lookup_write(&wrong_context, writes[0].0).is_err());
+            assert!(Roc800Catalog::new(FirmwareVersion::new(3, 61).unwrap()).is_err());
+            let undiscovered = Roc800Catalog::new(FirmwareVersion::new(3, 60).unwrap()).unwrap();
+            assert!(
+                undiscovered
+                    .lookup_write(&undiscovered.context(), writes[0].0)
+                    .is_err()
+            );
+            assert_eq!(peer.expected.lock().unwrap().len(), 3); // No preflight sent a write.
+        }
+        let plan = WritePlan::build(&catalog, &context, writes, client.profile()).unwrap();
+        assert_eq!(
+            plan.batches()
+                .iter()
+                .map(|b| (b.opcode(), b.payload().to_vec()))
+                .collect::<Vec<_>>(),
+            expected
+        );
+        assert_eq!(
+            client.write_plan(plan).await.unwrap().batches,
+            [WriteOutcome::Acknowledged; 3]
+        );
+        assert!(peer.expected.lock().unwrap().is_empty());
+        client.read_clock().await.unwrap();
+        client.stop().await;
+    }
+}
+
+#[cfg(feature = "simulator")]
+#[test]
+fn di_simulator_enforces_configuration_bounds_without_changing_rejected_fields() {
+    // REQ-DI-WRITE-SIMULATOR: Table 3-13 /4–5, /9–11, /13 and Tables 2-23/26.
+    // POL-DI-SIMULATOR-REJECTION: fixture errors preserve the preceding stored value;
+    // this is model policy, not evidence of controller rollback or atomicity.
+    use rocsteady::{protocol::Frame, simulator::Model};
+    let mut model = Model::default();
+    model.io_point_types[16] = 101;
+    let mut authenticated = false;
+    for opcode in [166, 181] {
+        for parameter in [4, 5, 9, 10, 11, 13] {
+            let values: Vec<(Vec<u8>, Option<Value>)> = if parameter == 13 {
+                vec![
+                    (vec![0x6f, 0x12, 0x83, 0x3b], Some(Value::Float(0.004))),
+                    (vec![0x6e, 0x12, 0x83, 0x3b], None),
+                    (vec![0, 0xc0, 0x28, 0x47], Some(Value::Float(43200.0))),
+                    (vec![1, 0xc0, 0x28, 0x47], None),
+                    (vec![0, 0, 0, 0], None),
+                    (vec![0, 0, 0x80, 0x7f], None),
+                    (vec![0, 0, 0xc0, 0x7f], None),
+                ]
+            } else {
+                (0..=255)
+                    .map(|v| (vec![v], (v <= 1).then_some(Value::UInt8(v))))
+                    .collect()
+            };
+            let tlp = Tlp::new(101, 16, parameter);
+            let mut previous = model.written_parameters.lock().unwrap().get(&tlp).cloned();
+            for (bytes, accepted) in values {
+                let mut payload = if opcode == 166 {
+                    vec![101, 16, 1, parameter]
+                } else {
+                    vec![1, 101, 16, parameter]
+                };
+                payload.extend(bytes);
+                let reply = model
+                    .respond(
+                        &Frame::new(Address::new(1, 2), Address::new(1, 0), opcode, payload),
+                        &mut authenticated,
+                    )
+                    .unwrap();
+                if let Some(value) = accepted {
+                    assert_eq!((reply.opcode, reply.data), (opcode, vec![]));
+                    previous = Some(value);
+                } else {
+                    assert_eq!(
+                        (reply.opcode, reply.data),
+                        (255, vec![4, if opcode == 166 { parameter } else { 1 }])
+                    );
+                }
+                assert_eq!(
+                    model.written_parameters.lock().unwrap().get(&tlp).cloned(),
+                    previous
+                );
+            }
+        }
+    }
+}
+
+#[tokio::test]
+async fn di_configuration_failures_stop_at_first_batch_with_explicit_outcomes() {
+    // REQ-DI-WRITE-ACK: Tables 2-23/26 require an empty acknowledgement.
+    // POL-DI-WRITE-PROGRESS: malformed ack is uncertain, OP-255 is a device
+    // rejection, and later batches are never attempted or replayed. DEC-6 remains open.
+    for opcode in [166, 181] {
+        for fault in [1, 2] {
+            let writes = catalog_writes()[12..].to_vec();
+            let expected = if opcode == 166 {
+                vec![
+                    (166, vec![101, 16, 2, 4, 1, 0]),
+                    (166, vec![101, 16, 3, 9, 1, 0, 1]),
+                    (166, vec![101, 16, 1, 13, 0, 0, 0, 0x3e]),
+                ]
+            } else {
+                vec![(
+                    181,
+                    vec![
+                        6, 101, 16, 4, 1, 101, 16, 5, 0, 101, 16, 9, 1, 101, 16, 10, 0, 101, 16,
+                        11, 1, 101, 16, 13, 0, 0, 0, 0x3e,
+                    ],
+                )]
+            };
+            let peer = Peer::start_with_fault(IoLayout::Compatibility160, expected, fault).await;
+            let client = peer.client(IoLayout::Compatibility160);
+            let catalog = Roc800Catalog::from_discovery(
+                client
+                    .discover_io(FirmwareVersion::new(3, 60).unwrap())
+                    .await
+                    .unwrap(),
+            )
+            .unwrap();
+            let plan = if opcode == 166 {
+                WritePlan::build(&catalog, &catalog.context(), &writes, client.profile())
+            } else {
+                WritePlan::build_arbitrary(&catalog, &catalog.context(), &writes, client.profile())
+            }
+            .unwrap();
+            let mut outcomes = vec![WriteOutcome::NotAttempted; plan.batches().len()];
+            outcomes[0] = if fault == 1 {
+                WriteOutcome::Uncertain
+            } else {
+                WriteOutcome::DeviceError
+            };
+            let failure = client.write_plan(plan).await.unwrap_err();
+            assert_eq!(failure.progress.batches, outcomes);
+            if fault == 2 {
+                assert!(
+                    matches!(failure.error, etherbird::Error::Operation(Error::Device(ref errors))
+                        if errors.iter().map(|e| (e.code, e.offset)).collect::<Vec<_>>() == [(4, 1), (2, 2)])
+                );
+                client.read_clock().await.unwrap(); // Healthy rejection preserves the connection.
+            }
+            assert_eq!(peer.expected.lock().unwrap().len(), outcomes.len() - 1);
+            client.stop().await;
+        }
+    }
+}
+
+#[cfg(feature = "simulator")]
+#[tokio::test]
+async fn di_configuration_lost_ack_preserves_effect_without_replay() {
+    // POL-DI-WRITE-NO-REPLAY: managed write contract; Table 3-13 /4–5 and /13.
+    // Disconnect is injected after model dispatch, before acknowledgement. Reconcile
+    // by an explicit read; remaining configuration must stay unattempted after recovery.
+    use rocsteady::simulator::{Fault, Model, Simulator};
+    for opcode in [166, 181] {
+        let mut model = Model::default();
+        model.io_point_types[16] = 101;
+        let server = Simulator::bind("127.0.0.1:0".parse().unwrap(), model)
+            .await
+            .unwrap();
+        let client = Client::tcp(
+            server.endpoint().to_string(),
+            ClientConfig {
+                profile: Arc::new(Roc800Profile {
+                    layout: IoLayout::Compatibility160,
+                }),
+                heartbeat_interval: None,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let catalog = Roc800Catalog::from_discovery(
+            client
+                .discover_io(FirmwareVersion::new(3, 60).unwrap())
+                .await
+                .unwrap(),
+        )
+        .unwrap();
+        let writes = if opcode == 166 {
+            vec![
+                (Tlp::new(101, 16, 4), Value::UInt8(1)),
+                (Tlp::new(101, 16, 13), Value::Float(0.125)),
+            ]
+        } else {
+            // 35 seven-byte tuples exceed the explicit 240-byte policy; two batches.
+            (0..35)
+                .map(|i| {
+                    (
+                        Tlp::new(101, 16, 13),
+                        Value::Float(if i < 34 { 0.125 } else { 0.25 }),
+                    )
+                })
+                .collect()
+        };
+        let plan = if opcode == 166 {
+            WritePlan::build(&catalog, &catalog.context(), &writes, client.profile())
+        } else {
+            WritePlan::build_arbitrary(&catalog, &catalog.context(), &writes, client.profile())
+        }
+        .unwrap();
+        assert_eq!(plan.batches().len(), 2);
+        let before = server.stats().requests;
+        server.inject(Fault::Disconnect);
+        assert_eq!(
+            client.write_plan(plan).await.unwrap_err().progress.batches,
+            [WriteOutcome::Uncertain, WriteOutcome::NotAttempted]
+        );
+        let (tlp, value) = &writes[0];
+        assert_eq!(
+            client
+                .read_parameters(&[Parameter::new(*tlp, value.data_type())])
+                .await
+                .unwrap(),
+            std::slice::from_ref(value)
+        );
+        assert_eq!(server.stats().requests - before, 3); // Write, replacement setup, read (no replay).
+        if opcode == 166 {
+            assert!(
+                !server
+                    .model()
+                    .written_parameters
+                    .lock()
+                    .unwrap()
+                    .contains_key(&writes[1].0)
+            );
+        }
+        // POL-DI-WRITE-GENERATION: an old discovery plan cannot cross replacement.
+        let stale =
+            WritePlan::build(&catalog, &catalog.context(), &writes[..1], client.profile()).unwrap();
+        let before = server.stats().requests;
+        assert_eq!(
+            client.write_plan(stale).await.unwrap_err().progress.batches,
+            [WriteOutcome::NotAttempted]
+        );
+        assert_eq!(server.stats().requests, before);
+        client.stop().await;
+        server.stop().await.unwrap();
+    }
 }

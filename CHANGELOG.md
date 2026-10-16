@@ -1,6 +1,27 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 2026-10-16
+
+- Add PT-99 table definitions and generation-bound snapshots, mixed OP-10 reads
+  and schema-opt-in OP-11 mapped writes with explicit outcomes and no replay.
+  Full map checks detect observed changes; external edits can still race writes.
+  PT-99 configuration writes remain outside the delivered scope.
+- Add typed OP-8 unicast clock setting with calendar validation, empty
+  acknowledgements and explicit uncertainty after interrupted transmission.
+- Add OP-206 inventory/raw transaction retrieval, bounded exclusive reassembly
+  and confirmed progress. Tagged/TLP-tagged decoding remains explicitly provisional.
+- Enable six additional PT-101 settings: invert/latch mode, alarming, SRBX on
+  clear/set and scan period, bringing the audited writable subset to 18 fields.
+- Add independent wire/boundary/lifecycle tests, simulator effects and targeted
+  faults, three runnable feature examples and packaged-consumer coverage.
+  Enforce requirement annotations and exact test/index links in ordinary tests;
+  consolidate related preflight cases with inline annotations and named failures.
+- Document unresolved definitions and the TCP/SRBX applicability caveat. Defer
+  hardware validation until hardware or a volunteer tester is available.
+- **Breaking (simulator feature):** `Model` gains `written_clock` and
+  `configurable_tables`; `HistoryMetadataModel` gains `transactions`. Supply these
+  in exhaustive literals or use `..Default::default()`. Client method signatures
+  remain compatible. See [migration notes](README.md#migrating-from-013).
 
 ## 0.1.3 — 2026-10-15
 

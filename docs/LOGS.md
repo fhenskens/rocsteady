@@ -8,6 +8,16 @@ inspected. Both services are introduced in firmware 1.00. Firmware/controller
 applicability is caller-established; no physical controller or serial exchange
 has been validated. Vendor prose is not redistributed.
 
+## Channel applicability evidence — 2026-10-16
+
+Emerson's ROCLINK D301250X012, February 2024, printed p.3-8 (PDF page 60),
+states that SRBX transmission is unavailable over TCP. Existing synthetic TCP
+notification/interleaving tests prove library handling, not controller Ethernet
+SRBX support. Ordinary OP-118/119 polling is separate from receiving unsolicited
+OP-224 signals. Keep SRBX channel applicability provisional pending an applicable
+supplement or future tester evidence; see [research follow-up](reference/FOLLOW_UP_2026_10_16.md).
+No library notification handling or polling behavior changes in this documentation pass.
+
 ## Requests and page boundaries
 
 `LogRequest::new(start, count)` produces a three-byte payload: count followed by

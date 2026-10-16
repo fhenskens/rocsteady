@@ -198,7 +198,7 @@ optional logical bounds and optional numeric bounds. Missing metadata is never g
 ReadOnly/ReadWrite are readable; WriteOnly and unresolved Conditional fail locally.
 Logical bounds are enforced; numeric bounds are write metadata, not a read-value filter.
 The built-in Roc800Catalog covers 332 parameters, including clock, port and module fields; schema-aware
-writes use a separate opt-in contract with a twelve-field built-in subset; complete PT conformance remains open. PT-101–108 have all read
+writes use a separate opt-in contract with a eighteen-field built-in subset; complete PT conformance remains open. PT-101–108 have all read
 widths plus optional CatalogMetadata enum/bit/unit annotations. Unknown values
 remain raw; source write caveats do not alter read planning or establish write access. See [CATALOG.md](CATALOG.md).
 

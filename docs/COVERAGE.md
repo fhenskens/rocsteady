@@ -23,6 +23,8 @@ the sections used by the implementation and fixtures.
 | CRC-16 | Zero seed, reflected polynomial, wire byte order | Chapter 4 vector plus standard check value |
 | 6 | Original/extended configuration, point counts, raw security and identity fields; unknown data retained | Independent Table 2-2 payloads, fixed TCP fixture, malformed reply and recovery tests |
 | 7 | Typed clock read and validation | Table 2-3 fixture and independent peer |
+| 8 | Typed seven-byte clock set without weekday; empty acknowledgement and explicit uncertain outcomes, no replay | Independent TCP literals, calendar boundaries, simulator read-back and cancellation/recovery; [contract](CLOCK_SET.md) |
+| 10 / 11 | Schema-backed mixed configurable-table reads/writes, raw revision identity, opaque generation snapshots and per-batch write checks | Tables 2-5/6 and 3-11 independent literals/TCP, simulator, consumer and [contract](CONFIGURABLE_TABLES.md) |
 | 17 | Legacy operator ID/numeric password and optional access level | Fixed request tests, rejected/accepted simulator login, setup recovery |
 | 50 | Both I/O selectors; explicit 160/240/224-entry layouts; repeated consistency checks; physical/per-type logical positions kept distinct | Independent Table 2-12 TCP fixtures in tests/discovery.rs and simulator tests; DEC-3/hardware applicability remains unresolved |
 | 100 | Command 11 point-type classification, echoed headers, counts 0-245, bounded range paging, unknown codes preserved | Independent Table 2-13 fixtures/TCP and tests/discovery_simulator.rs |
@@ -33,9 +35,10 @@ the sections used by the implementation and fixtures.
 | 136 | Minute/periodic/daily time-major point blocks, zero-period probes, bounded windows and explicit partial/index-change outcomes | Table 2-19 literals/TCP, simulator, consumer; [multi-point contracts](MULTI_HISTORY.md); DEC-4.03/04 and physical evidence remain open |
 | 137 / 138 | Table-based day/month index lookup; whole-day values or point-255 timestamps; explicit OP-137/135 indexed paging, mapping recheck and confirmed progress | Tables 2-20/21 literals/TCP, simulator, consumer; [day contracts](DAY_HISTORY.md); year/point prose ambiguities and physical evidence open |
 | 139 | Command-0 configured inventory; command-1 explicit ordered nonempty points with optional timestamps, bounded period paging and opt-in before/after inventory checks | Table 2-22 independent literals/TCP, simulator, external consumer; [contracts](HISTORY_INFORMATION.md); firmware/geometry/physical limits remain open |
-| 166 / 181 | Schema-aware contiguous/arbitrary writes, conservative budgets, 12 audited fields and explicit partial/uncertain outcomes; no automatic replay | Independent literals/TCP, simulator state checks, consumer and [write contracts](WRITES.md) |
+| 166 / 181 | Schema-aware contiguous/arbitrary writes, conservative budgets, 18 audited fields and explicit partial/uncertain outcomes; no automatic replay | Independent literals/TCP, simulator state checks, consumer and [write contracts](WRITES.md) |
 | 167 | Typed contiguous parameter reads | Echo/range/width checks and TCP integration |
 | 180 | Typed arbitrary TLP reads | Echo/count/width/response-budget checks and TCP integration |
+| 206 | Raw transaction inventory/data pages, bounded exclusive reassembly and confirmed progress; explicit provisional tagged/TLP-tagged interpretations | Table 2-29 independent literals/TCP, all tags, split/max-size simulator records, lifecycle and consumer; [contract](TRANSACTIONS.md); DEC-5/physical open |
 | 224 / 225 | Stable SRBX notifications, opt-in bounded idle polling, explicit consumed-index acknowledgement and staged outcomes | Chapter 6 literals, independent TCP/lifecycle cases, simulator pending comparisons and [contracts](LOGS.md) |
 | 255 | Preserve multiple and unknown error entries | Fixed error fixtures; healthy connection preserved |
 | Parameter types | Binary, fixed ASCII, signed/unsigned integers, float/double, TLP, time | Literal byte-order/width tests |
@@ -73,12 +76,12 @@ This does not resolve DEC-3 mappings or DEC-8 firmware discovery.
 | Service | Opcodes / scope | Status |
 | --- | --- | --- |
 | I/O layout and user-defined point discovery | 50, 100 | Typed selectors and command 11 implemented; automatic firmware/layout applicability and DEC-3 hardware evidence outstanding |
-| Contiguous and arbitrary parameter writes | 166, 181 | Implemented framework and 12 audited fields; additional writable schemas/constraints remain open. Separate bounded packing, opt-in schemas and explicit batch outcomes; [contracts](WRITES.md), tests/writes.rs and tests/arbitrary_writes.rs |
-| Set clock | 8 | Raw unicast exchange only; typed codec outstanding |
-| Configurable tables | 10, 11 | Raw unicast exchange only; typed codecs outstanding |
+| Contiguous and arbitrary parameter writes | 166, 181 | Implemented framework and 18 audited fields; additional writable schemas/constraints remain open. Separate bounded packing, opt-in schemas and explicit batch outcomes; [contracts](WRITES.md), tests/writes.rs and tests/arbitrary_writes.rs |
+| Set clock | 8 | Typed seven-byte unicast, empty acknowledgement, explicit uncertain outcomes/no replay; [contract](CLOCK_SET.md), tests/clock_set.rs; broadcast and physical validation open |
+| Configurable tables | 10, 11 | Typed reads and schema-opt-in mapped writes with PT-99 snapshots, exact revisions, budgets and explicit outcomes; [contract](CONFIGURABLE_TABLES.md). Table configuration writes remain separate. |
 | Enhanced login/session key and logout | Additional forms of 17 | Not implemented |
 | Store and forward / broadcast | 24 / no-reply operations | Unsupported by request API |
-| Transactions | 206 | Raw unicast exchange only; typed transaction records/continuation outstanding; OP-105/108 and OP-135–139 history services implemented within the declared scope above |
+| Transactions | 206 | Typed raw inventory/data pages, bounded exclusive reassembly and confirmed progress; explicit provisional tag/TLP interpretations; [contract](TRANSACTIONS.md), tests/transactions.rs; DEC-5/physical evidence open |
 | Alarms/events | 118, 119 | Fixed records and bounded retrieval implemented; checkpoint continuity limits explicit; physical evidence outstanding |
 | File transfers | 203 | Raw unicast exchange only; file lifecycle/chunking outstanding |
 | Peer network tunnel | 205 | Raw unicast exchange only; typed tunneled exchange outstanding |
@@ -86,8 +89,9 @@ This does not resolve DEC-3 mappings or DEC-8 firmware discovery.
 | Parameter schema catalog | Device/firmware point dictionaries | 332-entry built-in slice, including all PT-136 read widths; remaining metadata/parameters/rows outstanding |
 | Physical interoperability | Ethernet / serial controller | No hardware tests performed |
 
-The Chapter 3 inventory contains 62 point-type tables: thirteen have partial built-in
-coverage and 49 remain open. None is claimed fully conformant. The 332 delivered
+The Chapter 3 inventory contains 62 point-type tables: fourteen have partial coverage
+and 48 remain open. Thirteen have catalog entries; PT-99 uses separate typed
+revision/TLP definition APIs. None is claimed fully conformant. The 332 catalog
 parameters are a read-oriented subset; full closure includes remaining metadata,
 write conditions, variants and applicability evidence. See the
 [schema inventory](SCHEMA_WORK_PLAN.md) for the per-table status.

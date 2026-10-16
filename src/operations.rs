@@ -334,9 +334,39 @@ pub(crate) fn write_batch(
     opcode: u8,
     payload: Vec<u8>,
 ) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<(), Error> + Send> {
-    empty_ack(
-        opcode,
-        payload,
-        "parameter write acknowledgement must be empty",
+    empty_ack(opcode, payload, "write acknowledgement must be empty")
+}
+
+pub(crate) fn transaction_list(
+    q: crate::TransactionListRequest,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<crate::TransactionListPage, Error> + Send> {
+    PreparedOperation::new(206, q.payload(), Some(15), move |b: &[u8]| {
+        q.decode(b).map_err(Error::from)
+    })
+}
+pub(crate) fn transaction_data(
+    q: crate::TransactionDataRequest,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<crate::TransactionDataPage, Error> + Send> {
+    PreparedOperation::new(206, q.payload(), Some(3), move |b: &[u8]| {
+        q.decode(b).map_err(Error::from)
+    })
+}
+
+pub(crate) fn table_definition(
+    q: crate::TableDefinitionRequest,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<crate::ConfigurableTableDefinition, Error> + Send>
+{
+    PreparedOperation::new(167, q.payload(), Some(140), move |b: &[u8]| {
+        q.decode_reply(b)
+    })
+}
+pub(crate) fn table_read(
+    q: crate::TableReadBatch,
+) -> PreparedOperation<impl FnOnce(&[u8]) -> Result<crate::TableReadReply, Error> + Send> {
+    PreparedOperation::new(
+        10,
+        q.payload(),
+        Some(q.response_size()),
+        move |b: &[u8]| q.decode_wire(b),
     )
 }

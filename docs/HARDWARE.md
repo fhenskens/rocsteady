@@ -1,5 +1,14 @@
 # Hardware and communication channels
 
+## Current scope — 2026-10-16
+
+Physical hardware validation is deferred and outside the current software-completion
+scope by project-owner instruction. Reopen it when a controller becomes available
+or an interested external tester volunteers. The acceptance sequence below is a
+future validation plan, not a blocker for source-audited software implementation.
+Continue loopback, simulator, stream, applicable pseudo-terminal and package checks.
+Keep physical status explicit; deferral does not establish device compatibility.
+
 ## Initial channel: Ethernet TCP
 
 ROC800 supports ROC Plus over Ethernet TCP. The configured TCP port is normally

@@ -25,6 +25,9 @@ jobs:
       - run: cargo run --locked --example schema_profiles
       - run: cargo run --locked --example discovery_catalog
       - run: cargo run --locked --features simulator --example parameter_writes
+      - run: cargo run --locked --features simulator --example clock_set
+      - run: cargo run --locked --features simulator --example transactions
+      - run: cargo run --locked --features simulator --example configurable_tables
       - run: cargo run --locked --example temperature_monitoring -- 3 1 --demo-reconnect
       - run: cargo run --locked --example log_retrieval
       - run: cargo run --locked --example history_metadata

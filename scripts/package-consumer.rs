@@ -396,8 +396,70 @@ async fn main() {
     assert_eq!(plan.batches()[0].opcode(),181);
     assert_eq!(discovery_client.write_plan(plan).await.unwrap().batches,[rocsteady::WriteOutcome::Acknowledged]);
     assert_eq!(discovery_client.read_schema(&catalog,&catalog.context(),&writes.iter().map(|(t,_)|*t).collect::<Vec<_>>()).await.unwrap(),writes.iter().map(|(_,v)|v.clone()).collect::<Vec<_>>());
+    // REQ-DI-WRITE-PACKAGE: Table 3-13 /4–5, /9–11, /13 through the
+    // extracted public API; both services acknowledge and explicit reads confirm values.
+    let di_configuration = [
+        (rocsteady::Tlp::new(101,32,4),rocsteady::Value::UInt8(1)),
+        (rocsteady::Tlp::new(101,32,5),rocsteady::Value::UInt8(0)),
+        (rocsteady::Tlp::new(101,32,9),rocsteady::Value::UInt8(1)),
+        (rocsteady::Tlp::new(101,32,10),rocsteady::Value::UInt8(0)),
+        (rocsteady::Tlp::new(101,32,11),rocsteady::Value::UInt8(1)),
+        (rocsteady::Tlp::new(101,32,13),rocsteady::Value::Float(0.125)),
+    ];
+    for arbitrary in [false, true] {
+        let plan = if arbitrary {
+            rocsteady::WritePlan::build_arbitrary(&catalog,&catalog.context(),&di_configuration,discovery_client.profile())
+        } else {
+            rocsteady::WritePlan::build(&catalog,&catalog.context(),&di_configuration,discovery_client.profile())
+        }.unwrap();
+        let batch_count=plan.batches().len();
+        assert_eq!(discovery_client.write_plan(plan).await.unwrap().batches,vec![rocsteady::WriteOutcome::Acknowledged;batch_count]);
+        assert_eq!(discovery_client.read_schema(&catalog,&catalog.context(),&di_configuration.iter().map(|(t,_)|*t).collect::<Vec<_>>()).await.unwrap(),di_configuration.iter().map(|(_,v)|v.clone()).collect::<Vec<_>>());
+    }
+    // REQ-008-PACKAGE: seven-byte typed set and explicit weekday-bearing read-back.
+    let clock=rocsteady::ClockSet::new(2024,2,29,23,58,59).unwrap();
+    assert_eq!(discovery_client.set_clock(clock).await.unwrap(),rocsteady::WriteOutcome::Acknowledged);
+    let observed=discovery_client.read_clock().await.unwrap();
+    assert_eq!((observed.year,observed.month,observed.day,observed.weekday),(2024,2,29,5));
     discovery_client.stop().await;
     server.stop().await.unwrap();
+    // REQ-206-PACKAGE: both commands and split-field reassembly from extracted API.
+    let mut history=rocsteady::simulator::HistoryMetadataModel::default();
+    history.transactions.insert(13,rocsteady::simulator::TransactionSegmentModel{
+        description:*b"PACKAGE TX",payload_size:7,records:vec![(42,123456,vec![3,0x34,0x12,9,b'A',0,b'Z'])],list_page_size:1,data_page_size:2,
+    });
+    let server=rocsteady::simulator::Simulator::bind_with_history("127.0.0.1:0".parse().unwrap(),rocsteady::simulator::Model::default(),history).await.unwrap();
+    let client=rocsteady::Client::tcp(server.endpoint().to_string(),rocsteady::ClientConfig{heartbeat_interval:None,..Default::default()}).unwrap();
+    let segment=rocsteady::TransactionSegment::new(13,rocsteady::FirmwareVersion::new(3,50).unwrap()).unwrap();
+    let inventory=client.transaction_inventory(rocsteady::TransactionListRequest::new(segment,0),4).await.unwrap();
+    assert!(inventory.complete);assert_eq!(inventory.pages[0].entries[0].number,42);
+    let data=client.read_transaction(segment,42,inventory.pages[0].payload_size,8).await.unwrap();
+    assert!(data.complete);assert_eq!(data.bytes,[3,0x34,0x12,9,b'A',0,b'Z']);
+    let fields=rocsteady::decode_transaction_fields(&data.bytes,rocsteady::TransactionFieldLayout::TaggedValues).unwrap();
+    assert_eq!(fields[0].value,rocsteady::TransactionValue::Scalar(rocsteady::Value::UInt16(0x1234)));
+    assert_eq!(fields[1].value,rocsteady::TransactionValue::String(vec![b'A',0,b'Z']));
+    client.stop().await;server.stop().await.unwrap();
+    // REQ-TABLE-PACKAGE: typed PT-99 discovery, mapped duplicate ordering,
+    // OP-10/11 planning and explicit read-back through the extracted crate.
+    let mut model=rocsteady::simulator::Model::default();
+    model.parameters.insert(rocsteady::Tlp::new(91,0,2),rocsteady::Value::Ascii("INITIAL STATION     ".into()));
+    let mut entries=[rocsteady::Tlp::new(0,0,0);44];
+    entries[0]=rocsteady::Tlp::new(91,0,2);entries[1]=entries[0];
+    model.configurable_tables.lock().unwrap().insert(0,rocsteady::ConfigurableTableDefinition{table:0,revision:rocsteady::TableRevision::from_bits(0x80000000),entries});
+    let server=rocsteady::simulator::Simulator::bind("127.0.0.1:0".parse().unwrap(),model).await.unwrap();
+    let client=rocsteady::Client::tcp(server.endpoint().to_string(),rocsteady::ClientConfig{heartbeat_interval:None,..Default::default()}).unwrap();
+    let firmware=rocsteady::FirmwareVersion::new(3,60).unwrap();
+    let catalog=rocsteady::Roc800Catalog::new(firmware).unwrap();
+    let table=client.discover_configurable_table(0,firmware).await.unwrap();
+    assert_eq!(table.definition().revision.bits(),0x80000000);
+    let writes=[rocsteady::Value::Ascii("FIRST STATION       ".into()),rocsteady::Value::Ascii("FINAL STATION       ".into())];
+    let plan=table.write_plan(&catalog,&catalog.context(),0,&writes,client.profile()).unwrap();
+    assert_eq!(plan.batches()[0].opcode(),11);
+    assert_eq!(client.write_plan(plan).await.unwrap().batches,[rocsteady::WriteOutcome::Acknowledged]);
+    let plan=rocsteady::TableReadPlan::build(&table,&catalog,&catalog.context(),0,2,client.profile()).unwrap();
+    let read=client.read_configurable_table(plan).await.unwrap();assert!(read.complete);
+    assert_eq!(read.batches[0].values,vec![writes[1].clone();2]);
+    client.stop().await;server.stop().await.unwrap();
     println!("packaged external consumer passed");
 }
 

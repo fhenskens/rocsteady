@@ -368,3 +368,24 @@ Reopen the relevant row when a new edition, erratum, implementation or captured
 exchange becomes available. Link the source and update confidence rather than
 silently replacing a previous candidate. Do not resume disputed implementation
 work merely because its search record is complete.
+
+
+## Targeted follow-up — 2026-10-16
+
+[Executed queries R16-01–09 and findings](FOLLOW_UP_2026_10_16.md) extend this
+historical ledger for DEC-2/5/9. Source records are S25–28; no exhaustion claim.
+
+- L02: publisher ROCLINK manual obtained and the named TCP/security sections
+  inspected. Other layout/history/parameter sections remain future audit work.
+- L03: release, ROCPlus data-group and LOGINSEC pages inspected. Support is confirmed;
+  credential wrapping and ROC800 key lifetime remain missing. Device-page full read
+  is not claimed after browser retrieval failures.
+- L04: ABB publisher original obtained; OP-203 support note inspected, no wire details.
+- L05: transaction per-file history and one pinned correction diff inspected;
+  formatting-only change supplies no new wire/provenance evidence. Other diffs,
+  issues and forks remain open leads.
+- L01: renewed 2011/part-number searches did not retrieve a verified earlier manual.
+  Archive collection remains open; this is not proof of absence.
+
+Hardware validation is deferred outside the current software-completion scope;
+source-definition research remains active. See [prepared questions](DEFINITION_REQUEST.md).

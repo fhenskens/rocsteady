@@ -9,15 +9,13 @@ same contracts, so callers can replace them with their own implementations.
 
 ## Resuming development
 
-Start with the [current handoff](OUTSTANDING_WORK.md#current-handoff--2026-10-15)
+Start with the [current handoff](OUTSTANDING_WORK.md#current-handoff--2026-10-16)
 and [recommended next slice](OUTSTANDING_WORK.md#recommended-next-slice).
-Version 0.1.3 includes history services, OP-166/181 writes (12 audited fields),
-PT-106/107/108 reads (332 total catalog definitions), finite caller-driven polling
-and registry etherbird 0.4.3 adapter helpers.
-[Write contracts](WRITES.md), [temperature contracts](TEMPERATURE.md) and
-[MVS/polling contracts](MVS.md) record outcomes, firmware and applicability limits.
-The handoff separates implementation, remaining baseline acceptance and physical
-validation; release status is recorded in [RELEASE.md](RELEASE.md).
+Version 0.2.0 includes history and monitoring, 18 audited writable fields,
+clock setting, transaction retrieval and configurable-table access. The generic
+catalog retains 332 definitions; PT-99 uses a separate typed definition API.
+Feature contracts below record applicability and outcomes; [release evidence](RELEASE.md)
+records validation and publication provenance.
 
 ## Reading order
 
@@ -44,6 +42,9 @@ validation; release status is recorded in [RELEASE.md](RELEASE.md).
 | [Service plan](SPEC_WORK_PLAN.md) | Baseline opcode/core inventory and closure criteria |
 | [Schema plan](SCHEMA_WORK_PLAN.md) | Point-type inventory and per-parameter closure criteria |
 | [Parameter writes](WRITES.md) | OP-166/181 planning, audited writable manifest, partial/uncertain outcomes and no replay |
+| [Clock setting](CLOCK_SET.md) | OP-8 calendar validation, explicit outcomes and no replay |
+| [Transactions](TRANSACTIONS.md) | OP-206 inventory/raw reassembly and provisional field interpretations |
+| [Configurable tables](CONFIGURABLE_TABLES.md) | PT-99 snapshots, OP-10 reads, OP-11 mapped writes and external-edit limits |
 | [MVS reads and polling](MVS.md) | PT-108 fields, explicit 4088 applicability and caller-driven sampling/re-discovery |
 | [Temperature reads](TEMPERATURE.md) | PT-106/107 read fields, units/sensor labels, source caveats and validation evidence |
 | [Catalog](CATALOG.md) | Selected source-audited parameter metadata, discovery policies, per-variant fixtures and explicit firmware/hardware limitations |

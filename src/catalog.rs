@@ -104,12 +104,14 @@ impl SchemaProvider for Roc800Catalog {
         tlp: Tlp,
     ) -> Result<Option<ParameterSchema>, Error> {
         // Audited R/W User fields only: Table 3-5 /2; Tables 3-13..17 tags,
-        // plus Table 3-13 DI scanning /1 and filter /2. See docs/WRITES.md.
+        // plus Table 3-13 DI configuration /1–2, /4–5, /9–11, /13.
+        // Both-updated status/counters and system-only fields remain excluded.
+        // See docs/WRITES.md for the field-by-field write audit.
         // lookup retains the same explicit firmware and discovered physical-location gates.
         let schema = self.lookup(context, tlp)?;
         if matches!(
             (tlp.point_type, tlp.parameter),
-            (91, 2) | (101, 0..=2) | (102..=105, 0..=1)
+            (91, 2) | (101, 0..=2 | 4..=5 | 9..=11 | 13) | (102..=105, 0..=1)
         ) {
             Ok(schema)
         } else {
